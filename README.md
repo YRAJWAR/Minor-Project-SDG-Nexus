@@ -7,6 +7,8 @@ citizen confirms the fix, students earn verifiable credentials, and every step i
 
 B.Tech minor project, Dev Bhoomi Uttarakhand University, 2026.
 
+**Live:** https://sdg-nexus-delta.vercel.app — demo data, every person and organisation fictional.
+
 ## How a report moves
 1. **Reported** — a citizen (or NGO) picks state → district, describes the problem; it is tagged with SDGs and checked for duplicates.
 2. **Verified** — the district officer confirms the SDGs and verifies, rejects (with a reason) or merges it.
@@ -61,8 +63,8 @@ New faculty and students join the demo university with invite code `KVIT-DEMO-20
 3. In Vercel → Settings → Environment Variables add `DATABASE_URL` (the connection string) and `JWT_SECRET` (any random
    string of 32+ characters). The app refuses to start in production without them (`src/instrumentation.ts`).
 4. Deploy. Vercel runs `npm run vercel-build`, which applies the migrations and builds.
-5. Load the demo data once, from your machine, pointed at the hosted database:
-   `DATABASE_URL="<hosted connection string>" npx prisma db seed`
+5. Load the demo data once, from your machine, pointed at the hosted database (use Neon's **direct** connection string,
+   not the `-pooler` one): `DATABASE_URL="<hosted connection string>" npx prisma db seed`. Re-run it to reset the live demo.
 6. Optional: `BASE_URL=https://<your-app>.vercel.app npm run smoke` (adds one test report to that database).
 
 ## Project map

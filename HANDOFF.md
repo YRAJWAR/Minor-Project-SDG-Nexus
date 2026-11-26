@@ -54,7 +54,7 @@ npm run dev                 # http://localhost:3000
 | 3 Proposals, funding, milestones | done |
 | 4 Closure, credentials, scores | done |
 | 6 Design (use `.claude/skills/impeccable` guidance) | done — see DESIGN.md |
-| 7 Ship | code ready; hosting (Neon/Supabase DB + new Vercel project) is the owner's step — see README "Deploy" |
+| 7 Ship | done — live at https://sdg-nexus-delta.vercel.app |
 
 ## Log (newest last — every assistant adds an entry before stopping)
 Format: date · who · branch · what changed (files) · what is unfinished · anything the next one must know.
@@ -164,4 +164,9 @@ Format: date · who · branch · what changed (files) · what is unfinished · a
     prisma generate + migrate deploy + next build. Removed the `db:push` script (against project rules). `.env.example` trimmed to what is used.
   - README rewritten (story, run, demo accounts, five-minute demo, deploy steps, project map).
   - Remaining owner steps: create a hosted PostgreSQL, a NEW Vercel project from this repo with DATABASE_URL + JWT_SECRET, seed it once.
+- 2026-11-27 · Claude Code · main · Live. Vercel project (owner's account) + Neon PostgreSQL (us-east-1, direct connection).
+  - First build failed: DATABASE_URL was not set in Vercel (P1012); owner added it and redeployed. Startup env check now skips `next build`.
+  - Hosted DB seeded from the local `.env.neon` (git-ignored; never commit or print it). `BASE_URL=https://sdg-nexus-delta.vercel.app npm run smoke`
+    passed end to end; live data then reset with the seed.
+  - Public link is the production domain; the `-git-main-` preview addresses sit behind Vercel's login (Deployment Protection).
 

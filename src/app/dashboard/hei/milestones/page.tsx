@@ -408,7 +408,7 @@ export default function MilestoneTrackerPage() {
                                     onClick={() => setSelectedProject(proj)}
                                     className={`p-4 rounded-2xl border cursor-pointer transition shadow-xs flex flex-col justify-between space-y-3 ${
                                         isSelected
-                                            ? 'bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white border-indigo-600 shadow-md ring-2 ring-indigo-500/20'
+                                            ? 'bg-[var(--color-survey-deep)] text-white border-indigo-600 shadow-md ring-2 ring-indigo-500/20'
                                             : 'bg-white text-slate-900 border-slate-200 hover:border-indigo-300'
                                     }`}
                                 >
@@ -610,7 +610,7 @@ export default function MilestoneTrackerPage() {
             {/* SIDE PANEL / DRAWER MODAL: "Add Milestone" */}
             <AnimatePresence>
                 {isSidePanelOpen && (
-                    <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/60 backdrop-blur-xs">
+                    <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/60">
                         <motion.div
                             initial={{ x: '100%' }}
                             animate={{ x: 0 }}
@@ -654,7 +654,7 @@ export default function MilestoneTrackerPage() {
                                 {/* Cryptographic Seal Banner (Displayed upon submission) */}
                                 {sealedSuccess && sealedHash && (
                                     <motion.div
-                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        initial={{ opacity: 1, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         className="bg-emerald-900 text-white p-5 rounded-2xl space-y-3 shadow-md border border-emerald-700"
                                     >

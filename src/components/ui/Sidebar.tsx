@@ -29,7 +29,7 @@ const NAV_ITEMS: Record<string, { label: string; href: string; icon: string }[]>
         { label: 'Profile', href: '/dashboard/profile', icon: '👤' },
     ],
     government: [
-        { label: 'District Command Center', href: '/dashboard/government', icon: '🏛️' },
+        { label: 'District office', href: '/dashboard/government', icon: '🏛️' },
         { label: 'Heatmap', href: '/dashboard/heatmap', icon: '🗺️' },
         { label: 'Activity Ledger', href: '/dashboard/ledger', icon: '📋' },
         { label: 'Leaderboard', href: '/dashboard/leaderboard', icon: '🏆' },
@@ -37,7 +37,7 @@ const NAV_ITEMS: Record<string, { label: string; href: string; icon: string }[]>
         { label: 'Profile', href: '/dashboard/profile', icon: '👤' },
     ],
     corporate: [
-        { label: 'Industry & Funding Partner Dashboard', href: '/dashboard/corporate', icon: '🏢' },
+        { label: 'CSR dashboard', href: '/dashboard/corporate', icon: '🏢' },
         { label: 'Heatmap', href: '/dashboard/heatmap', icon: '🗺️' },
         { label: 'Activity Ledger', href: '/dashboard/ledger', icon: '📋' },
         { label: 'Leaderboard', href: '/dashboard/leaderboard', icon: '🏆' },
@@ -83,7 +83,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
             {/* Mobile Backdrop */}
             {mobileOpen && (
                 <div
-                    className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+                    className="fixed inset-0 bg-black/60 z-40 lg:hidden transition-opacity"
                     onClick={onClose}
                 />
             )}

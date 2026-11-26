@@ -17,7 +17,7 @@ export default function ProfilePage() {
     return (
         <div className="max-w-6xl mx-auto space-y-6 pb-20">
             {/* Header Area */}
-            <div className="relative h-48 rounded-2xl overflow-hidden mb-16" style={{ background: 'linear-gradient(135deg, #16a34a 0%, #0f172a 100%)' }}>
+            <div className="relative h-48 rounded-2xl overflow-hidden mb-16" style={{ background: 'var(--color-forest)' }}>
                 <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20 bg-center"></div>
                 <div className="absolute -bottom-12 left-8 flex items-end">
                     <div className="w-32 h-32 rounded-2xl flex items-center justify-center text-5xl font-bold shadow-2xl border-4 border-white"
@@ -29,7 +29,7 @@ export default function ProfilePage() {
 
             <div className="px-8 flex items-end justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900">{user.name}</h1>
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--color-ink)]">{user.name}</h1>
                     <p className="text-lg text-slate-500 mt-1">{user.organization_name}</p>
                 </div>
                 <div className="flex gap-3">
@@ -45,7 +45,7 @@ export default function ProfilePage() {
             <div className="px-8 grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
                 {/* Left Column - Details */}
                 <div className="space-y-6">
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
+                    <motion.div initial={{ opacity: 1, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
                         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Account Overview</h3>
                         <div className="space-y-4">
                             <div>
@@ -74,7 +74,7 @@ export default function ProfilePage() {
                         </div>
                     </motion.div>
 
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-6">
+                    <motion.div initial={{ opacity: 1, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-6">
                         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Compliance & Documents</h3>
                         <div className="space-y-3">
                             <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
@@ -104,21 +104,21 @@ export default function ProfilePage() {
                 <div className="lg:col-span-2 space-y-6">
                     {/* Stat Cards */}
                     <div className="grid grid-cols-3 gap-6">
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-6 text-center">
+                        <motion.div initial={{ opacity: 1, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-6 text-center">
                             <h4 className="text-3xl font-bold" style={{ color: '#16a34a' }}>{myProjects.length || 0}</h4>
                             <p className="text-xs font-medium text-slate-500 uppercase mt-2">Active Projects</p>
                         </motion.div>
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-card p-6 text-center">
+                        <motion.div initial={{ opacity: 1, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-card p-6 text-center">
                             <h4 className="text-3xl font-bold" style={{ color: '#3b82f6' }}>{(totalBeneficiaries / 1000).toFixed(1)}K</h4>
                             <p className="text-xs font-medium text-slate-500 uppercase mt-2">Beneficiaries Reached</p>
                         </motion.div>
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="glass-card p-6 text-center">
+                        <motion.div initial={{ opacity: 1, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="glass-card p-6 text-center">
                             <h4 className="text-3xl font-bold" style={{ color: '#8b5cf6' }}>{Math.max(90, 100 - (myProjects.length * 2))}%</h4>
                             <p className="text-xs font-medium text-slate-500 uppercase mt-2">Profile Completeness</p>
                         </motion.div>
                     </div>
 
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="glass-card p-6">
+                    <motion.div initial={{ opacity: 1, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="glass-card p-6">
                         <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-2">
                             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Recent Activity & Security</h3>
                             <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">Secure</span>
@@ -149,7 +149,7 @@ export default function ProfilePage() {
                         </div>
                     </motion.div>
 
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="glass-card p-6">
+                    <motion.div initial={{ opacity: 1, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="glass-card p-6">
                         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-6 border-b border-slate-100 pb-2">Preferences</h3>
                         <div className="space-y-6">
                             <div className="flex items-center justify-between">

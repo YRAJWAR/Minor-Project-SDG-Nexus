@@ -25,7 +25,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="text-center">
                     <Image src="/logo.png" alt="SDG Nexus" width={48} height={48}
                         className="rounded-xl mx-auto mb-4 animate-pulse" style={{ objectFit: 'contain' }} />
-                    <p className="text-sm" style={{ color: '#94a3b8' }}>Loading SDG Nexus...</p>
+                    <p className="text-sm" style={{ color: 'var(--color-ink-muted)' }}>Loading SDG Nexus...</p>
                 </div>
             </div>
         );

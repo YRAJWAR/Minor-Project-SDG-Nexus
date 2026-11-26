@@ -226,7 +226,7 @@ export default function StudentCredentialsPage() {
             </div>
 
             {/* Institutional Framework Banner */}
-            <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 text-white rounded-2xl p-5 shadow-sm border border-indigo-800/40 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
+            <div className="bg-[var(--color-survey-deep)] text-white rounded-2xl p-5 shadow-sm border border-indigo-800/40 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
                 <div className="space-y-1.5 max-w-2xl">
                     <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
@@ -239,7 +239,7 @@ export default function StudentCredentialsPage() {
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3 bg-white/10 p-3 rounded-xl backdrop-blur-xs border border-white/10 shrink-0">
+                <div className="flex items-center gap-3 bg-white/10 p-3 rounded-xl border border-white/10 shrink-0">
                     <GraduationCap className="w-6 h-6 text-indigo-300" />
                     <div>
                         <span className="text-[10px] text-indigo-200 uppercase block font-semibold">Attesting Mentor</span>
@@ -385,9 +385,9 @@ export default function StudentCredentialsPage() {
             {/* CREDENTIAL ISSUANCE FORM (Modal / Side Drawer) */}
             <AnimatePresence>
                 {isFormOpen && selectedProject && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60">
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.96 }}
+                            initial={{ opacity: 1, scale: 0.96 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.96 }}
                             className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden"

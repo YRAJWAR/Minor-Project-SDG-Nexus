@@ -160,7 +160,7 @@ export default function CreateProjectPage() {
 
     return (
         <div className="max-w-3xl mx-auto space-y-6">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div initial={{ opacity: 1, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                 <h1 className="text-2xl font-bold text-slate-900">Create New Project</h1>
                 <p className="text-sm text-slate-500 mt-1">Fill in all required fields — AI will classify relevant SDGs automatically</p>
             </motion.div>
@@ -169,7 +169,7 @@ export default function CreateProjectPage() {
                 {step === 'form' && (
                     <motion.form
                         key="form"
-                        initial={{ opacity: 0, x: -20 }}
+                        initial={{ opacity: 1, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         onSubmit={handleSubmit}
@@ -258,7 +258,7 @@ export default function CreateProjectPage() {
                 {step === 'analyzing' && (
                     <motion.div
                         key="analyzing"
-                        initial={{ opacity: 0, scale: 0.95 }}
+                        initial={{ opacity: 1, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         className="glass-card p-12 text-center"
@@ -278,7 +278,7 @@ export default function CreateProjectPage() {
                 {step === 'results' && sdgResults && (
                     <motion.div
                         key="results"
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 1, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="space-y-5"
                     >
@@ -305,7 +305,7 @@ export default function CreateProjectPage() {
                                     return (
                                         <motion.div
                                             key={cls.sdg_id}
-                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            initial={{ opacity: 1, scale: 0.8 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             transition={{ delay: i * 0.15 }}
                                             className="flex items-center gap-3 px-4 py-3 rounded-xl flex-1 min-w-[200px]"
@@ -359,7 +359,7 @@ export default function CreateProjectPage() {
                             </button>
                             <button onClick={() => setStep('form')} disabled={saveStatus !== 'idle'}
                                 className="flex-1 py-3 rounded-xl text-sm font-medium text-slate-500 disabled:opacity-50"
-                                style={{ background: '#e2e8f0', border: '1px solid #e2e8f0' }}>
+                                style={{ background: '#e2e8f0', border: '1px solid var(--color-rule)' }}>
                                 ← Edit Details
                             </button>
                         </div>

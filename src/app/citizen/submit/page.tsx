@@ -327,7 +327,7 @@ export default function CitizenSubmitPage() {
                 {/* If already submitted, show Success View */}
                 {submittedData ? (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
+                        initial={{ opacity: 1, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         className="bg-[var(--color-sheet)]  border border-emerald-500/30 rounded-2xl p-6 sm:p-10 shadow-sm shadow-emerald-500/5 text-center"
                     >
@@ -471,7 +471,7 @@ export default function CitizenSubmitPage() {
                             {step === 1 && (
                                 <motion.div
                                     key="step1"
-                                    initial={{ opacity: 0, x: 20 }}
+                                    initial={{ opacity: 1, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -20 }}
                                     className="space-y-6"
@@ -564,7 +564,7 @@ export default function CitizenSubmitPage() {
                             {step === 2 && (
                                 <motion.div
                                     key="step2"
-                                    initial={{ opacity: 0, x: 20 }}
+                                    initial={{ opacity: 1, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -20 }}
                                     className="space-y-6"
@@ -684,7 +684,7 @@ export default function CitizenSubmitPage() {
                             {step === 3 && (
                                 <motion.div
                                     key="step3"
-                                    initial={{ opacity: 0, x: 20 }}
+                                    initial={{ opacity: 1, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -20 }}
                                     className="space-y-6"
@@ -834,7 +834,7 @@ export default function CitizenSubmitPage() {
                             {step === 4 && (
                                 <motion.div
                                     key="step4"
-                                    initial={{ opacity: 0, x: 20 }}
+                                    initial={{ opacity: 1, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -20 }}
                                     className="space-y-6"
@@ -849,7 +849,7 @@ export default function CitizenSubmitPage() {
                                     {/* Engine 6: Duplicate Warning Panel */}
                                     {duplicateResult?.isDuplicate && duplicateDecision === 'none' && (
                                         <motion.div
-                                            initial={{ opacity: 0, y: -8 }}
+                                            initial={{ opacity: 1, y: -8 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             className="p-5 rounded-2xl bg-amber-500/10 border-2 border-amber-500/40 text-[var(--color-ochre)] space-y-3 shadow-lg shadow-amber-500/5"
                                         >

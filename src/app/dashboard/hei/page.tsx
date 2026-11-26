@@ -132,27 +132,15 @@ export default function HEIChallengeInboxPage() {
                 </div>
             )}
 
-            {/* Sub-header Banner */}
-            <div className="bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 border border-indigo-800/60 rounded-2xl p-6 text-white relative overflow-hidden shadow-sm">
-                <div className="relative z-10 max-w-2xl">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-2">
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
-                        AI-Routed Problem Bank
-                    </div>
-                    <h2 className="text-2xl font-bold text-white tracking-tight">
-                        Societal Challenges Awaiting University Action
-                    </h2>
-                    <p className="mt-1 text-sm text-indigo-200/80 leading-relaxed">
-                        Government-validated societal challenges matched to your university based on department laboratory capabilities, UN SDG expertise, and district priority.
-                    </p>
-                </div>
-                <div className="absolute -right-6 -bottom-8 opacity-15 pointer-events-none text-white">
-                    <GraduationCap className="w-64 h-64" />
-                </div>
+            <div>
+                <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--color-ink)]">Problems open to your university</h1>
+                <p className="mt-0.5 max-w-3xl text-sm text-[var(--color-ink-muted)]">
+                    Verified by district officers. The match score weighs your departments&apos; SDG expertise, distance and track record; open a problem to see why.
+                </p>
             </div>
 
             {/* Filter & Search Bar */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm space-y-4">
+            <div className="glass-card p-4 space-y-4">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
                     <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-600" />
                     Filter & Prioritize Challenge Inbox
@@ -353,7 +341,7 @@ export default function HEIChallengeInboxPage() {
                                             onClick={() => router.push(`/dashboard/hei/proposal/${challenge.id}`)}
                                             className="flex-1 sm:flex-initial justify-center px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm shadow-indigo-600/20 transition flex items-center gap-1.5 cursor-pointer"
                                         >
-                                            <span>Accept Challenge</span>
+                                            <span>{challenge.status === 'VALIDATED' || challenge.status === 'UNIVERSITY_ASSIGNED' ? 'Write a proposal' : 'Open'}</span>
                                             <ArrowRight className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
@@ -407,9 +395,9 @@ export default function HEIChallengeInboxPage() {
             {/* Pass Challenge Confirmation Modal */}
             <AnimatePresence>
                 {passingChallenge && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
+                            initial={{ opacity: 1, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200"

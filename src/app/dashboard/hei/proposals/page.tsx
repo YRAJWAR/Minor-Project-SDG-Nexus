@@ -71,7 +71,7 @@ export default function ProposalsIndexPage() {
     return (
         <div className="space-y-6 max-w-6xl mx-auto pb-16">
             {/* Header banner */}
-            <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 border border-indigo-800/60 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="bg-[var(--color-survey-deep)] text-white rounded-2xl p-6 border border-indigo-800/60 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-2 mb-1">
                         <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 uppercase">

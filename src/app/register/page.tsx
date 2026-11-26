@@ -68,7 +68,7 @@ export default function RegisterPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--color-paper)' }}>
-            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+            <motion.div initial={{ opacity: 1, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
                 className="glass-card-dark p-8 w-full" style={{ maxWidth: 560 }}>
                 <div className="text-center mb-7">
                     <Image src="/logo.png" alt="SDG Nexus" width={52} height={52} className="rounded-2xl mx-auto mb-3" style={{ objectFit: 'contain' }} />

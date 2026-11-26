@@ -70,10 +70,10 @@ export default function HeatmapPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                    SDG Impact Heatmap
-                    <span title="Geospatial density visualization identifying 'Impact Dark Zones' through real-time geospatial overlay mapping."><Info className="w-5 h-5 text-slate-400 hover:text-blue-500 cursor-help transition-colors" /></span>
+            <motion.div initial={{ opacity: 1, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--color-ink)] flex items-center gap-2">
+                    Impact map
+                    <span title="Where problems are reported (by district) and where NGO projects work (by state)"><Info className="w-5 h-5 text-slate-400 hover:text-blue-500 cursor-help transition-colors" /></span>
                 </h1>
                 <p className="text-sm text-slate-500 mt-1">
                     Multi-variable density visualization with composite scoring across {regions.length} regions
@@ -82,7 +82,7 @@ export default function HeatmapPage() {
 
             {/* Summary Cards */}
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 1, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 }}
                 className="grid grid-cols-2 md:grid-cols-5 gap-3"
@@ -96,7 +96,7 @@ export default function HeatmapPage() {
                 ].map((stat, i) => (
                     <motion.div
                         key={stat.label}
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 1, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 + i * 0.05 }}
                         className="glass-card p-4 text-center group relative cursor-pointer"
@@ -111,7 +111,7 @@ export default function HeatmapPage() {
 
             {/* Controls */}
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 1, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
                 className="glass-card p-5"
@@ -130,7 +130,7 @@ export default function HeatmapPage() {
                                     title={opt.description}
                                     style={{
                                         background: colorBy === opt.key ? opt.color + '18' : '#f8fafc',
-                                        color: colorBy === opt.key ? opt.color : '#94a3b8',
+                                        color: colorBy === opt.key ? opt.color : 'var(--color-ink-muted)',
                                         border: `1.5px solid ${colorBy === opt.key ? opt.color + '50' : '#e2e8f0'}`,
                                         boxShadow: colorBy === opt.key ? `0 2px 8px ${opt.color}20` : 'none',
                                     }}>
@@ -173,7 +173,7 @@ export default function HeatmapPage() {
 
             {/* Map */}
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 1, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
             >
@@ -189,7 +189,7 @@ export default function HeatmapPage() {
             <div className="grid md:grid-cols-2 gap-5">
                 {/* Top Performing Regions */}
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 1, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                     className="glass-card p-5"
@@ -200,7 +200,7 @@ export default function HeatmapPage() {
                     </h2>
                     <div className="space-y-3">
                         {analytics.topRegions.map((r: any, i: number) => (
-                            <div key={r.name} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                            <div key={r.name} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'var(--color-paper)', border: '1px solid var(--color-rule)' }}>
                                 <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white"
                                     style={{ background: i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : '#cd7f32' }}>
                                     {i + 1}
@@ -225,7 +225,7 @@ export default function HeatmapPage() {
 
                 {/* Underfunded Regions */}
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 1, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.35 }}
                     className="glass-card p-5"
@@ -262,7 +262,7 @@ export default function HeatmapPage() {
 
             {/* SDG Coverage Heatmap */}
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 1, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
                 className="glass-card p-5"
@@ -282,7 +282,7 @@ export default function HeatmapPage() {
                                     background: selectedSDG === sdg.id ? sdg.color + '25' :
                                         `rgba(${Math.round(34 + (239 - 34) * intensity)}, ${Math.round(197 - 197 * intensity * 0.6)}, ${Math.round(94 - 94 * intensity * 0.3)}, 0.1)`,
                                     border: `1.5px solid ${selectedSDG === sdg.id ? sdg.color : 'transparent'}`,
-                                    color: selectedSDG === sdg.id ? sdg.color : '#64748b',
+                                    color: selectedSDG === sdg.id ? sdg.color : 'var(--color-ink-muted)',
                                     fontWeight: selectedSDG === sdg.id ? 700 : 500,
                                 }}
                             >
@@ -303,7 +303,7 @@ export default function HeatmapPage() {
 
             {/* Full Region Table */}
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 1, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.45 }}
                 className="glass-card p-6"

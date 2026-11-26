@@ -111,7 +111,7 @@ export default function SDGHeatmap({ regions = [], colorBy = 'challenge_density'
                         >
                             <Tooltip direction="top" offset={[0, -6]}>
                                 <div style={{ fontFamily: 'inherit' }}>
-                                    <strong>{b.title}</strong>{b.subtitle ? <span style={{ color: '#64748b' }}> · {b.subtitle}</span> : null}
+                                    <strong>{b.title}</strong>{b.subtitle ? <span style={{ color: 'var(--color-ink-muted)' }}> · {b.subtitle}</span> : null}
                                     <div>{b.label}</div>
                                 </div>
                             </Tooltip>

@@ -51,7 +51,7 @@ npm run dev                 # http://localhost:3000
 | 1 Foundation (schema, auth, guards, regions) | done |
 | 5 Demo seed | pulled forward, done (smoke script still to do) |
 | 2 Lifecycle core | done |
-| 3 Proposals, funding, milestones | not started |
+| 3 Proposals, funding, milestones | in progress on branch `phase-3-funding` (NOT merged) — see log |
 | 4 Closure, credentials, scores | not started |
 | 6 Design (use `.claude/skills/impeccable` guidance) | not started |
 | 7 Ship | not started |
@@ -90,4 +90,22 @@ Format: date · who · branch · what changed (files) · what is unfinished · a
   - Officer cards: "Verify…" opens an SDG checklist (1–5) and sends `sdgTags` with VERIFY; filter chips Overdue / Rejected /
     Merged next to the funnel.
   - Still open (moves to Phase 3): `hei/teams/create` sets TEAM_FORMED directly — fold into `transition()` with the proposal rework.
+- 2026-11-26 · Claude Code · phase-3-funding (NOT merged to main) · Phase 3 mostly built, stopped before testing.
+  - Done and committed: schema migration `proposals_funding` (FUNDED status, proposal `teamPlan`/`milestonePlan` JSON,
+    `Milestone.amount`, `FundingCommitment`); lifecycle actions SELECT_PROPOSAL, COMMIT_FUNDS, START, COMPLETE and
+    `validatePlan()` (+ tests, 15 pass); ASSIGN now creates an empty DRAFT proposal (an invitation);
+    proposals API saves/validates the plan; officer ACCEPT goes through SELECT_PROPOSAL; milestone submit fills a planned
+    milestone (only when FUNDED/IN_PROGRESS) and the first one STARTs the project; release must equal the tranche and
+    fit the funder's commitment, last paid tranche COMPLETEs; APIs `GET /api/challenges/[id]/proposals`,
+    `GET /api/funding/open`; components `ProposalsPanel` (officer), `FundingQueue` (CSR), `ProposalPlanEditor` (builder).
+  - Committed as WIP (typecheck passes, NOT yet run): `prisma/seed.ts` Phase 3 demo data (`planFor()` helper, competing
+    Nalgonda proposals, planned milestones with amounts, commitments; TEAM_FORMED projects 40% funded by Westcoast Infra);
+    milestone tracker "Planned milestone" picker.
+  - NEXT, in order: (1) `npx prisma migrate deploy` then `npx prisma db seed` and fix any seed error; (2) `npm run check`;
+    (3) browser test of the full flow (faculty builds + submits plan → officer "Compare proposals" → select → CSR "Commit
+    funds" until FUNDED → student submits proof for a planned milestone → officer verifies → CSR releases each tranche →
+    report COMPLETED; ledger chain still valid via GET /api/ledger/chain); (4) `npm run build`; (5) merge to main.
+  - Known gaps: `hei/teams/create` (old team-formation page) still sets TEAM_FORMED directly — teams now come from the
+    selected proposal, so remove that page from the faculty nav or make the route return 410; proof files are still data
+    URLs (hash covers their content); CSR compliance (2% of profit) and NGO attestation not started.
 

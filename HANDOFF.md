@@ -52,7 +52,7 @@ npm run dev                 # http://localhost:3000
 | 5 Demo seed | pulled forward, done (smoke script still to do) |
 | 2 Lifecycle core | done |
 | 3 Proposals, funding, milestones | done |
-| 4 Closure, credentials, scores | not started |
+| 4 Closure, credentials, scores | done |
 | 6 Design (use `.claude/skills/impeccable` guidance) | not started |
 | 7 Ship | not started |
 
@@ -118,4 +118,22 @@ Format: date · who · branch · what changed (files) · what is unfinished · a
     and made `POST /api/hei/teams/create` return HTTP 410.
   - Note: Chrome DevTools MCP could not connect to local Chrome (`DevToolsActivePort` missing), so the UI walkthrough was
     verified via API end-to-end + `npm run check` + `npm run build` on `main`. Next: Phase 4 (closure, credentials, scores).
+- 2026-11-26 · Claude Code · phase-4-closure → merged to main · Phase 3 screens checked in the browser; Phase 4 done.
+  - Phase 3 check: builder (team + milestones, "adds up"), officer "Compare proposals", CSR funding list, student planned-milestone
+    picker all work. Fixed labels: "Proposals from:" vs "University:" (only the selected one once chosen), "Invite a university".
+  - Phase 4: migration `closure_credentials` (Challenge completedAt, confirmedAt, citizenRating, disputeReason,
+    verifiedBeneficiaries; StudentCredential.challengeId). Lifecycle CONFIRM (reporter, rating 1–5), DISPUTE (reporter, reason →
+    IN_PROGRESS), CLOSE (officer, after confirmation or 14 days, records verified beneficiaries → DEPLOYED = resolved).
+    Credentials only for resolved projects (`isProjectComplete(milestones, challengeStatus)`), linked by challengeId, once per
+    student per report, rating 80% faculty + 20% citizen (`blendedRating`). University score `src/lib/universityScore.ts`
+    (on time 30, citizen 25, people per ₹ lakh vs median 20, proof 15; parts without data are left out; "area need" has no
+    data source yet) → `GET /api/impact/universities` → leaderboard "Universities" table. Track page: confirm/dispute UI,
+    stage dates from the ledger for every stage. Officer card: "Close as resolved…".
+  - Seed: finished projects are DEPLOYED (rating, beneficiaries, ledger history); "Tanker-dependent wadis in Purandar taluka"
+    stays COMPLETED, reported by the demo citizen, who gets a notification to confirm it (live demo of closing).
+  - Checks: 17 tests; API flow (too-early close 409, other citizen 403, bad rating 400, confirm → close → ready for
+    credentials, scores, chain valid) verified; build passes.
+  - Not done / next: Phase 6 design (biggest visible gain), Phase 5 smoke script, Phase 7 ship. Small gaps: CSR dashboard stats
+    still count NGO-project allocations, not FundingCommitments; credential QR code not added (no QR library installed);
+    NGO attestation of milestones not built.
 

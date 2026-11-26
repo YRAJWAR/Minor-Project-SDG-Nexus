@@ -59,3 +59,20 @@ test('duplicate detection: same problem scores higher than an unrelated one', ()
     assert.ok(unrelated < same, 'unrelated challenge must score lower');
     assert.deepEqual(tfidfSimilarities([[], ['water']]), [0]);
 });
+
+test('university score: only resolved work counts, missing parts are left out, never invented', async () => {
+    const { universityScore, median } = await import('./universityScore');
+    const due = new Date('2026-06-01');
+    const p = (rating: number | null, onTime: boolean) => ({
+        budget: 400000, verifiedBeneficiaries: 800, citizenRating: rating,
+        milestones: [{ dueDate: due, submittedAt: new Date(onTime ? '2026-05-20' : '2026-06-10'), sealed: true, hasProof: true }],
+    });
+    assert.equal(universityScore([], 100), null, 'no score before the first resolution');
+    const good = universityScore([p(5, true)], 200)!;
+    assert.equal(good.breakdown.onTime, 100);
+    assert.equal(good.breakdown.satisfaction, 100);
+    assert.equal(good.breakdown.reach, 50, '200 people per lakh at the median scores 50');
+    assert.ok(good.score! > universityScore([p(2, false)], 200)!.score!);
+    assert.equal(universityScore([p(null, true)], 200)!.breakdown.satisfaction, null, 'no rating = left out');
+    assert.equal(median([3, 1, 2]), 2);
+});

@@ -112,7 +112,12 @@ export default function GovernmentDashboard() {
     const [verifyFor, setVerifyFor] = useState<string | null>(null);
     const [proposalsFor, setProposalsFor] = useState<string | null>(null);
     const [verifyTags, setVerifyTags] = useState<number[]>([]);
-    const runAction = async (ch: any, action: 'VERIFY' | 'REJECT' | 'MERGE', extra: Record<string, unknown> = {}) => {
+    const runAction = async (ch: any, action: 'VERIFY' | 'REJECT' | 'MERGE' | 'CLOSE', extra: Record<string, unknown> = {}) => {
+        if (action === 'CLOSE') {
+            const n = window.prompt(`Close "${ch.title}": how many people verifiably benefit? (checked on the ground; this number is used in impact scores)`);
+            if (!n) return;
+            extra = { beneficiaries: Number(n) };
+        }
         if (action === 'REJECT') {
             const reason = window.prompt(`Why is "${ch.title}" not being taken up? The citizen will see this (10-500 characters).`);
             if (!reason) return;
@@ -969,6 +974,12 @@ export default function GovernmentDashboard() {
                                         )}
                                         {proposalsFor === ch.id && (
                                             <ProposalsPanel challengeId={ch.id} onSelected={() => { setProposalsFor(null); setActionMessage({ ok: true, text: `Plan selected for "${ch.title}". The team is formed and CSR partners were notified.` }); setReloadKey((k) => k + 1); }} />
+                                        )}
+                                        {ch.allowedActions?.includes('CLOSE') && (
+                                            <button type="button" disabled={actionBusy === ch.id} onClick={() => runAction(ch, 'CLOSE')}
+                                                className="w-full py-1.5 text-xs font-semibold rounded-lg bg-emerald-700 text-white hover:bg-emerald-800 disabled:opacity-50">
+                                                Close as resolved…
+                                            </button>
                                         )}
                                         {verifyFor === ch.id && (
                                             <fieldset className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-2.5">

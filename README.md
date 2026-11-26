@@ -41,8 +41,14 @@ npm run check                # integrity + access-rule tests
 npm run dev
 ```
 
+### Demo data
+`npx prisma db seed` builds a fictional, pan-India demo: 7 universities, 12 NGOs, 5 CSR partners, 6 district officers,
+33 students, 37 citizen problems at every stage, 14 university project teams with hash-sealed milestones (one deliberately
+tampered so the ledger check has something to catch), 12 credentials, 36 NGO projects with field activity and CSR funding.
+Re-run it any time to reset the demo.
+
 ### Demo accounts
-All are fictional and share the password set in `prisma/seed.ts` (`DEMO_PASSWORD`).
+All are fictional and share the password set in `prisma/seed.ts` (`DEMO_PASSWORD`). The login page has one-click buttons.
 
 | Role | Email |
 |---|---|
@@ -57,3 +63,12 @@ All are fictional and share the password set in `prisma/seed.ts` (`DEMO_PASSWORD
 New faculty and students join the demo university with invite code `KVIT-DEMO-2026`.
 
 District list: [KTBsomen/Indian-state-district-json](https://github.com/KTBsomen/Indian-state-district-json) (MIT, from igod.gov.in), 36 states/UTs, 784 districts.
+
+### Five-minute demo
+1. **Citizen** — report a problem: pick state → district, describe it; it is tagged with SDGs and checked for duplicates.
+2. **District officer (Nalgonda)** — see the India map and the district's queue at every stage; click a district for its numbers; verify the submitted Marriguda milestone.
+3. **Faculty** — inbox of matched problems with match scores, proposals, teams, milestones.
+4. **CSR partner** — real portfolio numbers; release funds for verified milestones; NGO recommendations.
+5. **Student** — their projects, milestone board and verifiable credentials.
+6. **Ledger** — open a project ledger and verify hashes; one record is tampered and shows as failing.
+

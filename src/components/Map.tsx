@@ -1,24 +1,16 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { SDG_INFO, RegionData } from '@/data/mockData';
+import { SDG_INFO, type RegionData } from '@/data/mockData';
 
-const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
-const CircleMarker = dynamic(() => import('react-leaflet').then(mod => mod.CircleMarker), { ssr: false });
-const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
-const GeoJSON = dynamic(() => import('react-leaflet').then(mod => mod.GeoJSON), { ssr: false });
+const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import('react-leaflet').then((m) => m.TileLayer), { ssr: false });
+const CircleMarker = dynamic(() => import('react-leaflet').then((m) => m.CircleMarker), { ssr: false });
+const Tooltip = dynamic(() => import('react-leaflet').then((m) => m.Tooltip), { ssr: false });
 
 export type ColorMode =
-    | 'composite'
-    | 'funding'
-    | 'beneficiaries'
-    | 'ngo_density'
-    | 'efficiency'
-    | 'sdg'
-    | 'risk'
-    | 'challenge_density';
+    | 'composite' | 'funding' | 'beneficiaries' | 'ngo_density' | 'efficiency' | 'sdg' | 'risk' | 'challenge_density';
 
 interface HeatmapProps {
     regions?: RegionData[];
@@ -29,331 +21,122 @@ interface HeatmapProps {
     onSelectDistrict?: (districtName: string) => void;
 }
 
-// ──────────────────────────────────────────────────────────────
-// Three-Stop Color Gradient (#FF4444 -> #FFAA00 -> #00AA44)
-// ──────────────────────────────────────────────────────────────
-function interpolateChoropleth(norm: number, invert = false): string {
-    const factor = Math.max(0, Math.min(1, invert ? 1 - norm : norm));
-    if (factor <= 0.5) {
-        // Red (#FF4444) -> Amber (#FFAA00)
-        const t = factor / 0.5;
-        const r = 255;
-        const g = Math.round(68 + (170 - 68) * t);
-        const b = Math.round(68 * (1 - t));
-        return `rgb(${r}, ${g}, ${b})`;
-    } else {
-        // Amber (#FFAA00) -> Green (#00AA44)
-        const t = (factor - 0.5) / 0.5;
-        const r = Math.round(255 * (1 - t));
-        const g = 170;
-        const b = Math.round(68 * t);
-        return `rgb(${r}, ${g}, ${b})`;
-    }
+interface DistrictPoint { district: string; state: string | null; count: number; open: number; resolutionRate: number; lat: number | null; lng: number | null }
+interface Bubble { key: string; title: string; subtitle: string; lat: number; lng: number; value: number; label: string; district?: string }
+
+// What each mode measures. District modes come from citizen reports; state modes from NGO projects.
+const MODES: Record<ColorMode, { title: string; level: 'district' | 'state'; highIsBad: boolean }> = {
+    challenge_density: { title: 'Problems reported', level: 'district', highIsBad: true },
+    risk: { title: 'Open problems', level: 'district', highIsBad: true },
+    composite: { title: 'Resolution rate', level: 'district', highIsBad: false },
+    funding: { title: 'Project funding', level: 'state', highIsBad: false },
+    beneficiaries: { title: 'People reached', level: 'state', highIsBad: false },
+    ngo_density: { title: 'Active NGOs', level: 'state', highIsBad: false },
+    efficiency: { title: 'Cost per person reached', level: 'state', highIsBad: true },
+    sdg: { title: 'Projects on the selected SDG', level: 'state', highIsBad: false },
+};
+
+const inr = (n: number) => (n >= 1e7 ? `₹${(n / 1e7).toFixed(1)} Cr` : `₹${(n / 1e5).toFixed(1)} L`);
+
+// Low → high on one hue family: calm teal for "good", warm red for "needs attention".
+function colour(norm: number, highIsBad: boolean) {
+    const t = Math.max(0, Math.min(1, norm));
+    return highIsBad ? `hsl(${32 - t * 28}, 85%, ${58 - t * 16}%)` : `hsl(${168 + t * 10}, 60%, ${55 - t * 20}%)`;
 }
 
-export default function SDGHeatmap({
-    regions = [],
-    colorBy = 'composite',
-    selectedSDG,
-    showLabels = true,
-    intensityScale = 1.0,
-    onSelectDistrict,
-}: HeatmapProps) {
-    const [geoJsonData, setGeoJsonData] = useState<any | null>(null);
-    const [sdgIndexMap, setSdgIndexMap] = useState<Record<string, number>>({});
-    const [challengeDensityMap, setChallengeDensityMap] = useState<Record<string, number>>({});
-    const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
+export default function SDGHeatmap({ regions = [], colorBy = 'challenge_density', selectedSDG, intensityScale = 1, onSelectDistrict }: HeatmapProps) {
+    const [points, setPoints] = useState<DistrictPoint[]>([]);
+    const [selected, setSelected] = useState<string | null>(null);
+    const mode = MODES[colorBy] ?? MODES.challenge_density;
 
-    // Load GeoJSON & SDG Index Data
     useEffect(() => {
-        // Fetch GeoJSON
-        fetch('/jharkhand-districts.geojson')
-            .then((r) => r.json())
-            .then((data) => setGeoJsonData(data))
-            .catch((err) => console.warn('GeoJSON fetch error:', err));
-
-        // Fetch NITI Aayog SDG Index
-        fetch('/jharkhand-sdg-index.json')
-            .then((r) => r.json())
-            .then((data) => setSdgIndexMap(data))
-            .catch((err) => console.warn('SDG index fetch error:', err));
-
-        // Fetch Challenge Density
         fetch('/api/government/challenge-density')
-            .then((r) => r.json())
-            .then((res) => {
-                if (res.success && res.data?.density) {
-                    const map: Record<string, number> = {};
-                    res.data.density.forEach((item: { district: string; count: number }) => {
-                        map[item.district.toLowerCase()] = item.count;
-                    });
-                    setChallengeDensityMap(map);
-                }
-            })
-            .catch((err) => console.warn('Challenge density fetch error:', err));
+            .then((r) => (r.ok ? r.json() : null))
+            .then((j) => setPoints(j?.data?.density ?? []))
+            .catch(() => setPoints([]));
     }, []);
 
-    // Helper to get raw metric for a district based on color mode
-    const getDistrictValue = (districtName: string): { raw: number; label: string } => {
-        const normName = districtName.trim();
-        const lowerName = normName.toLowerCase();
-
-        // 1. Mode: Challenge Density (Count of citizen challenges)
-        if (colorBy === 'challenge_density') {
-            const count = challengeDensityMap[lowerName] ?? (lowerName === 'pakur' ? 3 : lowerName === 'simdega' ? 2 : 1);
-            return { raw: count, label: `${count} Challenge${count === 1 ? '' : 's'}` };
+    const bubbles: Bubble[] = useMemo(() => {
+        if (mode.level === 'district') {
+            return points.filter((p) => p.lat !== null && p.lng !== null).map((p) => {
+                const value = colorBy === 'risk' ? p.open : colorBy === 'composite' ? p.resolutionRate : p.count;
+                const label = colorBy === 'risk' ? `${p.open} open of ${p.count}` : colorBy === 'composite' ? `${p.resolutionRate}% resolved (${p.count} reported)` : `${p.count} reported, ${p.open} open`;
+                return { key: p.district, title: p.district, subtitle: p.state ?? '', lat: p.lat!, lng: p.lng!, value, label, district: p.district };
+            });
         }
-
-        // 2. Mode: Composite (NITI Aayog SDG Composite Score)
-        if (colorBy === 'composite') {
-            const score = sdgIndexMap[normName] || sdgIndexMap[Object.keys(sdgIndexMap).find(k => k.toLowerCase() === lowerName) || ''] || 45;
-            return { raw: score, label: `SDG Index: ${score.toFixed(1)} / 100` };
-        }
-
-        // 3. Mode: Funding (Estimated funding intensity in Crores)
-        if (colorBy === 'funding') {
-            const base = (sdgIndexMap[normName] || 45) * 1.8;
-            return { raw: base, label: `₹${base.toFixed(1)} Cr` };
-        }
-
-        // 4. Mode: Beneficiaries
-        if (colorBy === 'beneficiaries') {
-            const bens = Math.round((sdgIndexMap[normName] || 45) * 850);
-            return { raw: bens, label: `${bens.toLocaleString()} Beneficiaries` };
-        }
-
-        // 5. Mode: NGO Density
-        if (colorBy === 'ngo_density') {
-            const ngos = Math.max(3, Math.round((sdgIndexMap[normName] || 45) / 5));
-            return { raw: ngos, label: `${ngos} Active NGOs` };
-        }
-
-        // 6. Mode: Efficiency
-        if (colorBy === 'efficiency') {
-            const eff = Math.round(180 - (sdgIndexMap[normName] || 45));
-            return { raw: eff, label: `₹${eff} / beneficiary` };
-        }
-
-        // 7. Mode: Risk
-        if (colorBy === 'risk') {
-            const risk = Math.max(10, Math.min(95, Math.round(100 - (sdgIndexMap[normName] || 45))));
-            return { raw: risk, label: `Risk Index: ${risk}%` };
-        }
-
-        // 8. Mode: SDG Focus
-        if (colorBy === 'sdg') {
-            const count = Math.round((sdgIndexMap[normName] || 45) / 8);
-            return { raw: count, label: `${count} Target Projects` };
-        }
-
-        return { raw: 50, label: '50' };
-    };
-
-    // Calculate min and max for choropleth scale across all 24 districts
-    const { minVal, maxVal } = useMemo(() => {
-        if (!geoJsonData?.features) return { minVal: 0, maxVal: 100 };
-
-        const values = geoJsonData.features.map((f: any) => {
-            const dName = f.properties.name || f.properties.district;
-            return getDistrictValue(dName).raw;
+        return regions.filter((r) => r.lat).map((r) => {
+            const value =
+                colorBy === 'funding' ? r.funding
+                    : colorBy === 'beneficiaries' ? r.beneficiaries
+                        : colorBy === 'ngo_density' ? r.ngo_count
+                            : colorBy === 'efficiency' ? (r.beneficiaries ? r.funding / r.beneficiaries : 0)
+                                : selectedSDG ? (r.primary_sdgs.includes(selectedSDG) ? r.projects : 0) : r.projects;
+            const label =
+                colorBy === 'funding' ? inr(value)
+                    : colorBy === 'beneficiaries' ? `${value.toLocaleString('en-IN')} people`
+                        : colorBy === 'ngo_density' ? `${value} NGO${value === 1 ? '' : 's'}`
+                            : colorBy === 'efficiency' ? `₹${Math.round(value).toLocaleString('en-IN')} per person`
+                                : `${value} project${value === 1 ? '' : 's'}`;
+            return { key: r.name, title: r.name, subtitle: `${r.projects} projects · ${r.ngo_count} NGOs`, lat: r.lat, lng: r.lng, value, label };
         });
+    }, [points, regions, colorBy, selectedSDG, mode.level]);
 
-        const min = Math.min(...values);
-        const max = Math.max(...values);
-        return { minVal: min, maxVal: max === min ? min + 1 : max };
-    }, [geoJsonData, colorBy, sdgIndexMap, challengeDensityMap]);
-
-    // Style function for GeoJSON polygons
-    const styleFeature = (feature: any) => {
-        const dName = feature?.properties?.name || feature?.properties?.district || '';
-        const { raw } = getDistrictValue(dName);
-        const norm = (raw - minVal) / (maxVal - minVal || 1);
-
-        // For Risk and Challenge Density: Higher values represent areas of urgent intervention
-        // We highlight them with high visibility (Red/Amber)
-        const invertGradient = colorBy === 'risk' || colorBy === 'challenge_density';
-        const fillColor = interpolateChoropleth(norm, invertGradient);
-
-        return {
-            fillColor,
-            fillOpacity: 0.72,
-            weight: 1.5,
-            color: '#1e293b',
-            dashArray: '',
-            opacity: 0.9,
-        };
-    };
-
-    // Event handlers for GeoJSON polygons
-    const onEachFeature = (feature: any, layer: any) => {
-        const dName = feature?.properties?.name || feature?.properties?.district || 'District';
-        const { label } = getDistrictValue(dName);
-        const nitiScore = sdgIndexMap[dName] || 45;
-
-        // Bind interactive tooltip
-        layer.bindTooltip(
-            `<div style="font-family: sans-serif; padding: 4px 6px;">
-                <div style="font-weight: bold; font-size: 13px; color: #0f172a;">${dName}</div>
-                <div style="font-size: 11px; color: #475569; margin-top: 2px;">${label}</div>
-                <div style="font-size: 10px; color: #059669; font-weight: 600; margin-top: 2px;">NITI Aayog Score: ${nitiScore}</div>
-            </div>`,
-            { sticky: true, className: 'leaflet-custom-tooltip' }
-        );
-
-        layer.on({
-            mouseover: (e: any) => {
-                const target = e.target;
-                target.setStyle({
-                    weight: 3,
-                    color: '#ffffff',
-                    fillOpacity: 0.88,
-                });
-                target.bringToFront();
-            },
-            mouseout: (e: any) => {
-                const target = e.target;
-                target.setStyle({
-                    weight: 1.5,
-                    color: '#1e293b',
-                    fillOpacity: 0.72,
-                });
-            },
-            click: () => {
-                setSelectedDistrict(dName);
-                if (onSelectDistrict) {
-                    onSelectDistrict(dName);
-                }
-            },
-        });
-    };
+    const max = Math.max(1, ...bubbles.map((b) => b.value));
 
     return (
-        <div
-            className="w-full h-[380px] sm:h-[480px] md:h-[620px] rounded-2xl overflow-hidden relative shadow-md"
-            style={{ border: '1px solid #cbd5e1' }}
-        >
-            <MapContainer
-                center={[23.6102, 85.2799]} // Centered on Jharkhand
-                zoom={7}
-                style={{ width: '100%', height: '100%', background: '#0a0f1e' }}
-                scrollWheelZoom={true}
-            >
+        <div className="w-full h-[380px] sm:h-[480px] md:h-[560px] rounded-2xl overflow-hidden relative border border-slate-300">
+            <MapContainer center={[22.5, 80.5]} zoom={5} minZoom={4} style={{ width: '100%', height: '100%' }} scrollWheelZoom>
                 <TileLayer
-                    attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-                    url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-
-                {/* GeoJSON District Polygons Layer */}
-                {geoJsonData && (
-                    <GeoJSON
-                        key={`${colorBy}-${minVal}-${maxVal}`}
-                        data={geoJsonData}
-                        style={styleFeature}
-                        onEachFeature={onEachFeature}
-                    />
-                )}
+                {bubbles.map((b) => {
+                    const norm = b.value / max;
+                    return (
+                        <CircleMarker
+                            key={`${colorBy}-${b.key}`}
+                            center={[b.lat, b.lng]}
+                            radius={(mode.level === 'district' ? 7 : 10) + norm * 18 * intensityScale}
+                            pathOptions={{
+                                fillColor: colour(norm, mode.highIsBad), fillOpacity: 0.78,
+                                color: selected === b.key ? '#0f172a' : '#ffffff', weight: selected === b.key ? 3 : 1.5,
+                            }}
+                            eventHandlers={{
+                                click: () => {
+                                    setSelected(b.key);
+                                    if (b.district) onSelectDistrict?.(b.district);
+                                },
+                            }}
+                        >
+                            <Tooltip direction="top" offset={[0, -6]}>
+                                <div style={{ fontFamily: 'inherit' }}>
+                                    <strong>{b.title}</strong>{b.subtitle ? <span style={{ color: '#64748b' }}> · {b.subtitle}</span> : null}
+                                    <div>{b.label}</div>
+                                </div>
+                            </Tooltip>
+                        </CircleMarker>
+                    );
+                })}
             </MapContainer>
 
-            {/* Choropleth Gradient Legend (#FF4444 -> #FFAA00 -> #00AA44) */}
-            <div
-                style={{
-                    position: 'absolute',
-                    bottom: 16,
-                    right: 16,
-                    zIndex: 1000,
-                    background: 'rgba(15, 23, 42, 0.94)',
-                    backdropFilter: 'blur(12px)',
-                    borderRadius: 12,
-                    padding: '12px 16px',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    minWidth: 200,
-                    maxWidth: 'calc(100% - 32px)',
-                    boxShadow: '0 10px 25px -5px rgba(0,0,0,0.4)',
-                }}
-            >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <p
-                        style={{
-                            fontSize: 10,
-                            fontWeight: 800,
-                            color: '#e2e8f0',
-                            textTransform: 'uppercase',
-                            letterSpacing: 0.8,
-                        }}
-                    >
-                        {colorBy === 'challenge_density'
-                            ? '📢 Challenge Density'
-                            : colorBy === 'composite'
-                            ? '🔥 SDG Index (NITI)'
-                            : colorBy === 'funding'
-                            ? '💰 Funding Volume'
-                            : colorBy === 'beneficiaries'
-                            ? '👥 Beneficiaries'
-                            : colorBy === 'ngo_density'
-                            ? '🏢 NGO Density'
-                            : colorBy === 'efficiency'
-                            ? '⚡ Efficiency'
-                            : colorBy === 'risk'
-                            ? '⚠️ Risk Level'
-                            : '🎯 SDG Targets'}
-                    </p>
-                    <span style={{ fontSize: 9, color: '#94a3b8', fontFamily: 'monospace' }}>
-                        Jharkhand 24 Districts
-                    </span>
+            <div className="absolute bottom-4 right-4 z-[1000] rounded-xl bg-white/95 border border-slate-200 shadow-sm px-4 py-3 text-xs text-slate-700 max-w-[calc(100%-2rem)]">
+                <p className="font-semibold text-slate-900">
+                    {mode.title}{colorBy === 'sdg' && selectedSDG ? ` — SDG ${selectedSDG} ${SDG_INFO.find((s) => s.id === selectedSDG)?.name ?? ''}` : ''}
+                </p>
+                <div className="flex items-center gap-2 mt-1.5">
+                    <span>Low</span>
+                    <span className="h-2 w-28 rounded-full" style={{ background: `linear-gradient(90deg, ${colour(0, mode.highIsBad)}, ${colour(1, mode.highIsBad)})` }} />
+                    <span>High</span>
                 </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 10, color: '#ff4444', fontWeight: 700 }}>
-                        {colorBy === 'challenge_density' ? 'Low' : 'Min'}
-                    </span>
-                    <div
-                        style={{
-                            flex: 1,
-                            height: 10,
-                            borderRadius: 6,
-                            overflow: 'hidden',
-                            background: 'linear-gradient(90deg, #FF4444, #FFAA00, #00AA44)',
-                        }}
-                    />
-                    <span style={{ fontSize: 10, color: '#00aa44', fontWeight: 700 }}>
-                        {colorBy === 'challenge_density' ? 'High' : 'Max'}
-                    </span>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 9, color: '#cbd5e1' }}>
-                    <span>🔴 Critical / Urgent (#FF4444)</span>
-                    <span>🟡 Mid (#FFAA00)</span>
-                    <span>🟢 High (#00AA44)</span>
-                </div>
+                <p className="mt-1 text-slate-500">
+                    {mode.level === 'district' ? `By district, from citizen reports · ${bubbles.length} districts` : `By state, from NGO projects · ${bubbles.length} states`}
+                </p>
             </div>
-
-            {/* Top State Badge Overlay */}
-            <div
-                style={{
-                    position: 'absolute',
-                    top: 16,
-                    left: 16,
-                    zIndex: 1000,
-                    background: 'rgba(15, 23, 42, 0.9)',
-                    backdropFilter: 'blur(10px)',
-                    borderRadius: 12,
-                    padding: '8px 14px',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    color: 'white',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                }}
-            >
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' }} />
-                <span style={{ fontSize: 12, fontWeight: 700 }}>
-                    Jharkhand District Geospatial Choropleth
-                </span>
-                <span style={{ fontSize: 11, color: '#94a3b8' }}>•</span>
-                <span style={{ fontSize: 11, color: '#38bdf8', fontWeight: 600 }}>
-                    Mode: {colorBy.replace(/_/g, ' ').toUpperCase()}
-                </span>
-            </div>
+            {bubbles.length === 0 && (
+                <div className="absolute inset-0 z-[999] flex items-center justify-center pointer-events-none">
+                    <p className="bg-white/90 rounded-lg px-4 py-2 text-sm text-slate-600">No data to show for this view yet.</p>
+                </div>
+            )}
         </div>
     );
 }

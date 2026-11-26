@@ -288,7 +288,6 @@ export async function getRecommendedNGOs(corporateId: string): Promise<{
 
 // ─── Section 10: Challenge → HEI Smart Matching Engine ─────────
 
-import { jharkhandCoordinates } from '@/lib/jharkhandCoordinates';
 
 export type HEIMatch = {
     hei: {
@@ -357,7 +356,6 @@ export async function matchChallengesToHEIs(
 
     const heis = await prisma.hEI.findMany();
 
-    const heiCoords = jharkhandCoordinates;
     const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
 
     const challengeLat: number | null = challenge.gpsLat ?? null;
@@ -371,11 +369,9 @@ export async function matchChallengesToHEIs(
             Math.max(challengeSdgs.length, 1);
 
         // Geographic Proximity (30%)
-        // ponytail: university location comes from a district-name lookup (Jharkhand only today).
-        // Phase 1 stores lat/lng on each university for all of India. Unknown location -> no proximity credit.
-        const coords = heiCoords[hei.district];
-        const distKm = coords && challengeLat !== null && challengeLng !== null
-            ? haversineDistance(challengeLat, challengeLng, coords.lat, coords.lng)
+        // Campus coordinates are stored on each university. Unknown location -> no proximity credit.
+        const distKm = hei.lat != null && hei.lng != null && challengeLat !== null && challengeLng !== null
+            ? haversineDistance(challengeLat, challengeLng, hei.lat, hei.lng)
             : null;
 
         const geoScore = distKm === null ? 0 : Math.max(0, 1 - distKm / 500);

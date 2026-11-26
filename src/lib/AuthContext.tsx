@@ -19,6 +19,7 @@ interface ApiUser {
     name: string;
     email: string;
     role: string;
+    organizationId: string | null;
     organizationName: string | null;
     organizationStatus: string | null;
     district: string | null;
@@ -32,6 +33,7 @@ function toUser(u: ApiUser): User {
         name: u.name,
         email: u.email,
         role: UI_ROLE[u.role] ?? 'citizen',
+        organization_id: u.organizationId,
         organization_name: u.organizationName ?? (u.district ? `${u.district}, ${u.state}` : ''),
         verification_status: u.organizationStatus === 'PENDING' ? 'pending' : 'verified',
         created_at: u.createdAt.split('T')[0],

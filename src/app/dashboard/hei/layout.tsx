@@ -38,10 +38,10 @@ export default function HEILayout({ children }: { children: React.ReactNode }) {
                     <div>
                         <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">
-                                {user?.organization_name || 'National Institute of Technology Jamshedpur'}
+                                {user?.organization_name}
                             </span>
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">
-                                UGC & NAAC A Accredited
+                                University workspace
                             </span>
                         </div>
                         <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2 mt-0.5">
@@ -61,7 +61,7 @@ export default function HEILayout({ children }: { children: React.ReactNode }) {
                                 {user?.name || 'Prof. Anjali Sharma'}
                             </span>
                             <span className="text-[10px] text-slate-500 block leading-tight">
-                                {user?.email || 'faculty@nitjsr.ac.in'}
+                                {user?.email}
                             </span>
                         </div>
                     </div>
@@ -72,7 +72,7 @@ export default function HEILayout({ children }: { children: React.ReactNode }) {
 
             {/* Quick sub-nav tabs */}
             <nav className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200/80 scrollbar-none">
-                {HEI_TABS.map((tab) => {
+                {HEI_TABS.filter((t) => user?.role !== 'student' || t.href.endsWith('/milestones') || t.href.endsWith('/credentials')).map((tab) => {
                     const Icon = tab.icon;
                     const isActive =
                         tab.href === '/dashboard/hei'

@@ -56,7 +56,7 @@ export default function TeamFormationPage() {
 
     // Form states
     const [facultyName, setFacultyName] = useState(user?.name || 'Prof. Anjali Sharma');
-    const [facultyEmail, setFacultyEmail] = useState(user?.email || 'faculty@nitjsr.ac.in');
+    const [facultyEmail, setFacultyEmail] = useState(user?.email ?? '');
     const [backupLead, setBackupLead] = useState('Dr. Sanjay Verma');
     const [teamName, setTeamName] = useState('');
 

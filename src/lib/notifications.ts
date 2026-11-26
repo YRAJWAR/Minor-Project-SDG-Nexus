@@ -144,7 +144,7 @@ export const NotificationTriggers = {
     },
 
     // 3. HEI accepts challenge (TEAM_FORMED) -> P2 for GOV
-    async teamFormed(challenge: { id: string; title: string }, heiName: string = 'NIT Jamshedpur') {
+    async teamFormed(challenge: { id: string; title: string }, heiName: string) {
         const msg = `${heiName} has formed a team for '${challenge.title}'`;
         return notifyUsersByRole(['OFFICER'], msg, 'CHALLENGE', challenge.id, 'P2', challenge.id);
     },

@@ -21,9 +21,9 @@ export default function NGODashboard() {
     const { user } = useAuth();
     const { projects, activities, impactScores } = useData();
 
-    const myProjects = projects.filter(p => p.organization_id === user?.id);
-    const allProjects = myProjects.length > 0 ? myProjects : projects.filter(p => p.organization_id === 'u1');
-    const impactData = impactScores.find(s => s.organization_id === (user?.id || 'u1'));
+    const orgId = user?.organization_id;
+    const allProjects = projects.filter(p => p.organization_id === orgId);
+    const impactData = impactScores.find(s => s.organization_id === orgId);
     const totalBeneficiaries = allProjects.reduce((s, p) => s + p.beneficiary_count, 0);
     const totalBudget = allProjects.reduce((s, p) => s + p.budget, 0);
     const totalSpent = allProjects.reduce((s, p) => s + p.spent, 0);
@@ -32,8 +32,8 @@ export default function NGODashboard() {
     const [apiScoreData, setApiScoreData] = React.useState<any>(null);
 
     React.useEffect(() => {
-        if (user?.id) {
-            fetch(`/api/organizations/${user.id}/impact-breakdown`)
+        if (user?.organization_id) {
+            fetch(`/api/organizations/${user.organization_id}/impact-breakdown`)
                 .then(r => r.json())
                 .then(json => {
                     const payload = json.data || json;
@@ -41,7 +41,7 @@ export default function NGODashboard() {
                 })
                 .catch(console.error);
         }
-    }, [user?.id]);
+    }, [user?.organization_id]);
 
     const handleExportReport = () => {
         generateImpactReport({

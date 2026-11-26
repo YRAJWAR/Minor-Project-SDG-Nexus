@@ -31,6 +31,7 @@ export interface User {
     email: string;
     role: UserRole;
     organization_name: string;
+    organization_id?: string | null; // NGO/CSR users' organisation
     verification_status: 'verified' | 'pending' | 'unverified';
     created_at: string;
     avatar?: string;

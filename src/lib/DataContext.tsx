@@ -1,6 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { useAuth } from '@/lib/AuthContext';
 import {
     type Project, type Activity, type Donation, type ImpactScore, type PartnerNGO, type RegionData,
 } from '@/data/mockData';
@@ -13,6 +14,7 @@ interface DataContextType {
     impactScores: ImpactScore[];
     organizations: PartnerNGO[];
     regions: RegionData[];
+    myCsr: { committed: number; disbursed: number; projects: number; sdgs: number; beneficiaries: number } | null;
     addProject: (project: Omit<Project, 'id' | 'created_at'>) => Project;
     addActivity: (activity: Omit<Activity, 'id' | 'hash'>) => Activity;
     addDonation: (donation: Omit<Donation, 'id'>) => void;
@@ -23,13 +25,31 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | null>(null);
 
 export function DataProvider({ children }: { children: ReactNode }) {
-    // ponytail: starts empty (no fake data). Pages still reading this get wired to the real APIs in Phase 2.
+    // Loaded from the database (/api/overview) once the user is signed in; empty until then, never fake.
+    const { user } = useAuth();
     const [projects, setProjects] = useState<Project[]>([]);
     const [activities, setActivities] = useState<Activity[]>([]);
     const [donations, setDonations] = useState<Donation[]>([]);
-    const [impactScores] = useState<ImpactScore[]>([]);
-    const [organizations] = useState<PartnerNGO[]>([]);
-    const [regions] = useState<RegionData[]>([]);
+    const [impactScores, setImpactScores] = useState<ImpactScore[]>([]);
+    const [organizations, setOrganizations] = useState<PartnerNGO[]>([]);
+    const [regions, setRegions] = useState<RegionData[]>([]);
+    const [myCsr, setMyCsr] = useState<DataContextType['myCsr']>(null);
+
+    useEffect(() => {
+        if (!user) return;
+        fetch('/api/overview', { cache: 'no-store' })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((j) => {
+                if (!j?.success) return;
+                setProjects(j.data.projects);
+                setActivities(j.data.activities);
+                setImpactScores(j.data.impactScores);
+                setOrganizations(j.data.organizations);
+                setRegions(j.data.regions);
+                setMyCsr(j.data.myCsr);
+            })
+            .catch(() => undefined);
+    }, [user]);
 
     const addProject = useCallback((projectData: Omit<Project, 'id' | 'created_at'>): Project => {
         const newProject: Project = {
@@ -68,7 +88,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     return (
         <DataContext.Provider value={{
-            projects, activities, donations, impactScores, organizations, regions,
+            projects, activities, donations, impactScores, organizations, regions, myCsr,
             addProject, addActivity, addDonation, getProjectsByOrg, getActivitiesByProject,
         }}>
             {children}

@@ -17,11 +17,10 @@ export default function LoginPage() {
     // The landing page links here with ?email= to prefill a demo account.
     useEffect(() => { setEmail(new URLSearchParams(window.location.search).get('email') ?? ''); }, []);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const signIn = async (mail: string, pass: string) => {
         setError('');
         setLoading(true);
-        const err = await login(email, password);
+        const err = await login(mail, pass);
         if (err) {
             setError(err);
             setLoading(false);
@@ -31,6 +30,9 @@ export default function LoginPage() {
         const next = new URLSearchParams(window.location.search).get('next');
         router.push(next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard');
     };
+    const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); signIn(email, password); };
+    // Demo accounts are fictional and share the password published on the home page (prisma/seed.ts).
+    const DEMO_PASSWORD = 'Demo@1234';
 
     // Fictional demo accounts created by prisma/seed.ts.
     const demoAccounts = [
@@ -89,11 +91,11 @@ export default function LoginPage() {
 
                 {/* Demo accounts */}
                 <div className="mt-6">
-                    <p className="text-xs text-slate-500 text-center mb-3">Demo accounts (fills the email; the password is on the home page)</p>
+                    <p className="text-xs text-slate-500 text-center mb-3">One-click demo login (fictional accounts)</p>
                     <div className="grid grid-cols-2 gap-2">
                         {demoAccounts.map(acc => (
                             <button key={acc.email}
-                                type="button" onClick={() => setEmail(acc.email)}
+                                type="button" disabled={loading} onClick={() => { setEmail(acc.email); signIn(acc.email, DEMO_PASSWORD); }}
                                 className="px-3 py-2.5 rounded-lg text-xs font-medium transition-all hover:bg-white/10 flex items-center gap-2"
                                 style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#cbd5e1' }}>
                                 <span>{acc.icon}</span>

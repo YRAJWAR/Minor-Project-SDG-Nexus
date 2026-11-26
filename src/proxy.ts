@@ -15,7 +15,7 @@ const RULES: { prefix: string; exact?: boolean; roles: Role[] }[] = [
     { prefix: '/dashboard/ngo', roles: ['NGO'] },
     { prefix: '/dashboard/corporate', roles: ['CSR'] },
     { prefix: '/dashboard', roles: [] }, // shared pages: any signed-in user
-    { prefix: '/citizen/submit', roles: ['CITIZEN', 'ADMIN'] },
+    { prefix: '/citizen/submit', roles: ['CITIZEN', 'NGO', 'ADMIN'] },
 ];
 
 export function proxy(req: NextRequest) {

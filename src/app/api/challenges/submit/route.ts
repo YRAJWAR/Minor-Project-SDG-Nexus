@@ -6,7 +6,7 @@ import { NotificationTriggers } from '@/lib/notifications';
 
 export async function POST(req: NextRequest) {
     try {
-        const user = await requireUser(req, ['CITIZEN', 'ADMIN']);
+        const user = await requireUser(req, ['CITIZEN', 'NGO', 'ADMIN']);
         if (user instanceof NextResponse) return user;
 
         const body = await req.json();
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
                     sdgTags,
                     aiConfidence,
                     submittedBy: submittedByStr,
-                    submitterType: 'CITIZEN',
+                    submitterType: user.role,
                     isAnonymous: anonymousFlag,
                     isDuplicate: Boolean(isDuplicate),
                     duplicateOf: similarChallengeId ? String(similarChallengeId) : null,

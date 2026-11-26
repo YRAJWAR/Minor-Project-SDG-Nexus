@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
         // 4. Team-Domain Alignment
         // Check alignment between engineering faculty/students and challenge category keywords
         let teamDomainAlignment = 88;
-        let alignmentFeedback = 'Strong institutional alignment: NIT Jamshedpur engineering faculty and lab resources match technical requirements.';
+        let alignmentFeedback = 'Strong institutional alignment: the university’s faculty and lab resources match the technical requirements.';
 
         if (challenge?.category) {
             const cat = challenge.category.toLowerCase();

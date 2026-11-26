@@ -9,6 +9,7 @@ import { SDG_INFO } from '@/data/mockData';
 import { useData } from '@/lib/DataContext';
 import AnimatedCounter from '@/components/ui/AnimatedCounter';
 import StatCard from '@/components/dashboard/StatCard';
+import MilestoneQueue from '@/components/dashboard/MilestoneQueue';
 import { useRouter } from 'next/navigation';
 import { FileDown, AlertTriangle, Clock, MapPin, Building2, CheckCircle2, X, ArrowRight, Sparkles, ShieldCheck, LayoutGrid, List, Shield, Search, Filter, Calendar, RefreshCw, TrendingUp, Info, Layers } from 'lucide-react';
 import { generateExecutiveReport } from '@/lib/pdfGenerator';
@@ -354,7 +355,7 @@ export default function GovernmentDashboard() {
                     { label: "Total Tracked Funding", value: `₹${(totalFunding / 10000000).toFixed(2)} Cr` },
                     { label: "Active Organizations", value: totalNGOs },
                     { label: "Total Beneficiaries", value: totalBeneficiaries.toLocaleString() },
-                    { label: "Innovation Challenges", value: totalProjects }
+                    { label: "NGO Projects", value: totalProjects }
                 ],
                 tableData: {
                     head: ['Organization', 'State', 'Funding (₹)', 'Beneficiaries', 'Innovation Outcome Score'],
@@ -371,7 +372,7 @@ export default function GovernmentDashboard() {
             <motion.div {...fadeIn(0)} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-xl sm:text-2xl font-bold text-slate-900">District Command Center</h1>
-                    <p className="text-xs sm:text-sm text-slate-500 mt-1">SDG Funding Analysis, Alerts & NGO Performance</p>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-1">Citizen problems, university projects and NGO impact</p>
                 </div>
 
                 <div className="flex items-center gap-3 self-start sm:self-auto">
@@ -450,7 +451,7 @@ export default function GovernmentDashboard() {
                     { label: 'Total Funding Tracked', value: Math.round(totalFunding / 10000000), icon: '💰', color: '#3b82f6', prefix: '₹', suffix: ' Cr' },
                     { label: 'Active NGOs', value: totalNGOs, icon: '🏢', color: '#10b981' },
                     { label: 'Total Beneficiaries', value: totalBeneficiaries, icon: '👥', color: '#8b5cf6' },
-                    { label: 'Innovation Challenges', value: totalProjects, icon: '📁', color: '#f59e0b' },
+                    { label: 'NGO Projects', value: totalProjects, icon: '📁', color: '#f59e0b' },
                 ].map((stat, i) => (
                     <StatCard
                         key={i}
@@ -465,6 +466,8 @@ export default function GovernmentDashboard() {
                 ))}
             </div>
 
+            <MilestoneQueue mode="officer" />
+
             {/* ===== DISTRICT HEATMAP ===== */}
             <motion.div {...fadeIn(0.11)} className="glass-card p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
@@ -472,24 +475,21 @@ export default function GovernmentDashboard() {
                         <div className="flex items-center gap-2">
                             <span className="text-xl">🗺️</span>
                             <h2 className="text-lg font-semibold text-slate-900">
-                                District-Level SDG & Challenge Map
+                                India Problem & Impact Map
                             </h2>
-                            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wider">
-                                24 Districts Live
-                            </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-0.5">
-                            3-Stop Choropleth Overlay (<span className="text-rose-500 font-medium">#FF4444</span> → <span className="text-amber-500 font-medium">#FFAA00</span> → <span className="text-emerald-500 font-medium">#00AA44</span>) anchored to NITI Aayog District Composite Index
+                            Citizen reports by district and NGO project funding by state. Click a district for its details.
                         </p>
                     </div>
 
                     {/* Mode Selector */}
                     <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-1 rounded-xl">
                         {[
-                            { key: 'challenge_density' as ColorMode, label: 'Challenge Density', icon: '📍', color: '#ec4899' },
-                            { key: 'composite' as ColorMode, label: 'SDG Composite', icon: '🔥', color: '#f59e0b' },
+                            { key: 'challenge_density' as ColorMode, label: 'Reported', icon: '📍', color: '#ec4899' },
+                            { key: 'composite' as ColorMode, label: 'Resolution rate', icon: '✅', color: '#f59e0b' },
                             { key: 'funding' as ColorMode, label: 'Funding', icon: '💰', color: '#22c55e' },
-                            { key: 'risk' as ColorMode, label: 'Risk Analysis', icon: '⚠️', color: '#ef4444' },
+                            { key: 'risk' as ColorMode, label: 'Open problems', icon: '⚠️', color: '#ef4444' },
                         ].map((m) => (
                             <button
                                 key={m.key}
@@ -850,7 +850,7 @@ export default function GovernmentDashboard() {
                                         </h3>
                                         <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
                                             <span className="inline-flex items-center gap-0.5 text-slate-700 font-medium">
-                                                📍 {ch.district}{ch.block ? `, ${ch.block}` : ''}
+                                                📍 {ch.block ? `${ch.block}, ` : ''}{ch.district}{ch.state ? `, ${ch.state}` : ''}
                                             </span>
                                             <span>•</span>
                                             <span className="text-[11px] text-slate-400">ID: {ch.id.slice(0, 10)}...</span>
@@ -1812,7 +1812,7 @@ export default function GovernmentDashboard() {
                                                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                                                         <span>🎯</span> Top SDG Pressure Indicators
                                                     </h3>
-                                                    <span className="text-[10px] text-slate-400">NITI Aayog Baseline</span>
+                                                    <span className="text-[10px] text-slate-400">From open reports</span>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
                                                     {districtDrillData.pressureSDGs?.map((sdg: any, idx: number) => (
@@ -1982,11 +1982,11 @@ export default function GovernmentDashboard() {
                                                     <span className="font-semibold text-slate-900">{districtDrillData.district.nearestHEI}</span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-slate-500 font-medium">Administrative Division:</span>
+                                                    <span className="text-slate-500 font-medium">State:</span>
                                                     <span className="font-semibold text-slate-900">{districtDrillData.district.division}</span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-slate-500 font-medium">District Portal Code:</span>
+                                                    <span className="text-slate-500 font-medium">Universities in state:</span>
                                                     <span className="font-mono text-slate-700 font-semibold">{districtDrillData.district.code}</span>
                                                 </div>
                                             </div>

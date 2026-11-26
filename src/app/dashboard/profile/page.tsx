@@ -11,7 +11,7 @@ export default function ProfilePage() {
 
     if (!user) return null;
 
-    const myProjects = projects.filter(p => p.organization_id === user.id);
+    const myProjects = projects.filter(p => p.organization_id === user.organization_id);
     const totalBeneficiaries = myProjects.reduce((acc, p) => acc + p.beneficiary_count, 0);
 
     return (

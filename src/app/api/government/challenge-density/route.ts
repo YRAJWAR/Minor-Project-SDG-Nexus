@@ -8,9 +8,10 @@ const RESOLVED = new Set(['COMPLETED', 'DEPLOYED']);
 export async function GET(req: NextRequest) {
     const user = await requireUser(req);
     if (user instanceof NextResponse) return user;
-    let challenges;
+    let challenges, coords;
     try {
-        challenges = await prisma.challenge.findMany({ select: { district: true, status: true } });
+        challenges = await prisma.challenge.findMany({ select: { district: true, state: true, status: true } });
+        coords = await prisma.district.findMany({ where: { lat: { not: null } }, select: { name: true, lat: true, lng: true, state: { select: { name: true } } } });
     } catch (dbErr) {
         console.error('Database query failed in challenge-density:', dbErr);
         return NextResponse.json(
@@ -42,7 +43,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
         success: true,
         data: {
-            density: districts.map((d) => ({ district: d.district, count: d.totalChallenges })),
+            // lat/lng come from the District table; districts without coordinates are left off the map.
+            density: districts.map((d) => {
+                const c = coords.find((x) => x.name.toLowerCase() === d.district.toLowerCase());
+                return { district: d.district, count: d.totalChallenges, open: d.totalChallenges - d.resolvedChallenges, resolutionRate: d.resolutionRate, state: c?.state.name ?? null, lat: c?.lat ?? null, lng: c?.lng ?? null };
+            }),
             equity: districts.map((d) => ({ ...d, avgResolutionRate, threshold, isBelowThreshold: d.resolutionRate < threshold })),
             avgResolutionRate,
             threshold,

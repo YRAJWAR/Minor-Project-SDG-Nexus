@@ -26,14 +26,6 @@ import {
 import { SDG_INFO } from '@/data/mockData';
 import RoutingExplainabilityPanel from '@/components/RoutingExplainabilityPanel';
 
-const JHARKHAND_DISTRICTS = [
-    'All Districts',
-    'Bokaro', 'Chatra', 'Deoghar', 'Dhanbad', 'Dumka',
-    'East Singhbhum', 'Garhwa', 'Giridih', 'Godda', 'Gumla',
-    'Hazaribagh', 'Jamtara', 'Khunti', 'Koderma', 'Latehar',
-    'Lohardaga', 'Pakur', 'Palamu', 'Ramgarh', 'Ranchi',
-    'Sahibganj', 'Saraikela Kharsawan', 'Simdega', 'West Singhbhum'
-];
 
 interface MatchScore {
     overall: number;
@@ -151,7 +143,7 @@ export default function HEIChallengeInboxPage() {
                         Societal Challenges Awaiting University Action
                     </h2>
                     <p className="mt-1 text-sm text-indigo-200/80 leading-relaxed">
-                        Government-validated societal challenges matched to NIT Jamshedpur based on department laboratory capabilities, UN SDG expertise, and district priority.
+                        Government-validated societal challenges matched to your university based on department laboratory capabilities, UN SDG expertise, and district priority.
                     </p>
                 </div>
                 <div className="absolute -right-6 -bottom-8 opacity-15 pointer-events-none text-white">
@@ -206,7 +198,7 @@ export default function HEIChallengeInboxPage() {
                             onChange={(e) => setDistrictFilter(e.target.value)}
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
-                            {JHARKHAND_DISTRICTS.map((d) => (
+                            {['All Districts', ...[...new Set(challenges.map((c) => c.district))].sort()].map((d) => (
                                 <option key={d} value={d}>
                                     {d}
                                 </option>

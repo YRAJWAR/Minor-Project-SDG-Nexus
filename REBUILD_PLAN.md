@@ -2,7 +2,7 @@
 
 > From a hackathon demo for one state to a working, pan-India platform where every screen is backed by real data and every number can be traced.
 
-Status: **Phase 0 and Phase 1 (foundation) done in code — 26 Nov 2026. Phase 1 still needs one run against a real database (migrate + seed + per-role login check). Next: Phase 2 (lifecycle).** Written from: a code audit of all 231 tracked files, a review of the live site (`sdg-nexus-sih2026.vercel.app`), and a hands-on walkthrough of every role on a local copy.
+Status: **Phases 0–1 done and verified against a real database — 26 Nov 2026. Demo seed (Phase 5) pulled forward for the mentor demo. Next: Phase 2 (lifecycle).** Written from: a code audit of all 231 tracked files, a review of the live site (`sdg-nexus-sih2026.vercel.app`), and a hands-on walkthrough of every role on a local copy.
 
 ### Phase 0 — what was done
 - **No more fake answers:** unknown IDs return 404 and database failures return 503 everywhere (credential verify + PDF, tracking, ledger, matching, inbox, notifications, insights, district/density/risk/audit, org profiles). All `FALLBACK_*` / hero datasets in API routes are gone.
@@ -29,9 +29,14 @@ Status: **Phase 0 and Phase 1 (foundation) done in code — 26 Nov 2026. Phase 1
 - **Seed:** regions, SDGs, and one fictional account per role (see README).
 - **Check:** `npm run check` now 9 tests (adds sessions, page guard, API 401).
 
+### Pulled forward for the demo (26 Nov 2026)
+- **Demo seed:** fictional pan-India dataset (see README), deterministic, hashes computed with the app's own helpers.
+- **One-click demo login** per role on the login page.
+- **Shared dashboards on real data:** `/api/overview` feeds `DataContext` (projects, activity, impact scores, NGOs, state totals, a CSR's own portfolio).
+- **India map:** OpenStreetMap + district bubbles (reports, open, resolution rate) and state bubbles (funding, reach, NGOs). Jharkhand GeoJSON, SDG-index file and district registry deleted; district drill-down computed from the DB; matching uses stored campus coordinates.
+- **Approvals queue:** officers verify/send back submitted milestones; CSR partners release funds for verified ones.
+
 ### Left for later phases (marked `ponytail:` in code)
-- Shared dashboards (NGO, corporate, heatmap, ledger page, leaderboard, analytics, profile) read the now-empty `DataContext` and show empty states until Phase 2 wires them to APIs.
-- Map still loads the Jharkhand GeoJSON; HEI inbox district filter still lists Jharkhand districts (Phase 2).
 - Notification recipients by role are platform-wide (Phase 2 scopes them).
 
 ---

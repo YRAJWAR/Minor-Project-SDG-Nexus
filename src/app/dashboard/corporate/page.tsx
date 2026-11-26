@@ -8,6 +8,7 @@ import { useData } from '@/lib/DataContext';
 import { findMatches } from '@/services/matching';
 import AnimatedCounter from '@/components/ui/AnimatedCounter';
 import StatCard from '@/components/dashboard/StatCard';
+import MilestoneQueue from '@/components/dashboard/MilestoneQueue';
 import { generateExecutiveReport } from '@/lib/pdfGenerator';
 import { FileDown, AlertTriangle } from 'lucide-react';
 
@@ -19,7 +20,7 @@ const fadeIn = (d: number) => ({
 
 export default function CorporateDashboard() {
     const { user } = useAuth();
-    const { organizations, projects, donations } = useData();
+    const { organizations, myCsr } = useData();
     const [sdgFilter, setSdgFilter] = useState<number | null>(null);
     const [stateFilter, setStateFilter] = useState('');
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -42,9 +43,10 @@ export default function CorporateDashboard() {
             .catch((err) => console.warn('Failed to load CSR risk flags:', err));
     }, []);
 
-    const totalCSRSpend = donations.reduce((s, d) => s + d.amount, 0);
-    const projectsFunded = new Set(donations.map(d => d.project_id)).size;
-    const sdgsSupported = new Set(projects.flatMap(p => p.sdg_tags)).size;
+    const disbursedLakh = Math.round((myCsr?.disbursed ?? 0) / 100000);
+    const projectsFunded = myCsr?.projects ?? 0;
+    const sdgsSupported = myCsr?.sdgs ?? 0;
+    const livesImpacted = myCsr?.beneficiaries ?? 0;
 
     const matches = useMemo(() => {
         return findMatches(organizations, {
@@ -70,10 +72,10 @@ export default function CorporateDashboard() {
                 organizationName: "TechServe India CSR",
                 date: new Date().toLocaleDateString(),
                 summaryMetrics: [
-                    { label: "Total CSR Spend", value: `₹${totalCSRSpend} Lakh` },
+                    { label: "CSR Funds Disbursed", value: `₹${disbursedLakh} Lakh` },
                     { label: "Projects Funded", value: projectsFunded },
                     { label: "SDGs Impacted", value: sdgsSupported },
-                    { label: "Lives Impacted", value: 80000 }
+                    { label: "Lives Impacted", value: livesImpacted }
                 ],
                 tableData: {
                     head: ['Recommended NGO', 'State', 'Match (%)', 'Funding Need', 'Innovation Outcome Score'],
@@ -115,10 +117,10 @@ export default function CorporateDashboard() {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total CSR Spend', value: 45, icon: '💰', color: '#3b82f6', prefix: '₹', suffix: ' Lakh' },
+                    { label: 'CSR Funds Disbursed', value: disbursedLakh, icon: '💰', color: '#3b82f6', prefix: '₹', suffix: ' Lakh' },
                     { label: 'Projects Funded', value: projectsFunded, icon: '📁', color: '#10b981' },
                     { label: 'SDGs Impacted', value: sdgsSupported, icon: '🎯', color: '#8b5cf6' },
-                    { label: 'Lives Impacted', value: 80000, icon: '👥', color: '#f59e0b' },
+                    { label: 'Lives Impacted', value: livesImpacted, icon: '👥', color: '#f59e0b' },
                 ].map((stat, i) => (
                     <StatCard
                         key={i}
@@ -132,6 +134,8 @@ export default function CorporateDashboard() {
                     />
                 ))}
             </div>
+
+            <MilestoneQueue mode="csr" />
 
             {/* High Funding Low Beneficiaries Alert (Joint CSR & Government Audit) */}
             {highFundingRisks.length > 0 && (

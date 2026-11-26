@@ -89,8 +89,6 @@ export default function CreateProjectPage() {
                 body: JSON.stringify({
                     title: form.title,
                     description: form.description,
-                    // ponytail: users aren't linked to organisations yet; Phase 1 adds User→Organization membership.
-                    organization_id: user?.id,
                     budget_allocated: budget,
                     budget_utilized: spent,
                     beneficiaries_count: beneficiaries,
@@ -121,7 +119,7 @@ export default function CreateProjectPage() {
             const newProject = addProject({
                 title: form.title,
                 description: form.description,
-                organization_id: user?.id || 'u1',
+                organization_id: user?.organization_id ?? '',
                 organization_name: user?.organization_name || 'Organization',
                 budget,
                 spent,

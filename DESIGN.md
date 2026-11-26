@@ -41,6 +41,7 @@ Tailwind's `slate`, `blue`, `indigo`, `emerald`, `green`, `amber`, `rose`, `red`
 
 ## Known gaps
 - Basemap boundaries come from Esri, not Survey of India; for an official deployment use Bhuvan or MapmyIndia tiles.
-- Large legacy pages (`dashboard/government`, `heatmap`, `ngo`, `corporate`) still carry their old layouts and some
-  hard-coded hex colours; they now read in the palette through the remap but were not re-composed.
+- Page layout rule: an Operate page opens with a plain `h1` (2xl/3xl, Anek, ink) and one honest subtitle; no kicker labels,
+  no hero banners inside the app. The officer page is tabbed work-first (Work queue default).
+- Motion starts from visible (`initial` opacity 1); never hide content behind an entrance animation.
 - Finish review ran in-thread (no reviewer sub-agent in this harness), not by a fresh reviewer.

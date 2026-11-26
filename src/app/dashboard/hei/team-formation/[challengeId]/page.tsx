@@ -239,7 +239,7 @@ export default function TeamFormationPage() {
                     <div className="h-4 bg-slate-100 rounded w-2/3 mx-auto" />
                 </div>
             ) : (
-                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 border border-indigo-800/60 shadow-md">
+                <div className="bg-[var(--color-survey-deep)] text-white rounded-2xl p-6 border border-indigo-800/60 shadow-md">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                         <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase">
                             Accepting & Forming Team

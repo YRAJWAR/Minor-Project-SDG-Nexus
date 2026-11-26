@@ -8,7 +8,7 @@ import { useData } from '@/lib/DataContext';
 import { getScoreTrend, assessRisk, type RiskAssessment } from '@/services/impactScoring';
 
 const fadeIn = (d: number) => ({
-    initial: { opacity: 0, y: 20 },
+    initial: { opacity: 1, y: 20 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.5, delay: d },
 });
@@ -45,9 +45,9 @@ export default function AnalyticsPage() {
     return (
         <div className="space-y-6">
             <motion.div {...fadeIn(0)}>
-                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                    Trend & Risk Analysis
-                    <span title="Overview of systemic risks, performance tracking and predictive efficiency calculations based on our diverse impact datasets."><Info className="w-5 h-5 text-slate-400 hover:text-blue-500 cursor-help transition-colors" /></span>
+                <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--color-ink)] flex items-center gap-2">
+                    Trends and risks
+                    <span title="Project spending, reach and risk flags, computed from recorded NGO projects"><Info className="w-5 h-5 text-slate-400 hover:text-blue-500 cursor-help transition-colors" /></span>
                 </h1>
                 <p className="text-sm text-slate-500 mt-1">Performance tracking, efficiency trends, and risk detection across organizations</p>
             </motion.div>
@@ -127,8 +127,8 @@ export default function AnalyticsPage() {
                             <XAxis dataKey="quarter" tick={{ fill: '#64748b', fontSize: 11 }} />
                             <YAxis tick={{ fill: '#64748b', fontSize: 11 }} />
                             <Tooltip
-                                contentStyle={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 12, fontSize: 12 }}
-                                labelStyle={{ color: '#94a3b8' }}
+                                contentStyle={{ background: '#ffffff', border: '1px solid var(--color-rule)', borderRadius: 12, fontSize: 12 }}
+                                labelStyle={{ color: 'var(--color-ink-muted)' }}
                             />
                             <Line type="monotone" dataKey="funding" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6', r: 4 }} />
                             <Line type="monotone" dataKey="projects" stroke="#8b5cf6" strokeWidth={2} dot={{ fill: '#8b5cf6', r: 4 }} />
@@ -158,7 +158,7 @@ export default function AnalyticsPage() {
                             <XAxis type="number" tick={{ fill: '#64748b', fontSize: 11 }} />
                             <YAxis dataKey="name" type="category" tick={{ fill: '#94a3b8', fontSize: 11 }} width={80} />
                             <Tooltip
-                                contentStyle={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 12, fontSize: 12 }}
+                                contentStyle={{ background: '#ffffff', border: '1px solid var(--color-rule)', borderRadius: 12, fontSize: 12 }}
                             />
                             <Bar dataKey="efficiency" radius={[0, 6, 6, 0]}>
                                 {efficiencyData.map((_, i) => (
@@ -175,7 +175,7 @@ export default function AnalyticsPage() {
                 <h2 className="text-sm font-semibold text-slate-900 mb-4">Organization Performance Trends</h2>
                 <div className="grid grid-cols-2 gap-6">
                     {orgAnalytics.slice(0, 4).map(({ org, trend, risk }) => (
-                        <div key={org.id} className="p-4 rounded-xl" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                        <div key={org.id} className="p-4 rounded-xl" style={{ background: 'var(--color-paper)', border: '1px solid var(--color-rule)' }}>
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
                                     <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
@@ -202,7 +202,7 @@ export default function AnalyticsPage() {
                                     <XAxis dataKey="month" tick={{ fill: '#475569', fontSize: 9 }} tickLine={false} axisLine={false} />
                                     <YAxis hide domain={['dataMin - 50', 'dataMax + 50']} />
                                     <Tooltip
-                                        contentStyle={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 10 }}
+                                        contentStyle={{ background: '#ffffff', border: '1px solid var(--color-rule)', borderRadius: 8, fontSize: 10 }}
                                     />
                                     <Line type="monotone" dataKey="score" stroke="#3b82f6" strokeWidth={2} dot={false} />
                                     <Line type="monotone" dataKey="efficiency" stroke="#10b981" strokeWidth={1.5} dot={false} strokeDasharray="4 4" />

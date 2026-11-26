@@ -20,7 +20,7 @@ import RoutingExplainabilityPanel, { HEIMatch } from '@/components/RoutingExplai
 const SDGHeatmap = dynamic(() => import('@/components/Map'), { ssr: false });
 
 const fadeIn = (d: number) => ({
-    initial: { opacity: 0, y: 20 },
+    initial: { opacity: 1, y: 20 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.5, delay: d },
 });
@@ -80,7 +80,7 @@ export default function GovernmentDashboard() {
     const [assigningHeiId, setAssigningHeiId] = useState<string | null>(null);
 
     // Primary Tab State
-    const [activeTab, setActiveTab] = useState<'overview' | 'insights' | 'audit'>('overview');
+    const [activeTab, setActiveTab] = useState<'queue' | 'map' | 'partners' | 'insights' | 'audit'>('queue');
 
     // District Drill-Down State (Part A)
     const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
@@ -359,6 +359,7 @@ export default function GovernmentDashboard() {
         return ch.status === statusFilter;
     });
 
+    const needsActionCount = challengesList.filter((c) => (c.allowedActions?.length ?? 0) > 0).length;
     const escalationDueCount = statusCounts.ESCALATION_DUE || challengesList.filter((c) => c.isEscalationDue).length;
 
     // Sort equity data from highest resolution rate to lowest for clean horizontal display
@@ -405,15 +406,15 @@ export default function GovernmentDashboard() {
         <div className="space-y-6">
             <motion.div {...fadeIn(0)} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-slate-900">District Command Center</h1>
-                    <p className="text-xs sm:text-sm text-slate-500 mt-1">Citizen problems, university projects and NGO impact</p>
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--color-ink)]">{user?.role === 'admin' ? 'All districts' : 'District office'}</h1>
+                    <p className="text-sm text-[var(--color-ink-muted)] mt-0.5">{user?.organization_name || 'Reports, university plans and milestones in your district'}</p>
                 </div>
 
                 <div className="flex items-center gap-3 self-start sm:self-auto">
                     <button
                         onClick={handleDownloadReport}
                         disabled={isGeneratingPDF}
-                        className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-medium rounded-lg transition-all shadow-sm disabled:opacity-70 cursor-pointer"
+                        className="btn-outline flex items-center gap-2 px-3 sm:px-4 py-2 text-sm disabled:opacity-60"
                     >
                         {isGeneratingPDF ? (
                             <>
@@ -430,75 +431,39 @@ export default function GovernmentDashboard() {
                 </div>
             </motion.div>
 
-            {/* Navigation Tabs (Part B & Part D) */}
-            <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
-                <button
-                    onClick={() => setActiveTab('overview')}
-                    className={`px-4 py-2 text-xs md:text-sm font-semibold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
-                        activeTab === 'overview'
-                            ? 'bg-slate-900 text-white shadow-sm'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                    }`}
-                >
-                    <span>Overview &amp; Map</span>
-                </button>
-                <button
-                    onClick={() => {
-                        setActiveTab('insights');
-                        if (!policyInsights) loadPolicyInsights();
-                    }}
-                    className={`px-4 py-2 text-xs md:text-sm font-semibold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
-                        activeTab === 'insights'
-                            ? 'bg-indigo-600 text-white shadow-sm'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                    }`}
-                >
-                    <span>Policy Insights</span>
-                    <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded-full ${activeTab === 'insights' ? 'bg-indigo-500 text-white' : 'bg-indigo-100 text-indigo-700'}`}>
-                        5 Live
-                    </span>
-                </button>
-                <button
-                    onClick={() => {
-                        setActiveTab('audit');
-                        if (auditLogs.length === 0) loadAuditLogs();
-                    }}
-                    className={`px-4 py-2 text-xs md:text-sm font-semibold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
-                        activeTab === 'audit'
-                            ? 'bg-emerald-700 text-white shadow-sm'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                    }`}
-                >
-                    <span>Audit Trail</span>
-                </button>
-            </div>
-
-            {/* ===== OVERVIEW & MAP TAB ===== */}
-            {activeTab === 'overview' && (
-                <div className="space-y-6">
-                    {/* Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {[
-                    { label: 'Total Funding Tracked', value: Math.round(totalFunding / 10000000), icon: '', color: '#3b82f6', prefix: '₹', suffix: ' Cr' },
-                    { label: 'Active NGOs', value: totalNGOs, icon: '', color: '#10b981' },
-                    { label: 'Total Beneficiaries', value: totalBeneficiaries, icon: '', color: '#8b5cf6' },
-                    { label: 'NGO Projects', value: totalProjects, icon: '', color: '#f59e0b' },
-                ].map((stat, i) => (
-                    <StatCard
-                        key={i}
-                        label={stat.label}
-                        value={stat.value}
-                        icon={stat.icon}
-                        color={stat.color}
-                        prefix={stat.prefix}
-                        suffix={stat.suffix}
-                        delay={0.1 * i}
-                    />
+            {/* Sections of the office's work */}
+            <div role="tablist" aria-label="District office" className="flex gap-1 overflow-x-auto border-b border-[var(--color-rule)]">
+                {([
+                    ['queue', 'Work queue'], ['map', 'District map'], ['partners', 'Partners'], ['insights', 'Insights'], ['audit', 'Audit trail'],
+                ] as const).map(([key, label]) => (
+                    <button key={key} type="button" role="tab" aria-selected={activeTab === key}
+                        onClick={() => {
+                            setActiveTab(key);
+                            if (key === 'insights' && !policyInsights) loadPolicyInsights();
+                            if (key === 'audit' && auditLogs.length === 0) loadAuditLogs();
+                        }}
+                        className={`-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm transition-colors ${
+                            activeTab === key ? 'border-[var(--color-survey)] font-semibold text-[var(--color-survey-deep)]' : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
+                        }`}>
+                        {label}{key === 'queue' && needsActionCount > 0 ? <span className="ml-2 rounded-full bg-[var(--color-ochre-wash)] px-2 py-0.5 text-xs font-semibold text-[var(--color-ochre)] tabular">{needsActionCount}</span> : null}
+                    </button>
                 ))}
             </div>
 
-            <MilestoneQueue mode="officer" />
+            {/* ===== OVERVIEW & MAP TAB ===== */}
+            {(activeTab === 'queue' || activeTab === 'map' || activeTab === 'partners') && (
+                <div className="space-y-6">
+                    {/* What is on this desk today */}
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                        <StatCard label="Need your action" value={needsActionCount} />
+                        <StatCard label="Overdue (over 7 days)" value={challengesList.filter((c) => c.isOverdue).length} />
+                        <StatCard label="With universities" value={challengesList.filter((c) => ['TEAM_FORMED', 'FUNDED', 'IN_PROGRESS'].includes(c.status)).length} />
+                        <StatCard label="Resolved" value={challengesList.filter((c) => c.status === 'DEPLOYED').length} />
+                    </div>
 
+            {activeTab === 'queue' && <MilestoneQueue mode="officer" />}
+
+            {activeTab === 'map' && (<>
             {/* ===== DISTRICT HEATMAP ===== */}
             <motion.div {...fadeIn(0.11)} className="glass-card p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
@@ -599,7 +564,7 @@ export default function GovernmentDashboard() {
                                     'Resolution Rate',
                                 ]}
                                 contentStyle={{
-                                    background: '#0f172a',
+                                    background: 'var(--color-ink)',
                                     border: '1px solid #334155',
                                     borderRadius: 10,
                                     color: '#f8fafc',
@@ -643,23 +608,26 @@ export default function GovernmentDashboard() {
                 </div>
             </motion.div>
 
+            </>)}
+
             {/* ===== GOVERNMENT CHALLENGE QUEUE & STATUS FUNNEL ===== */}
+            {activeTab === 'queue' && (
             <motion.div {...fadeIn(0.14)} className="glass-card p-6">
                 {/* Header & Search / View Toggle */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                     <div>
                         <div className="flex items-center gap-2">
                             <h2 className="text-lg font-semibold text-slate-900">
-                                Government Innovation Challenge Queue
+                                Reports in your district
                             </h2>
                             {escalationDueCount > 0 && (
                                 <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
-                                    {escalationDueCount} Escalation{escalationDueCount > 1 ? 's' : ''} Due
+                                    {escalationDueCount} waiting over a week
                                 </span>
                             )}
                         </div>
                         <p className="text-xs text-slate-500 mt-0.5">
-                            Real-time pipeline monitoring from citizen GP node intake through university engineering and field deployment
+                            Highest priority first. Hover a priority to see why; filter by stage below.
                         </p>
                     </div>
 
@@ -1047,7 +1015,7 @@ export default function GovernmentDashboard() {
 
                         {filteredChallenges.length === 0 && (
                             <div className="col-span-full py-12 text-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-                                <div className="text-sm font-semibold text-slate-600">No innovation challenges found</div>
+                                <div className="text-sm font-semibold text-slate-600">No reports at this stage</div>
                                 <div className="text-xs text-slate-400 mt-1">Try selecting another stage from the status funnel or clear the search.</div>
                             </div>
                         )}
@@ -1186,7 +1154,7 @@ export default function GovernmentDashboard() {
                                 {filteredChallenges.length === 0 && (
                                     <tr>
                                         <td colSpan={8} className="px-6 py-8 text-center text-slate-400">
-                                            No innovation challenges found matching criteria.
+                                            No reports match these filters.
                                         </td>
                                     </tr>
                                 )}
@@ -1199,6 +1167,7 @@ export default function GovernmentDashboard() {
                     Showing {filteredChallenges.length} of {challengesList.length} challenges
                 </div>
             </motion.div>
+            )}
 
             {/* ===== AI VALIDATE & ROUTE SIDE DRAWER MODAL ===== */}
             <AnimatePresence>
@@ -1206,11 +1175,11 @@ export default function GovernmentDashboard() {
                     <div className="fixed inset-0 z-50 overflow-hidden">
                         {/* Backdrop */}
                         <motion.div
-                            initial={{ opacity: 0 }}
+                            initial={{ opacity: 1 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => !loadingRouting && !assigningHeiId && setRoutingChallenge(null)}
-                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
+                            className="absolute inset-0 bg-slate-900/40 transition-opacity"
                         />
 
                         {/* Drawer Panel */}
@@ -1342,7 +1311,8 @@ export default function GovernmentDashboard() {
                 )}
             </AnimatePresence>
 
-            {/* ===== ORGANIZATIONS DIRECTORY (NOW AT TOP) ===== */}
+            {activeTab === 'partners' && (<>
+            {/* ===== ORGANIZATIONS DIRECTORY ===== */}
             <motion.div {...fadeIn(0.15)} className="glass-card p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
                     <div>
@@ -1427,17 +1397,8 @@ export default function GovernmentDashboard() {
                     <h2 className="text-lg font-semibold text-slate-900 mb-4">Top Performing NGOs</h2>
                     <div className="space-y-3">
                         {topNGOs.map((ngo, i) => (
-                            <div key={ngo.id} className="flex items-center gap-3 p-3 rounded-xl"
-                                style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
-                                    style={{
-                                        background: i === 0 ? 'linear-gradient(135deg,#f59e0b,#f43f5e)' :
-                                            i === 1 ? 'linear-gradient(135deg,#94a3b8,#64748b)' :
-                                                i === 2 ? 'linear-gradient(135deg,#b45309,#a16207)' :
-                                                    'rgba(255,255,255,0.1)',
-                                    }}>
-                                    {i + 1}
-                                </div>
+                            <div key={ngo.id} className="flex items-center gap-3 border-b border-[var(--color-rule-soft)] py-2.5 last:border-b-0">
+                                <span className="w-6 text-right font-[family-name:var(--font-display)] text-lg font-semibold text-[var(--color-ink-muted)] tabular">{i + 1}</span>
                                 <div className="flex-1">
                                     <p className="text-sm font-medium text-slate-900">{ngo.name}</p>
                                     <p className="text-xs text-slate-500">{ngo.location.state} • {ngo.beneficiaries.toLocaleString()} beneficiaries</p>
@@ -1451,6 +1412,7 @@ export default function GovernmentDashboard() {
                     </div>
                 </motion.div>
             </div>
+            </>)}
         </div>
     )}
 
@@ -1863,11 +1825,11 @@ export default function GovernmentDashboard() {
                     <div className="fixed inset-0 z-50 overflow-hidden">
                         {/* Backdrop */}
                         <motion.div
-                            initial={{ opacity: 0 }}
+                            initial={{ opacity: 1 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setSelectedDistrict(null)}
-                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
+                            className="absolute inset-0 bg-slate-900/40 transition-opacity"
                         />
 
                         <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
@@ -1879,7 +1841,7 @@ export default function GovernmentDashboard() {
                                 className="w-screen max-w-lg md:max-w-xl bg-white shadow-2xl flex flex-col"
                             >
                                 {/* Drawer Header */}
-                                <div className="px-6 py-5 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-start justify-between">
+                                <div className="px-6 py-5 bg-[var(--color-survey-deep)] text-white flex items-start justify-between">
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
                                             <MapPin className="w-5 h-5 text-emerald-400" />

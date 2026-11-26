@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useData } from '@/lib/DataContext';
 
 const fadeIn = (d: number) => ({
-    initial: { opacity: 0, y: 20 },
+    initial: { opacity: 1, y: 20 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.5, delay: d },
 });
@@ -45,8 +45,8 @@ export default function LedgerPage() {
         <div className="space-y-6 max-w-4xl">
             <motion.div {...fadeIn(0)} className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Transparent Activity Ledger</h1>
-                    <p className="text-sm text-slate-500 mt-1">SHA-256 hashed, timestamped, geo-tagged, and immutable activity records</p>
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--color-ink)]">Field activity ledger</h1>
+                    <p className="text-sm text-slate-500 mt-1">Each NGO field activity is hashed (SHA-256) with its time and place, so later edits are detectable</p>
                 </div>
                 <button onClick={() => setShowForm(!showForm)} className="btn-neon text-sm py-2 px-4">
                     {showForm ? 'Cancel' : '+ Log Activity'}
@@ -58,7 +58,7 @@ export default function LedgerPage() {
                 {showForm && (
                     <motion.form
                         key="activity-form"
-                        initial={{ opacity: 0, height: 0 }}
+                        initial={{ opacity: 1, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         onSubmit={handleSubmit}
@@ -132,13 +132,13 @@ export default function LedgerPage() {
             <motion.div {...fadeIn(0.2)} className="relative">
                 {/* Vertical line */}
                 <div className="absolute left-[27px] top-0 bottom-0 w-0.5"
-                    style={{ background: 'linear-gradient(to bottom, #3b82f6, #8b5cf6, transparent)' }} />
+                    style={{ background: 'var(--color-rule)' }} />
 
                 <div className="space-y-4">
                     {activities.map((activity, i) => (
                         <motion.div
                             key={activity.id}
-                            initial={{ opacity: 0, x: -20 }}
+                            initial={{ opacity: 1, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.06 * Math.min(i, 10) }}
                             className="flex gap-4 relative"
@@ -186,7 +186,7 @@ export default function LedgerPage() {
                                 </div>
 
                                 {/* Hash */}
-                                <div className="mt-3 p-3 rounded-lg" style={{ background: '#f1f5f9', border: '1px solid #f8fafc' }}>
+                                <div className="mt-3 p-3 rounded-lg" style={{ background: 'var(--color-paper)', border: '1px solid #f8fafc' }}>
                                     <div className="flex items-center justify-between mb-1">
                                         <p className="text-[10px] text-slate-400">SHA-256 Hash</p>
                                         <span className="text-[9px] px-1.5 py-0.5 rounded"

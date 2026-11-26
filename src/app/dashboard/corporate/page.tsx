@@ -14,7 +14,7 @@ import { generateExecutiveReport } from '@/lib/pdfGenerator';
 import { FileDown, AlertTriangle } from 'lucide-react';
 
 const fadeIn = (d: number) => ({
-    initial: { opacity: 0, y: 20 },
+    initial: { opacity: 1, y: 20 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.5, delay: d },
 });
@@ -92,8 +92,8 @@ export default function CorporateDashboard() {
         <div className="space-y-6">
             <motion.div {...fadeIn(0)} className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Industry & Funding Partner Dashboard</h1>
-                    <p className="text-sm text-slate-500 mt-1">{user?.organization_name} • CSR Dashboard</p>
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--color-ink)]">{user?.organization_name || "CSR partner"}</h1>
+                    <p className="text-sm text-[var(--color-ink-muted)] mt-0.5">What your CSR money is funding, and what is waiting for you</p>
                 </div>
 
                 <button
@@ -193,7 +193,7 @@ export default function CorporateDashboard() {
                 <div className="flex items-center justify-between mb-4">
                     <div>
                         <h2 className="text-lg font-semibold text-slate-900">Recommended partners</h2>
-                        <p className="text-xs text-slate-500 mt-1">AI-powered NGO recommendations based on your CSR focus areas</p>
+                        <p className="text-xs text-slate-500 mt-1">NGOs ranked by how well their SDGs match your CSR focus, their impact score and unmet funding need</p>
                     </div>
                 </div>
 
@@ -212,11 +212,11 @@ export default function CorporateDashboard() {
                 <div className="grid md:grid-cols-2 gap-4">
                     {matches.map((match, i) => (
                         <motion.div key={match.ngo.id}
-                            initial={{ opacity: 0, y: 10 }}
+                            initial={{ opacity: 1, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.08 }}
                             className="p-4 rounded-xl transition-all hover:bg-slate-100"
-                            style={{ background: '#f8fafc', border: '1px solid rgba(255,255,255,0.06)' }}
+                            style={{ background: 'var(--color-paper)', border: '1px solid rgba(255,255,255,0.06)' }}
                         >
                             {/* NGO Cover Banner */}
                             <div className="h-24 w-full rounded-lg bg-slate-200 mb-4 overflow-hidden shadow-sm relative group">
@@ -228,7 +228,7 @@ export default function CorporateDashboard() {
                                 />
                                 <div className="absolute top-2 right-2 flex gap-1">
                                     {match.ngo.verified && (
-                                        <span className="text-[10px] px-2 py-0.5 rounded-md shadow-sm border border-emerald-500/20 backdrop-blur-sm bg-emerald-500 text-white font-semibold">Verified</span>
+                                        <span className="text-[10px] px-2 py-0.5 rounded-md shadow-sm border border-emerald-500/20 bg-emerald-500 text-white font-semibold">Verified</span>
                                     )}
                                 </div>
                             </div>
@@ -256,15 +256,15 @@ export default function CorporateDashboard() {
                             </div>
 
                             <div className="grid grid-cols-3 gap-2 text-center">
-                                <div className="p-2 rounded-lg" style={{ background: '#f8fafc' }}>
+                                <div className="p-2 rounded-lg" style={{ background: 'var(--color-paper)' }}>
                                     <p className="text-xs font-bold text-slate-900">{match.ngo.impact_score}</p>
                                     <p className="text-[10px] text-slate-500">Impact</p>
                                 </div>
-                                <div className="p-2 rounded-lg" style={{ background: '#f8fafc' }}>
+                                <div className="p-2 rounded-lg" style={{ background: 'var(--color-paper)' }}>
                                     <p className="text-xs font-bold text-slate-900">₹{(match.ngo.funding_need / 100000).toFixed(0)}L</p>
                                     <p className="text-[10px] text-slate-500">Need</p>
                                 </div>
-                                <div className="p-2 rounded-lg" style={{ background: '#f8fafc' }}>
+                                <div className="p-2 rounded-lg" style={{ background: 'var(--color-paper)' }}>
                                     <p className="text-xs font-bold text-slate-900">{match.ngo.beneficiaries.toLocaleString()}</p>
                                     <p className="text-[10px] text-slate-500">Reach</p>
                                 </div>

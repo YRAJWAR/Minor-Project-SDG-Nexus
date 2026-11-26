@@ -553,7 +553,7 @@ export default function TrackChallengePage() {
                     <div className="space-y-6">
                         {isPastUniversityAssigned && data.assignedHEI && (
                             <motion.div
-                                initial={{ opacity: 0, y: 15 }}
+                                initial={{ opacity: 1, y: 15 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className="bg-[var(--color-paper)] border border-indigo-700/50 rounded-2xl p-6 shadow-sm space-y-4"
                             >

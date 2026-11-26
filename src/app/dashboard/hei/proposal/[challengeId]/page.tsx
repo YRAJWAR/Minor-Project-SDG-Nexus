@@ -347,7 +347,7 @@ export default function ProposalBuilderPage() {
                     <div className="h-4 bg-slate-100 rounded w-2/3 mx-auto" />
                 </div>
             ) : (
-                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 border border-indigo-800/60 shadow-md">
+                <div className="bg-[var(--color-survey-deep)] text-white rounded-2xl p-6 border border-indigo-800/60 shadow-md">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                         <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 uppercase">
                             Proposal Builder
@@ -389,7 +389,7 @@ export default function ProposalBuilderPage() {
             <AnimatePresence>
                 {toastMessage && (
                     <motion.div
-                        initial={{ opacity: 0, y: -10 }}
+                        initial={{ opacity: 1, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         className={`p-4 rounded-xl text-xs flex items-center justify-between border ${
@@ -619,7 +619,7 @@ export default function ProposalBuilderPage() {
 
                 {/* AI QUALITY PRE-SCORER SECTION */}
                 <div className="pt-4 border-t border-slate-100 space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 p-4 sm:p-5 rounded-2xl text-white">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--color-survey-deep)] p-4 sm:p-5 rounded-2xl text-white">
                         <div>
                             <div className="flex items-center gap-2 mb-1">
                                 <Sparkles className="w-4 h-4 text-amber-400" />
@@ -636,7 +636,7 @@ export default function ProposalBuilderPage() {
                             type="button"
                             onClick={handlePreviewQualityScore}
                             disabled={scoring}
-                            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition flex items-center justify-center gap-2 flex-shrink-0 disabled:opacity-50"
+                            className="px-4 py-2.5 rounded-xl bg-[var(--color-survey)] hover:from-amber-500 hover:to-amber-600 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition flex items-center justify-center gap-2 flex-shrink-0 disabled:opacity-50"
                         >
                             <Sparkles className="w-3.5 h-3.5" />
                             <span>{scoring ? 'Evaluating Proposal...' : 'Preview Quality Score'}</span>
@@ -646,7 +646,7 @@ export default function ProposalBuilderPage() {
                     {/* Pre-Scorer Results Display (4 Colored Progress Bars) */}
                     {qualityScores && (
                         <motion.div
-                            initial={{ opacity: 0, y: 10 }}
+                            initial={{ opacity: 1, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="bg-indigo-50/50 border border-indigo-200/80 rounded-2xl p-5 space-y-5"
                         >

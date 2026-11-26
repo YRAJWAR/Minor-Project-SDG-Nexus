@@ -53,7 +53,7 @@ interface OrgDetail {
 }
 
 const fadeIn = (delay: number) => ({
-    initial: { opacity: 0, y: 16 },
+    initial: { opacity: 1, y: 16 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.5, delay },
 });
@@ -306,7 +306,7 @@ export default function OrganizationPublicProfile({ params }: { params: Promise<
                         <div className="space-y-3">
                             {org.projects.map((p, i) => (
                                 <motion.div key={p.id}
-                                    initial={{ opacity: 0, x: -10 }}
+                                    initial={{ opacity: 1, x: -10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: 0.4 + i * 0.08 }}
                                     className="p-4 rounded-xl flex items-center justify-between"

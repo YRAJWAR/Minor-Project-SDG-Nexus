@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import AnimatedCounter from '@/components/ui/AnimatedCounter';
 
 interface StatCardProps {
     label: string;
@@ -21,7 +20,7 @@ export default function StatCard({ label, value, prefix = '', suffix = '' }: Sta
         <div className="rounded-md border border-[var(--color-rule)] bg-[var(--color-sheet)] px-4 py-3.5">
             <p className="text-xs font-medium text-[var(--color-ink-muted)]">{label}</p>
             <p className="mt-1 font-[family-name:var(--font-display)] text-[1.75rem] font-semibold leading-tight text-[var(--color-ink)] tabular">
-                <AnimatedCounter target={value} prefix={prefix} suffix={suffix} />
+                {prefix}{value.toLocaleString('en-IN')}{suffix}
             </p>
         </div>
     );

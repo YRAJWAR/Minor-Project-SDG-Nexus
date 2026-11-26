@@ -53,7 +53,7 @@ npm run dev                 # http://localhost:3000
 | 2 Lifecycle core | done |
 | 3 Proposals, funding, milestones | done |
 | 4 Closure, credentials, scores | done |
-| 6 Design (use `.claude/skills/impeccable` guidance) | core done — see DESIGN.md (legacy dashboard layouts not re-composed) |
+| 6 Design (use `.claude/skills/impeccable` guidance) | done — see DESIGN.md |
 | 7 Ship | not started |
 
 ## Log (newest last — every assistant adds an entry before stopping)
@@ -148,4 +148,13 @@ Format: date · who · branch · what changed (files) · what is unfinished · a
   - Dashboard map (`src/components/Map.tsx`) uses the same basemap and palette.
   - Next: re-compose the big legacy dashboards (government page tabs, heatmap, ngo, analytics) in the sheet language;
     Phase 5 smoke script; Phase 7 ship (consider Bhuvan/MapmyIndia tiles for official boundaries).
+- 2026-11-26 · Claude Code · phase-6-dashboards → merged to main · Dashboards re-composed.
+  - Officer page: tabs Work queue (default) / District map / Partners / Insights / Audit trail; figures are the officer's own desk
+    (need your action, overdue, with universities, resolved); plain copy ("Reports in your district"); nav label "District office".
+  - Faculty: university layout no longer repeats the sidebar (pass-through `hei/layout.tsx`); inbox opens with a plain heading;
+    action "Write a proposal". Consistent page headings and honest subtitles on CSR, NGO, leaderboard, ledger, map, analytics, profile.
+  - Gradients, backdrop blur and inline greys swept from dashboard pages/components; StatCard shows numbers directly (no counter).
+  - All `initial={{ opacity: 0 ...}}` motion starts changed to opacity 1, so content is visible even when animation frames are paused.
+  - Checks: 17 tests, build passes; officer, faculty and map pages checked in the browser.
+  - Next: Phase 5 smoke script, Phase 7 ship.
 

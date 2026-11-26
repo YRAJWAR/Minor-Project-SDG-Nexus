@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { generateImpactReport } from '@/lib/pdfGenerator';
 
 const fadeIn = (delay: number) => ({
-    initial: { opacity: 0, y: 12 },
+    initial: { opacity: 1, y: 12 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.4, delay },
 });
@@ -67,10 +67,8 @@ export default function NGODashboard() {
             {/* Header */}
             <motion.div {...fadeIn(0)} className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold" style={{ color: '#0f172a' }}>
-                        Welcome back, <span className="gradient-text-cyan">{user?.name}</span>
-                    </h1>
-                    <p className="text-sm mt-1" style={{ color: '#64748b' }}>{user?.organization_name} • NGO Dashboard</p>
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--color-ink)]">{user?.organization_name || "Your NGO"}</h1>
+                    <p className="text-sm mt-1" style={{ color: 'var(--color-ink-muted)' }}>{user?.organization_name} • NGO Dashboard</p>
                 </div>
                 <button onClick={handleExportReport} className="btn-neon text-xs px-4 py-2.5 flex items-center gap-2">
                     Export Impact Report
@@ -86,8 +84,8 @@ export default function NGODashboard() {
                                 <span className="text-xl">{stat.icon}</span>
                             </div>
                             <div>
-                                <p className="text-xs font-medium" style={{ color: '#64748b' }}>{stat.label}</p>
-                                <div className="text-2xl font-bold mt-0.5" style={{ color: '#0f172a' }}>
+                                <p className="text-xs font-medium" style={{ color: 'var(--color-ink-muted)' }}>{stat.label}</p>
+                                <div className="text-2xl font-bold mt-0.5" style={{ color: 'var(--color-ink)' }}>
                                     <AnimatedCounter target={stat.value} suffix={stat.suffix} />
                                 </div>
                             </div>
@@ -99,7 +97,7 @@ export default function NGODashboard() {
             {/* Impact Score + SDG Breakdown */}
             <div className="grid md:grid-cols-2 gap-5">
                 <motion.div {...fadeIn(0.3)} className="glass-card p-6">
-                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: '#0f172a' }}>
+                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--color-ink)' }}>
                         Organization Innovation Outcome Score
                         {apiScoreData && (
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium border border-slate-200">
@@ -126,14 +124,14 @@ export default function NGODashboard() {
                                 <div key={i}>
                                     <div className="flex justify-between text-xs mb-1 items-end">
                                         <div className="flex flex-col">
-                                            <span style={{ color: '#64748b' }}>{item.label}</span>
+                                            <span style={{ color: 'var(--color-ink-muted)' }}>{item.label}</span>
                                             {item.raw !== undefined && (
                                                 <span className="text-[9px] text-slate-400">Raw: {typeof item.raw === 'number' ? item.raw.toFixed(2) : item.raw}</span>
                                             )}
                                         </div>
                                         <span className="font-semibold" style={{ color: item.color }}>{item.score}%</span>
                                     </div>
-                                    <div className="h-2 rounded-full overflow-hidden w-40" style={{ background: '#f1f5f9' }}>
+                                    <div className="h-2 rounded-full overflow-hidden w-40" style={{ background: 'var(--color-paper)' }}>
                                         <div className="h-full rounded-full progress-bar-animated"
                                             style={{ width: `${item.score}%`, background: item.color }} />
                                     </div>
@@ -142,13 +140,13 @@ export default function NGODashboard() {
                         </div>
                     </div>
                     <div className="mt-4 text-center">
-                        <p className="text-xs" style={{ color: '#94a3b8' }}>Impact per ₹1 Lakh: <span className="font-bold" style={{ color: '#3b82f6' }}>
+                        <p className="text-xs" style={{ color: 'var(--color-ink-muted)' }}>Impact per ₹1 Lakh: <span className="font-bold" style={{ color: '#3b82f6' }}>
                             {totalBudget > 0 ? Math.round(totalBeneficiaries / (totalBudget / 100000)) : 0} lives</span></p>
                     </div>
                 </motion.div>
 
                 <motion.div {...fadeIn(0.4)} className="glass-card p-6">
-                    <h2 className="text-lg font-semibold mb-4" style={{ color: '#0f172a' }}>SDG-wise Breakdown</h2>
+                    <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-ink)' }}>SDG-wise Breakdown</h2>
                     <SDGBarChart data={impactData?.sdg_breakdown || []} />
                 </motion.div>
             </div>
@@ -156,7 +154,7 @@ export default function NGODashboard() {
             {/* Projects List */}
             <motion.div {...fadeIn(0.5)} className="glass-card p-6">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold" style={{ color: '#0f172a' }}>Your Projects</h2>
+                    <h2 className="text-lg font-semibold" style={{ color: 'var(--color-ink)' }}>Your Projects</h2>
                     <Link href="/dashboard/ngo/create-project" className="btn-neon text-xs px-4 py-2 no-underline">
                         + Submit a Societal Challenge
                     </Link>
@@ -164,7 +162,7 @@ export default function NGODashboard() {
                 <div className="space-y-3">
                     {allProjects.map((project) => (
                         <div key={project.id} className="p-4 rounded-xl transition-all flex flex-col sm:flex-row gap-4"
-                            style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}
+                            style={{ background: 'var(--color-paper)', border: '1px solid var(--color-rule)' }}
                             onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
                             onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
                         >
@@ -181,8 +179,8 @@ export default function NGODashboard() {
                             <div className="flex-1 flex flex-col justify-between py-1">
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1">
-                                        <h3 className="text-sm font-semibold" style={{ color: '#0f172a' }}>{project.title}</h3>
-                                        <p className="text-xs mt-1" style={{ color: '#64748b' }}>{project.location.name} • {project.beneficiary_count.toLocaleString()} beneficiaries</p>
+                                        <h3 className="text-sm font-semibold" style={{ color: 'var(--color-ink)' }}>{project.title}</h3>
+                                        <p className="text-xs mt-1" style={{ color: 'var(--color-ink-muted)' }}>{project.location.name} • {project.beneficiary_count.toLocaleString()} beneficiaries</p>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {project.sdg_tags.map(tag => {
@@ -205,7 +203,7 @@ export default function NGODashboard() {
                                 </div>
                                 {/* Budget progress */}
                                 <div className="mt-3">
-                                    <div className="flex justify-between text-xs mb-1" style={{ color: '#94a3b8' }}>
+                                    <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--color-ink-muted)' }}>
                                         <span>₹{(project.spent / 100000).toFixed(1)}L spent</span>
                                         <span>₹{(project.budget / 100000).toFixed(1)}L budget</span>
                                     </div>
@@ -223,20 +221,20 @@ export default function NGODashboard() {
             {/* Recent Activities */}
             <motion.div {...fadeIn(0.6)} className="glass-card p-6">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold" style={{ color: '#0f172a' }}>Recent Activities</h2>
+                    <h2 className="text-lg font-semibold" style={{ color: 'var(--color-ink)' }}>Recent Activities</h2>
                     <Link href="/dashboard/ledger" className="text-xs font-medium no-underline" style={{ color: '#3b82f6' }}>View All →</Link>
                 </div>
                 <div className="space-y-3">
                     {recentActivities.map(act => (
                         <div key={act.id} className="flex items-start gap-3 p-3 rounded-lg transition"
-                            style={{ background: '#f8fafc' }}>
+                            style={{ background: 'var(--color-paper)' }}>
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
                                 style={{ background: act.verified ? '#d1fae5' : '#fef3c7' }}>
                                 {act.verified ? '' : ''}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm" style={{ color: '#0f172a' }}>{act.description}</p>
-                                <p className="text-xs mt-1" style={{ color: '#94a3b8' }}>{act.location} • {new Date(act.timestamp).toLocaleDateString()}</p>
+                                <p className="text-sm" style={{ color: 'var(--color-ink)' }}>{act.description}</p>
+                                <p className="text-xs mt-1" style={{ color: 'var(--color-ink-muted)' }}>{act.location} • {new Date(act.timestamp).toLocaleDateString()}</p>
                             </div>
                             <code className="text-[10px] font-mono" style={{ color: '#cbd5e1' }}>{act.hash.slice(0, 12)}...</code>
                         </div>

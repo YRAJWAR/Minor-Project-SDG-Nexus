@@ -30,6 +30,9 @@
 \usepackage{listings}
 \usepackage[hidelinks]{hyperref}
 
+% Ragged-right table column with no hyphenation (keeps state names like VERIFIED whole)
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash\hyphenpenalty=10000}p{#1}}
+
 % ---------- Colours used in diagrams ----------
 \definecolor{nexusblue}{HTML}{1F4E79}
 \definecolor{nexusgreen}{HTML}{3F7F3F}
@@ -49,13 +52,18 @@
 \titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection}{0.8em}{}
 
 % ---------- Table of contents styling ----------
-\renewcommand{\contentsname}{\centering TABLE OF CONTENTS}
-\renewcommand{\listfigurename}{\centering LIST OF FIGURES}
-\renewcommand{\listtablename}{\centering LIST OF TABLES}
+\renewcommand{\contentsname}{TABLE OF CONTENTS}
+\renewcommand{\listfigurename}{LIST OF FIGURES}
+\renewcommand{\listtablename}{LIST OF TABLES}
+% centred, same size as the other front-matter headings
+\renewcommand{\cfttoctitlefont}{\hspace*{\fill}\Large\bfseries}\renewcommand{\cftaftertoctitle}{\hspace*{\fill}}
+\renewcommand{\cftloftitlefont}{\hspace*{\fill}\Large\bfseries}\renewcommand{\cftafterloftitle}{\hspace*{\fill}}
+\renewcommand{\cftlottitlefont}{\hspace*{\fill}\Large\bfseries}\renewcommand{\cftafterlottitle}{\hspace*{\fill}}
+\setlength{\cftbeforetoctitleskip}{0pt}\setlength{\cftbeforeloftitleskip}{0pt}\setlength{\cftbeforelottitleskip}{0pt}
 \setcounter{tocdepth}{1}   % chapters and sections only, as in the prescribed format
 \renewcommand{\cftchappresnum}{CHAPTER }
 \renewcommand{\cftchapaftersnum}{:}
-\setlength{\cftchapnumwidth}{6.2em}
+\setlength{\cftchapnumwidth}{7.2em}
 \renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}
 \renewcommand{\cftfigpresnum}{Figure }
 \setlength{\cftfignumwidth}{5.6em}

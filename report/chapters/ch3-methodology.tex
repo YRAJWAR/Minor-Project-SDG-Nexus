@@ -17,47 +17,46 @@ The system follows a layered client--server architecture, shown in Figure~\ref{f
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-  layer/.style={rectangle,draw=nexusline,fill=nexusgrey,rounded corners=3pt,minimum width=12.6cm,minimum height=0.55cm,font=\small\bfseries,anchor=west},
-  box/.style={rectangle,draw=nexusblue,fill=white,rounded corners=2pt,minimum height=0.85cm,text width=2.25cm,align=center,font=\scriptsize},
+  layer/.style={rectangle,draw=nexusline,fill=nexusgrey,rounded corners=3pt,minimum width=12.7cm,minimum height=0.55cm,font=\small\bfseries,anchor=west},
+  box/.style={rectangle,draw=nexusblue,fill=white,rounded corners=2pt,minimum height=1.0cm,text width=2.05cm,align=center,font=\scriptsize},
   core/.style={box,fill=nexusblue!12,very thick},
-  ext/.style={box,draw=nexusamber,fill=nexusamber!10,text width=2.6cm},
+  ext/.style={box,draw=nexusamber,fill=nexusamber!10,text width=2.45cm},
   arr/.style={-{Stealth[length=2mm]},thick,nexusline}
 ]
 % Presentation
 \node[layer] (L1) at (0,0) {Presentation layer (Next.js App Router, React, Tailwind CSS)};
-\node[box] at (1.3,-0.95) {Public pages\\(landing, map, tracker)};
-\node[box] at (3.8,-0.95) {Citizen\\workspace};
-\node[box] at (6.3,-0.95) {Officer\\workspace};
-\node[box] at (8.8,-0.95) {University \&\\student workspace};
-\node[box] at (11.3,-0.95) {NGO, CSR \&\\admin workspaces};
+\node[box] at (1.3,-1.05) {Public pages\\(landing, map, tracker)};
+\node[box] at (3.8,-1.05) {Citizen\\workspace};
+\node[box] at (6.3,-1.05) {Officer\\workspace};
+\node[box] at (8.8,-1.05) {University \&\\student workspace};
+\node[box] at (11.3,-1.05) {NGO, CSR \&\\admin workspaces};
 % API
-\node[layer] (L2) at (0,-2.0) {API layer (Route Handlers)};
-\node[box] at (1.3,-2.95) {Auth (JWT in\\httpOnly cookie)};
-\node[box] at (3.8,-2.95) {Role \& jurisdiction\\guard};
-\node[box] at (6.3,-2.95) {Input\\validators};
-\node[box] at (8.8,-2.95) {Uniform error\\handling (404/503)};
-\node[box] at (11.3,-2.95) {Rate limiting \&\\honeypot};
+\node[layer] (L2) at (0,-2.35) {API layer (Route Handlers)};
+\node[box] at (1.3,-3.4) {Auth (JWT in\\httpOnly cookie)};
+\node[box] at (3.8,-3.4) {Role \&\\jurisdiction guard};
+\node[box] at (6.3,-3.4) {Input\\validators};
+\node[box] at (8.8,-3.4) {Uniform errors\\(404 / 503)};
+\node[box] at (11.3,-3.4) {Rate limiting\\\& honeypot};
 % Domain
-\node[layer] (L3) at (0,-4.0) {Domain layer (services)};
-\node[core] at (1.3,-4.95) {Lifecycle\\state machine};
-\node[box] at (3.8,-4.95) {Matching \&\\priority};
-\node[box] at (6.3,-4.95) {Duplicate detection\\(TF-IDF)};
-\node[box] at (8.8,-4.95) {Ledger \&\\credentials};
-\node[box] at (11.3,-4.95) {Scoring \&\\notifications};
+\node[layer] (L3) at (0,-4.7) {Domain layer (services)};
+\node[core] at (1.3,-5.75) {Lifecycle\\state machine};
+\node[box] at (3.8,-5.75) {Matching \&\\priority};
+\node[box] at (6.3,-5.75) {Duplicate\\detection (TF-IDF)};
+\node[box] at (8.8,-5.75) {Ledger \&\\credentials};
+\node[box] at (11.3,-5.75) {Scoring \&\\notifications};
 % Data
-\node[layer] (L4) at (0,-6.0) {Data layer};
-\node[box,text width=4.6cm] at (2.55,-6.95) {Prisma ORM};
-\node[box,text width=4.6cm,fill=nexusblue!12] at (7.55,-6.95) {PostgreSQL database};
-\node[box] at (11.3,-6.95) {Daily scheduled\\job (cron)};
+\node[layer] (L4) at (0,-7.05) {Data layer};
+\node[box,text width=4.5cm] at (2.55,-8.1) {Prisma ORM};
+\node[box,text width=4.5cm,fill=nexusblue!12] at (7.55,-8.1) {PostgreSQL database};
+\node[box] at (11.3,-8.1) {Daily scheduled\\job (cron)};
 % External
-\node[ext] at (1.6,-8.35) {Object storage\\(proof photos)};
-\node[ext] at (5.0,-8.35) {OpenStreetMap tiles\\+ India GeoJSON};
-\node[ext] at (8.4,-8.35) {Optional language\\model (SDG tags)};
-\node[ext] at (11.6,-8.35) {E-mail / SMS\\(future)};
-\node[font=\scriptsize\itshape,anchor=west] at (0,-9.15) {External services};
-% arrows between layers
-\foreach \y in {-1.45,-3.45,-5.45} \draw[arr] (6.3,\y) -- (6.3,\y-0.5);
-\draw[arr,dashed] (6.3,-7.45) -- (6.3,-7.85);
+\node[font=\scriptsize\itshape,anchor=west] at (0,-9.2) {External services};
+\node[ext] at (1.6,-10.05) {Object storage\\(proof photos)};
+\node[ext] at (5.0,-10.05) {OpenStreetMap tiles\\+ India GeoJSON};
+\node[ext] at (8.4,-10.05) {Optional language\\model (SDG tags)};
+\node[ext] at (11.6,-10.05) {E-mail / SMS\\(future)};
+% request flow, drawn beside the stack so it never crosses a box
+\draw[arr] (-0.45,-0.1) -- node[midway,sloped,above,font=\scriptsize]{request flow} (-0.45,-8.1);
 \end{tikzpicture}
 \caption{Layered architecture of SDG Nexus}
 \label{fig:architecture}
@@ -70,19 +69,19 @@ Figure~\ref{fig:workflow} shows the path of a single challenge through the platf
 \centering
 \begin{tikzpicture}[
   node distance=0.45cm,
-  step/.style={rectangle,draw=nexusblue,fill=nexusblue!8,rounded corners=3pt,text width=8.2cm,minimum height=0.75cm,align=left,font=\small,inner sep=4pt},
+  wstep/.style={rectangle,draw=nexusblue,fill=nexusblue!8,rounded corners=3pt,text width=8.2cm,minimum height=0.75cm,align=left,font=\small,inner sep=4pt},
   who/.style={rectangle,draw=nexusline,fill=nexusgrey,rounded corners=2pt,text width=2.6cm,align=center,font=\scriptsize\bfseries,minimum height=0.75cm},
   dec/.style={diamond,draw=nexusamber,fill=nexusamber!10,aspect=2.6,inner sep=1pt,align=center,font=\scriptsize},
   arr/.style={-{Stealth[length=2mm]},thick,nexusline}
 ]
-\node[step] (s1) {\textbf{1. Report} -- title, description, category, location, photos; duplicate check suggests endorsing an existing report.};
-\node[step,below=of s1] (s2) {\textbf{2. Verify} -- officer confirms the report and its SDG tags, or rejects / merges it.};
-\node[step,below=of s2] (s3) {\textbf{3. Match} -- ranked universities with reasons; the top matches are notified.};
-\node[step,below=of s3] (s4) {\textbf{4. Propose} -- faculty submit an approach, a team of 2--8 students and 2--6 costed milestones.};
-\node[step,below=of s4] (s5) {\textbf{5. Select \& fund} -- officer selects one proposal; CSR partners commit funds until the budget is covered.};
-\node[step,below=of s5] (s6) {\textbf{6. Build \& prove} -- team submits proof per milestone; officer verifies; funder releases that tranche.};
-\node[step,below=of s6] (s7) {\textbf{7. Confirm} -- citizen confirms and rates the fix (or disputes it); officer records verified beneficiaries.};
-\node[step,below=of s7,fill=nexusgreen!12,draw=nexusgreen] (s8) {\textbf{8. Recognise} -- student credentials issued; impact scores updated; full history visible on the public ledger.};
+\node[wstep] (s1) {\textbf{1. Report} -- title, description, category, location, photos; duplicate check suggests endorsing an existing report.};
+\node[wstep,below=of s1] (s2) {\textbf{2. Verify} -- officer confirms the report and its SDG tags, or rejects / merges it.};
+\node[wstep,below=of s2] (s3) {\textbf{3. Match} -- ranked universities with reasons; the top matches are notified.};
+\node[wstep,below=of s3] (s4) {\textbf{4. Propose} -- faculty submit an approach, a team of 2--8 students and 2--6 costed milestones.};
+\node[wstep,below=of s4] (s5) {\textbf{5. Select \& fund} -- officer selects one proposal; CSR partners commit funds until the budget is covered.};
+\node[wstep,below=of s5] (s6) {\textbf{6. Build \& prove} -- team submits proof per milestone; officer verifies; funder releases that tranche.};
+\node[wstep,below=of s6] (s7) {\textbf{7. Confirm} -- citizen confirms and rates the fix (or disputes it); officer records verified beneficiaries.};
+\node[wstep,below=of s7,fill=nexusgreen!12,draw=nexusgreen] (s8) {\textbf{8. Recognise} -- student credentials issued; impact scores updated; full history visible on the public ledger.};
 \node[who,left=0.4cm of s1] {Citizen};
 \node[who,left=0.4cm of s2] {District Officer};
 \node[who,left=0.4cm of s3] {System};
@@ -144,7 +143,7 @@ Table~\ref{tab:transitions} lists each transition with the role allowed to perfo
 \caption{Lifecycle transitions, permitted roles and preconditions}
 \label{tab:transitions}
 \small
-\begin{tabularx}{\textwidth}{@{}p{4.3cm}p{2.6cm}X@{}}
+\begin{tabularx}{\textwidth}{@{}L{5.2cm}L{2.4cm}X@{}}
 \toprule
 \textbf{Transition} & \textbf{Who} & \textbf{Precondition} \\
 \midrule
@@ -175,16 +174,17 @@ A proposal contains between two and six milestones, each with a title, due date 
   lbl/.style={font=\tiny,align=center,fill=white,inner sep=1pt}
 ]
 \node[st] (pl) at (0,0) {PLANNED};
-\node[st] (sb) at (3.4,0) {SUBMITTED};
-\node[st] (vf) at (6.8,0) {VERIFIED};
-\node[pay] (pd) at (10.2,0) {PAID};
-\node[bad] (rj) at (3.4,-1.8) {REJECTED};
-\draw[arr] (pl) -- node[lbl,above]{team uploads proof\\+ hours} (sb);
-\draw[arr] (sb) -- node[lbl,above]{officer checks\\(NGO attests)} (vf);
-\draw[arr] (vf) -- node[lbl,above]{funder releases\\tranche} (pd);
+\node[st] (sb) at (3.7,0) {SUBMITTED};
+\node[st] (vf) at (7.4,0) {VERIFIED};
+\node[pay] (pd) at (11.1,0) {PAID};
+\node[bad] (rj) at (3.7,-1.8) {REJECTED};
+% labels sit above the boxes (south edge above the box tops) so they never cover a state
+\draw[arr] (pl) -- node[lbl,above=0.45cm]{team uploads\\proof + hours} (sb);
+\draw[arr] (sb) -- node[lbl,above=0.45cm]{officer checks\\(NGO attests)} (vf);
+\draw[arr] (vf) -- node[lbl,above=0.45cm]{funder releases\\tranche} (pd);
 \draw[arr] (sb) -- node[lbl,right]{reason} (rj);
 \draw[arr] (rj) -| node[lbl,pos=0.75,left]{resubmit} (pl);
-\node[draw=nexusamber,fill=nexusamber!8,rounded corners=3pt,text width=11.6cm,align=left,font=\scriptsize] at (5.1,-3.3)
+\node[draw=nexusamber,fill=nexusamber!8,rounded corners=3pt,text width=12.2cm,align=left,font=\scriptsize] at (5.55,-3.55)
 {\textbf{Funding rules:} (1) Several CSR funders may co-fund a proposal; the challenge becomes FUNDED when $\sum \text{commitments} \geq \text{budget}$. (2) A tranche equals the amount of one milestone and can be released only after that milestone is VERIFIED, and only by a funder who committed. (3) For every proposal, $\sum \text{released} \leq \sum \text{committed}$, checked inside the transaction.};
 \end{tikzpicture}
 \caption{Milestone states and milestone-linked funding}
@@ -199,7 +199,7 @@ Table~\ref{tab:modules} lists the main modules and their responsibilities. Figur
 \caption{Modules of SDG Nexus}
 \label{tab:modules}
 \small
-\begin{tabularx}{\textwidth}{@{}p{3.6cm}X@{}}
+\begin{tabularx}{\textwidth}{@{}L{3.6cm}X@{}}
 \toprule
 \textbf{Module} & \textbf{Responsibility} \\
 \midrule
@@ -273,25 +273,25 @@ The data model is built around the challenge. It is being consolidated from the 
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-  ent/.style={rectangle split,rectangle split parts=2,draw=nexusblue,fill=white,rounded corners=2pt,text width=2.55cm,font=\tiny,align=left,rectangle split part fill={nexusblue!15,white}},
+  ent/.style={rectangle split,rectangle split parts=2,draw=nexusblue,fill=white,rounded corners=2pt,text width=2.6cm,font=\tiny,align=left,rectangle split part fill={nexusblue!15,white},execute at begin node={\hyphenpenalty=10000\exhyphenpenalty=10000}},
   rel/.style={nexusline,thick},
-  card/.style={font=\tiny\bfseries,text=nexusred}
+  card/.style={font=\tiny\bfseries,text=nexusred,fill=white,inner sep=1pt}
 ]
-\node[ent] (state) at (-5.2,3.6) {\textbf{State / District}\nodepart{two}id, name, lat, lng,\\ sdgIndex};
-\node[ent] (user) at (0,3.6) {\textbf{User}\nodepart{two}id, name, email, passwordHash,\\ role, districtId};
-\node[ent] (org) at (5.2,3.6) {\textbf{Organization}\nodepart{two}id, type (University/NGO/CSR),\\ name, verified, inviteCode};
-\node[ent,fill=nexusblue!5] (ch) at (-2.6,0.6) {\textbf{Challenge}\nodepart{two}id, title, category, severity,\\ districtId, lat, lng, status,\\ sdgTags, reporterId};
-\node[ent] (end) at (-6.2,0.6) {\textbf{Endorsement}\nodepart{two}userId, challengeId};
-\node[ent] (prop) at (2.6,0.6) {\textbf{Proposal}\nodepart{two}id, challengeId, universityId,\\ ngoId, budget, status};
-\node[ent] (mem) at (6.4,0.6) {\textbf{ProposalMember}\nodepart{two}proposalId, userId, role};
-\node[ent] (led) at (-5.2,-2.6) {\textbf{LedgerEntry}\nodepart{two}challengeId, seq, type,\\ payload, prevHash, hash};
-\node[ent] (ms) at (0,-2.6) {\textbf{Milestone}\nodepart{two}proposalId, title, dueDate,\\ amount, status, proofHash};
-\node[ent] (fc) at (5.2,-2.6) {\textbf{FundingCommitment}\nodepart{two}csrOrgId, proposalId, amount};
-\node[ent] (cred) at (-2.6,-5.4) {\textbf{Credential}\nodepart{two}studentId, challengeId,\\ hours, credits, hash};
-\node[ent] (dis) at (2.6,-5.4) {\textbf{Disbursement}\nodepart{two}commitmentId, milestoneId,\\ amount, releasedAt};
+\node[ent] (state) at (-5.2,3.6) {\textbf{State / District}\nodepart{two}id, name\\ lat, lng, sdgIndex};
+\node[ent] (user) at (0,3.6) {\textbf{User}\nodepart{two}id, name, email\\ passwordHash, role\\ districtId};
+\node[ent] (org) at (5.2,3.6) {\textbf{Organization}\nodepart{two}id, name, type\\ (University / NGO / CSR)\\ verified, inviteCode};
+\node[ent,fill=nexusblue!5] (ch) at (-2.6,0.6) {\textbf{Challenge}\nodepart{two}id, title, category\\ severity, districtId\\ lat, lng, status\\ sdgTags, reporterId};
+\node[ent] (end) at (-6.15,0.6) {\textbf{Endorsement}\nodepart{two}userId\\ challengeId};
+\node[ent] (prop) at (2.6,0.6) {\textbf{Proposal}\nodepart{two}id, challengeId\\ universityId, ngoId\\ budget, status};
+\node[ent] (mem) at (6.15,0.6) {\textbf{ProposalMember}\nodepart{two}proposalId\\ userId, role};
+\node[ent] (led) at (-5.2,-2.6) {\textbf{LedgerEntry}\nodepart{two}challengeId, seq, type\\ payload, prevHash\\ hash};
+\node[ent] (ms) at (0,-2.6) {\textbf{Milestone}\nodepart{two}proposalId, title\\ dueDate, amount\\ status, proofHash};
+\node[ent] (fc) at (5.2,-2.6) {\textbf{FundingCommitment}\nodepart{two}csrOrgId\\ proposalId, amount};
+\node[ent] (cred) at (-2.6,-5.4) {\textbf{Credential}\nodepart{two}studentId, challengeId\\ hours, credits, hash};
+\node[ent] (dis) at (2.6,-5.4) {\textbf{Disbursement}\nodepart{two}commitmentId\\ milestoneId, amount\\ releasedAt};
 \draw[rel] (state) -- node[card,above]{1 : N} (ch);
 \draw[rel] (user) -- node[card,right,pos=0.4]{1 : N reports} (ch);
-\draw[rel] (user) -- node[card,above]{N : M (membership)} (org);
+\draw[rel] (user) -- node[card,below]{N : M membership} (org);
 \draw[rel] (ch) -- node[card,above]{1 : N} (end);
 \draw[rel] (ch) -- node[card,above]{1 : N} (prop);
 \draw[rel] (prop) -- node[card,above]{1 : N} (mem);
@@ -312,7 +312,7 @@ The data model is built around the challenge. It is being consolidated from the 
 \caption{Main entities of the database}
 \label{tab:entities}
 \small
-\begin{tabularx}{\textwidth}{@{}p{3.6cm}X@{}}
+\begin{tabularx}{\textwidth}{@{}L{3.6cm}X@{}}
 \toprule
 \textbf{Entity} & \textbf{Purpose} \\
 \midrule
@@ -402,24 +402,26 @@ In the design, an existing challenge within 2\,km in the same category with simi
 \subsection{Tamper-Evident Ledger}
 Every action on a challenge is stored as a ledger entry with a sequence number. Each entry's hash includes the previous entry's hash (Figure~\ref{fig:hashchain}):
 \begin{equation}
-H_i = \mathrm{SHA256}\big(H_{i-1}\;\|\;\mathrm{canonical}(\text{payload}_i)\;\|\;t_i\big),\qquad H_0 = \mathrm{SHA256}(\text{challenge id})
+H_i = \mathrm{SHA256}\big(H_{i-1}\;\|\;\mathrm{canonical}(\text{payload}_i)\;\|\;t_i\big)
 \end{equation}
-where $\|$ denotes concatenation and $t_i$ is the timestamp. To verify a challenge's history, the system recomputes every hash from the stored payloads and reports the first entry whose recomputed hash differs from the stored one; any change to a past entry breaks every hash after it \cite{haber1991}. Uploaded proof files are hashed from their bytes on the server, and a Merkle root \cite{merkle1987} summarises all milestone hashes of a project in a single value. Only stored data is used for verification; a hash supplied by the browser is never trusted.
+where $\|$ denotes concatenation, $t_i$ is the timestamp, and the chain starts from $H_0 = \mathrm{SHA256}(\text{challenge id})$. To verify a challenge's history, the system recomputes every hash from the stored payloads and reports the first entry whose recomputed hash differs from the stored one; any change to a past entry breaks every hash after it \cite{haber1991}. Uploaded proof files are hashed from their bytes on the server, and a Merkle root \cite{merkle1987} summarises all milestone hashes of a project in a single value. Only stored data is used for verification; a hash supplied by the browser is never trusted.
 
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-  blk/.style={rectangle split,rectangle split parts=3,draw=nexusblue,fill=white,rounded corners=2pt,text width=2.6cm,font=\tiny,align=left,rectangle split part fill={nexusblue!15,white,nexusgrey}},
+  blk/.style={rectangle split,rectangle split parts=3,draw=nexusblue,fill=white,rounded corners=2pt,text width=2.55cm,font=\tiny,align=left,anchor=north,rectangle split part fill={nexusblue!15,white,nexusgrey},execute at begin node={\hyphenpenalty=10000}},
   arr/.style={-{Stealth[length=2mm]},thick,nexusline}
 ]
-\node[blk] (b1) at (0,0) {\textbf{Entry 1: SUBMITTED}\nodepart{two}payload: report, location\\ prevHash: $H_0$\nodepart{three}hash: $H_1$ = SHA256($H_0\|p_1\|t_1$)};
-\node[blk] (b2) at (3.6,0) {\textbf{Entry 2: VERIFIED}\nodepart{two}payload: officer, SDG tags\\ prevHash: $H_1$\nodepart{three}hash: $H_2$};
-\node[blk] (b3) at (7.2,0) {\textbf{Entry 3: FUNDED}\nodepart{two}payload: commitments\\ prevHash: $H_2$\nodepart{three}hash: $H_3$};
-\node[blk] (b4) at (10.8,0) {\textbf{Entry 4: MILESTONE}\nodepart{two}payload: proof file hash\\ prevHash: $H_3$\nodepart{three}hash: $H_4$};
-\draw[arr] (b1.east) -- (b2.west);
-\draw[arr] (b2.east) -- (b3.west);
-\draw[arr] (b3.east) -- (b4.west);
-\node[draw=nexusred,fill=nexusred!8,rounded corners=3pt,text width=12.4cm,font=\scriptsize,align=left] at (5.4,-1.85)
+% all blocks anchored at the top and given the same number of lines, so they line up
+\node[blk] (b1) at (0,0) {\textbf{1 \textbullet{} SUBMITTED}\nodepart{two}payload: report, location\\ prevHash: $H_0$\nodepart{three}hash: $H_1$};
+\node[blk] (b2) at (3.55,0) {\textbf{2 \textbullet{} VERIFIED}\nodepart{two}payload: officer, SDG tags\\ prevHash: $H_1$\nodepart{three}hash: $H_2$};
+\node[blk] (b3) at (7.1,0) {\textbf{3 \textbullet{} FUNDED}\nodepart{two}payload: commitments\\ prevHash: $H_2$\nodepart{three}hash: $H_3$};
+\node[blk] (b4) at (10.65,0) {\textbf{4 \textbullet{} MILESTONE}\nodepart{two}payload: proof file hash\\ prevHash: $H_3$\nodepart{three}hash: $H_4$};
+\draw[arr] (b1.two east) -- (b2.two west);
+\draw[arr] (b2.two east) -- (b3.two west);
+\draw[arr] (b3.two east) -- (b4.two west);
+\coordinate (mid) at (5.3,0);
+\node[draw=nexusred,fill=nexusred!8,rounded corners=3pt,text width=12.4cm,font=\scriptsize,align=left,anchor=north] at ([yshift=-0.4cm]current bounding box.south -| mid)
 {\textbf{Tamper detection:} if the payload of Entry 2 is edited in the database, the recomputed $H_2$ no longer matches the stored value, and because $H_3$ and $H_4$ depend on $H_2$, verification reports Entry 2 as the first broken link.};
 \end{tikzpicture}
 \caption{Hash chain of ledger entries for one challenge}
@@ -448,7 +450,7 @@ Table~\ref{tab:stack} lists the technologies used and the reason for each choice
 \caption{Technology stack}
 \label{tab:stack}
 \small
-\begin{tabularx}{\textwidth}{@{}p{3.3cm}p{3.6cm}X@{}}
+\begin{tabularx}{\textwidth}{@{}L{3.3cm}L{3.6cm}X@{}}
 \toprule
 \textbf{Layer} & \textbf{Technology} & \textbf{Purpose} \\
 \midrule

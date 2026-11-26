@@ -270,6 +270,7 @@ model AuditLog {
   previous_value String?
   new_value      String?
   ip_address     String?
+  seq            Int      @unique @default(autoincrement()) // append order; the chain follows this, not timestamps
   prev_hash      String? // hash of the previous entry: a chain, so editing any old entry breaks every later one
   hash           String?
   created_at     DateTime @default(now())

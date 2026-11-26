@@ -29,8 +29,8 @@ const sameDistrict = (a: string, b: string) => a.trim().toLowerCase() === b.trim
 /** Why this actor can't take this action now, or null if they can. */
 export function blockedReason(action: Action, ch: ChallengeLike, actor: Actor): string | null {
     const rule = RULES[action];
-    if (!rule.from.includes(ch.status)) return `A ${ch.status.toLowerCase().replace(/_/g, ' ')} report cannot be ${action.toLowerCase()}ed.`;
     if (!rule.roles.includes(actor.role)) return 'Your role cannot do this.';
+    if (!rule.from.includes(ch.status)) return `A ${ch.status.toLowerCase().replace(/_/g, ' ')} report cannot be ${action.toLowerCase()}ed.`;
     if (rule.officerOnlyInDistrict && actor.role === 'OFFICER' && !(actor.district && sameDistrict(actor.district.name, ch.district))) {
         return 'This report is outside your district.';
     }

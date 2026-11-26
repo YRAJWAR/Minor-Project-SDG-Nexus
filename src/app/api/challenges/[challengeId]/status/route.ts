@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getSessionUser } from '@/server/middleware/auth';
+import { allowedActions } from '@/server/lifecycle';
 
 function maskSubmitter(submittedBy: string, isAnonymous: boolean, district: string): string {
     if (isAnonymous || !submittedBy) {
@@ -28,12 +30,14 @@ const PIPELINE_STAGES = [
 ];
 
 export async function GET(
-    _req: NextRequest,
+    req: NextRequest,
     context: { params: Promise<{ challengeId: string }> }
 ) {
     const { challengeId } = await context.params;
 
     let challenge;
+    let history: { action: string; created_at: Date }[] = [];
+    let mergedInto: { id: string; title: string } | null = null;
     try {
         challenge = await prisma.challenge.findUnique({
             where: { id: challengeId },
@@ -41,8 +45,13 @@ export async function GET(
                 proposals: {
                     select: { id: true, status: true, hei: { select: { name: true, district: true } } },
                 },
+                _count: { select: { endorsements: true } },
             },
         });
+        if (challenge) {
+            history = await prisma.auditLog.findMany({ where: { entity_type: 'Challenge', entity_id: challenge.id }, orderBy: { seq: 'asc' }, select: { action: true, created_at: true } });
+            mergedInto = challenge.mergedIntoId ? await prisma.challenge.findUnique({ where: { id: challenge.mergedIntoId }, select: { id: true, title: true } }) : null;
+        }
     } catch (dbErr) {
         console.error('Database query failed in /api/challenges/[challengeId]/status:', dbErr);
         return NextResponse.json(
@@ -61,17 +70,19 @@ export async function GET(
     const currentStageIndex = Math.max(0, PIPELINE_STAGES.findIndex((s) => s.id === challenge.status));
     const dateLabel = (d: Date) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
-    // Only real timestamps: submission date and the date of the latest status change.
-    // ponytail: per-stage dates need a status history table (planned ledger, Phase 2).
-    const pipeline = PIPELINE_STAGES.map((stage, index) => ({
-        step: index + 1,
-        ...stage,
-        state: index < currentStageIndex ? 'completed' : index === currentStageIndex ? 'current' : 'upcoming',
-        timestamp:
-            index === 0 ? dateLabel(challenge.createdAt)
-                : index === currentStageIndex ? dateLabel(challenge.updatedAt)
-                    : null,
-    }));
+    // Stage dates come from the ledger; a stage without a ledger entry shows no date rather than a guess.
+    const STAGE_ACTION: Record<string, string> = { SUBMITTED: 'CHALLENGE_SUBMITTED', AI_PROCESSED: 'CHALLENGE_SUBMITTED', VALIDATED: 'CHALLENGE_VERIFY', UNIVERSITY_ASSIGNED: 'CHALLENGE_ASSIGN' };
+    const when = (stageId: string) => history.find((h) => h.action === STAGE_ACTION[stageId])?.created_at;
+    const pipeline = PIPELINE_STAGES.map((stage, index) => {
+        const at = index === 0 ? challenge.createdAt : when(stage.id) ?? (index === currentStageIndex ? challenge.updatedAt : null);
+        return {
+            step: index + 1,
+            ...stage,
+            state: index < currentStageIndex ? 'completed' : index === currentStageIndex ? 'current' : 'upcoming',
+            timestamp: at && index <= currentStageIndex ? dateLabel(at) : null,
+        };
+    });
+    const viewer = await getSessionUser(req).catch(() => null);
 
     const assigned = challenge.proposals.find((p) => p.status === 'ACCEPTED')?.hei ?? null;
 
@@ -98,6 +109,11 @@ export async function GET(
             createdAt: challenge.createdAt.toISOString(),
             updatedAt: challenge.updatedAt.toISOString(),
             pipeline,
+            endorsements: challenge._count.endorsements,
+            rejectReason: challenge.rejectReason,
+            mergedInto,
+            allowedActions: viewer ? allowedActions(challenge, viewer) : [],
+            signedIn: !!viewer,
             proposalsCount: challenge.proposals.length,
             assignedInstitutions: assigned ? [assigned.name] : [],
             assignedHEI: assigned,

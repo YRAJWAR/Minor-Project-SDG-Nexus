@@ -16,6 +16,7 @@ export interface LedgerEntry {
     previous_value?: unknown;
     new_value?: unknown;
     ip_address?: string | null;
+    at?: Date; // only for seeding history
 }
 
 const asText = (v: unknown) => (v === undefined || v === null ? null : typeof v === 'string' ? v : JSON.stringify(v));
@@ -31,10 +32,10 @@ export async function appendLedger(entry: LedgerEntry, db: Db = prisma) {
     const write = async (tx: Prisma.TransactionClient) => {
         // One writer at a time, so two simultaneous appends can't both claim the same previous entry.
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(7240001)`;
-        const last = await tx.auditLog.findFirst({ where: { hash: { not: null } }, orderBy: [{ created_at: 'desc' }, { id: 'desc' }], select: { hash: true } });
+        const last = await tx.auditLog.findFirst({ where: { hash: { not: null } }, orderBy: { seq: 'desc' }, select: { hash: true } });
         const row = {
             actor_id: entry.actor_id, actor_role: entry.actor_role, action: entry.action, entity_type: entry.entity_type, entity_id: entry.entity_id,
-            previous_value: asText(entry.previous_value), new_value: asText(entry.new_value), prev_hash: last?.hash ?? null, created_at: new Date(),
+            previous_value: asText(entry.previous_value), new_value: asText(entry.new_value), prev_hash: last?.hash ?? null, created_at: entry.at ?? new Date(),
         };
         return tx.auditLog.create({ data: { ...row, ip_address: entry.ip_address ?? null, hash: entryHash(row) } });
     };
@@ -43,7 +44,7 @@ export async function appendLedger(entry: LedgerEntry, db: Db = prisma) {
 
 /** Recomputes the whole chain. Returns the first entry that does not match, if any. */
 export async function verifyLedger(db: Db = prisma) {
-    const rows = await db.auditLog.findMany({ where: { hash: { not: null } }, orderBy: [{ created_at: 'asc' }, { id: 'asc' }] });
+    const rows = await db.auditLog.findMany({ where: { hash: { not: null } }, orderBy: { seq: 'asc' } });
     let prev: string | null = null;
     for (const r of rows) {
         if (r.prev_hash !== prev || entryHash(r) !== r.hash) {

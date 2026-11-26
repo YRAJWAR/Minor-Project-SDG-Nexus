@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { computeMilestoneHash } from '../src/lib/merkle';
 import { computeCredentialHash, creditsForHours } from '../src/lib/credentials';
+import { appendLedger, type LedgerEntry } from '../src/server/ledger';
 
 const prisma = new PrismaClient();
 
@@ -178,7 +179,7 @@ const STAGE: Record<ChallengeStatus, number> = {
 async function main() {
     // Children before parents.
     await prisma.$transaction([
-        prisma.notification.deleteMany(), prisma.studentCredential.deleteMany(), prisma.milestone.deleteMany(),
+        prisma.endorsement.deleteMany(), prisma.notification.deleteMany(), prisma.studentCredential.deleteMany(), prisma.milestone.deleteMany(),
         prisma.teamMember.deleteMany(), prisma.projectTeam.deleteMany(), prisma.challengeProposal.deleteMany(),
         prisma.challenge.deleteMany(), prisma.studentProfile.deleteMany(), prisma.auditLog.deleteMany(),
         prisma.riskFlag.deleteMany(), prisma.cSRAllocation.deleteMany(), prisma.impactScore.deleteMany(),
@@ -277,6 +278,8 @@ async function main() {
 
     // ── Challenges → proposals → teams → milestones → credentials ──
     let tampered = false;
+    const ledger: LedgerEntry[] = []; // appended in time order at the end, so the hash chain is valid
+    const URGENT = /fluoride|malaria|sickle|landslide|flood|arsenic|cyclone|anaemia|culvert/i;
     const csrIds = CSRS.map((c) => orgByName[c.name]);
     for (const [ci, [title, description, district, category, sdgTags, status, daysAgo, uniKey]] of CHALLENGES.entries()) {
         const place = PLACES[district];
@@ -289,17 +292,24 @@ async function main() {
                 gpsLat: jitter(place.lat), gpsLng: jitter(place.lng), photoUrls: [], videoUrls: [],
                 aiConfidence: STAGE[status] >= 1 ? Number((0.72 + rand() * 0.25).toFixed(2)) : null,
                 submittedBy: anonymous ? 'Anonymous Citizen' : submitter, submitterType: 'CITIZEN', isAnonymous: anonymous,
+                submitterId: citizenIds[CITIZENS.indexOf(submitter)],
+                urgency: URGENT.test(title) ? (ci % 2 ? 'CRITICAL' : 'HIGH') : ci % 3 ? 'MODERATE' : 'NORMAL',
                 gpVerified: STAGE[status] >= 2, submittedVia: ci % 4 === 0 ? 'mobile' : 'web',
                 createdAt: created, updatedAt: ago(Math.max(0, daysAgo - 3)),
             },
         });
-        if (STAGE[status] >= 2 && officers[district]) {
-            await prisma.auditLog.create({
-                data: {
-                    actor_id: officers[district], actor_role: 'OFFICER', action: 'CHALLENGE_VALIDATED', entity_type: 'Challenge', entity_id: challenge.id,
-                    previous_value: 'AI_PROCESSED', new_value: 'VALIDATED', created_at: ago(daysAgo - 2),
-                },
-            });
+        const submitterId = citizenIds[CITIZENS.indexOf(submitter)];
+        ledger.push({ actor_id: submitterId, actor_role: 'CITIZEN', action: 'CHALLENGE_SUBMITTED', entity_type: 'Challenge', entity_id: challenge.id, new_value: { status: 'AI_PROCESSED', district, state: place.state }, at: created });
+        if (STAGE[status] >= 2) {
+            ledger.push({ actor_id: officers[district] ?? admin.id, actor_role: officers[district] ? 'OFFICER' : 'ADMIN', action: 'CHALLENGE_VERIFY', entity_type: 'Challenge', entity_id: challenge.id, previous_value: { status: 'AI_PROCESSED' }, new_value: { status: 'VALIDATED' }, at: ago(daysAgo - 2) });
+        }
+        if (STAGE[status] >= 3 && uniKey) {
+            ledger.push({ actor_id: officers[district] ?? admin.id, actor_role: officers[district] ? 'OFFICER' : 'ADMIN', action: 'CHALLENGE_ASSIGN', entity_type: 'Challenge', entity_id: challenge.id, previous_value: { status: 'VALIDATED' }, new_value: { status: 'UNIVERSITY_ASSIGNED', heiId: unis[uniKey].id }, at: ago(daysAgo - 5) });
+        }
+        // Other citizens saying "this affects me too".
+        if (STAGE[status] < 6) {
+            const endorsers = citizenIds.filter((id) => id !== submitterId).slice(0, Math.floor(rand() * 7));
+            if (endorsers.length) await prisma.endorsement.createMany({ data: endorsers.map((userId) => ({ challengeId: challenge.id, userId })) });
         }
         // A proposal waiting for the officer on some validated challenges.
         if (status === 'VALIDATED' && ci % 2 === 0) {
@@ -384,7 +394,30 @@ async function main() {
             }
         }
     }
-    console.log(`✓ ${CHALLENGES.length} challenges, ${await prisma.challengeProposal.count()} proposals, ${await prisma.projectTeam.count()} teams, ${await prisma.milestone.count()} milestones, ${await prisma.studentCredential.count()} credentials`);
+    // One rejected and one merged report in Nalgonda, so the officer's history shows both outcomes.
+    const streetLights = await prisma.challenge.findFirstOrThrow({ where: { title: { startsWith: 'Street lights off' } } });
+    const extra = [
+        { title: 'Neighbour built wall on my land in Chandur', description: 'My neighbour has built a compound wall two feet into my plot. I want the government to remove it.', status: 'REJECTED' as const, rejectReason: 'This is a private land dispute, not a public problem. Please approach the Tahsildar office or the civil court.', mergedIntoId: null, category: 'Infrastructure & Connectivity', sdg: [16], days: 20 },
+        { title: 'Dark stretch on Kattangur road, no lights', description: 'Street lights on the road from Nakrekal to Kattangur have not worked for months; walking at night is unsafe.', status: 'MERGED' as const, rejectReason: null, mergedIntoId: streetLights.id, category: 'Infrastructure & Connectivity', sdg: [11, 7], days: 1 },
+    ];
+    for (const [i, x] of extra.entries()) {
+        const submitterId = citizenIds[3 + i];
+        const c = await prisma.challenge.create({
+            data: {
+                title: x.title, description: x.description, state: 'Telangana', district: 'Nalgonda', category: x.category, sdgTags: x.sdg, status: x.status,
+                gpsLat: jitter(PLACES.Nalgonda.lat), gpsLng: jitter(PLACES.Nalgonda.lng), photoUrls: [], videoUrls: [], aiConfidence: 0.8,
+                submittedBy: CITIZENS[3 + i], submitterId, submitterType: 'CITIZEN', rejectReason: x.rejectReason, mergedIntoId: x.mergedIntoId,
+                createdAt: ago(x.days), updatedAt: ago(Math.max(0, x.days - 1)),
+            },
+        });
+        ledger.push({ actor_id: submitterId, actor_role: 'CITIZEN', action: 'CHALLENGE_SUBMITTED', entity_type: 'Challenge', entity_id: c.id, new_value: { status: 'AI_PROCESSED', district: 'Nalgonda', state: 'Telangana' }, at: ago(x.days) });
+        ledger.push({ actor_id: officers.Nalgonda, actor_role: 'OFFICER', action: x.status === 'REJECTED' ? 'CHALLENGE_REJECT' : 'CHALLENGE_MERGE', entity_type: 'Challenge', entity_id: c.id, previous_value: { status: 'AI_PROCESSED' }, new_value: { status: x.status, rejectReason: x.rejectReason, mergedIntoId: x.mergedIntoId }, at: ago(Math.max(0, x.days - 0.5)) });
+        if (x.status === 'MERGED') await prisma.endorsement.upsert({ where: { challengeId_userId: { challengeId: streetLights.id, userId: submitterId } }, create: { challengeId: streetLights.id, userId: submitterId }, update: {} });
+    }
+    ledger.sort((a, b) => a.at!.getTime() - b.at!.getTime());
+    for (const e of ledger) await appendLedger(e, prisma);
+
+    console.log(`✓ ${CHALLENGES.length + extra.length} challenges, ${await prisma.endorsement.count()} endorsements, ${ledger.length} ledger entries, ${await prisma.challengeProposal.count()} proposals, ${await prisma.projectTeam.count()} teams, ${await prisma.milestone.count()} milestones, ${await prisma.studentCredential.count()} credentials`);
 
     // ── NGO projects, field activity, impact scores, CSR funding ──
     const PROJECT_IDEAS: Record<number, string[]> = {

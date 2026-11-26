@@ -50,7 +50,7 @@ npm run dev                 # http://localhost:3000
 | 0 Clean-up | done |
 | 1 Foundation (schema, auth, guards, regions) | done |
 | 5 Demo seed | pulled forward, done (smoke script still to do) |
-| 2 Lifecycle core | in progress — see log |
+| 2 Lifecycle core | mostly done — remaining items listed in the log |
 | 3 Proposals, funding, milestones | not started |
 | 4 Closure, credentials, scores | not started |
 | 6 Design (use `.claude/skills/impeccable` guidance) | not started |
@@ -61,3 +61,25 @@ Format: date · who · branch · what changed (files) · what is unfinished · a
 
 - 2026-11-26 · Claude Code · main · Phases 0–1, demo seed, one-click demo login, real dashboards, India map,
   approvals queue. DB moved to local PostgreSQL 19 (5434). Tagged `demo-ready`. Next: Phase 2.
+- 2026-11-26 · Claude Code · phase-2-lifecycle → merged to main · Phase 2 core.
+  - Added: `src/server/lifecycle.ts` (the ONLY place challenge status changes: `transition()`, `allowedActions()`,
+    `priority()`), `src/server/ledger.ts` (hash-chained audit log, ordered by `seq`; `appendLedger()` / `verifyLedger()`),
+    `POST /api/challenges/[id]/actions` (VERIFY, REJECT, MERGE, ASSIGN, ENDORSE), `GET /api/ledger/chain`,
+    `src/server/lifecycle.test.ts`. Migrations `lifecycle_core`, `ledger_sequence` (the second was hand-written because
+    `prisma migrate dev` refuses non-interactive runs for it; apply with `npx prisma migrate deploy`).
+  - Changed: validate route uses `transition()`; submit stores `submitterId`, `urgency` and writes the ledger in the same
+    transaction; `notifyUsersByRole` is scoped per challenge (`audienceWhere`); officer queue returns priority, overdue,
+    endorsements, `allowedActions` and is sorted needs-action-first; officer cards show Verify/Reject/Merge from
+    `allowedActions`; track page shows reject/merge outcome, endorsement count, "This affects me too", stage dates from the ledger.
+    Seed: submitters, urgency, endorsements, one REJECTED + one MERGED report, ledger history appended in time order.
+  - DECISION: status names were kept (SUBMITTED, AI_PROCESSED, VALIDATED = verified/open for proposals, ...) and REJECTED,
+    MERGED were added, instead of renaming to the plan's OPEN_FOR_PROPOSALS etc. Renaming would break every screen; do it
+    only together with the Phase 3 proposal rework, if at all.
+  - Rule for everyone: any new status change MUST go through `transition()` in `src/server/lifecycle.ts`, and any new audit
+    entry through `appendLedger()` — never `prisma.challenge.update({ status })` or `prisma.auditLog.create` directly.
+  - Phase 2 still open: (1) submit form "endorse instead" on the duplicate warning (call ENDORSE on the similar report);
+    (2) tighter submission rules from REBUILD_PLAN §6 (title 5–120, description 30–2000, rate limit, honeypot);
+    (3) let the officer edit SDG tags before Verify (API already accepts `sdgTags`); (4) funnel chips for REJECTED, MERGED,
+    OVERDUE (counts already returned by the API); (5) `hei/teams/create` still sets TEAM_FORMED directly — move into
+    `transition()` when Phase 3 reworks teams into proposals.
+

@@ -101,6 +101,30 @@ export default function GovernmentDashboard() {
     const [auditDateTo, setAuditDateTo] = useState('');
     const [auditSearch, setAuditSearch] = useState('');
 
+    // Officer actions (verify / reject / merge) go through POST /api/challenges/[id]/actions;
+    // the buttons shown come from each challenge's allowedActions, computed on the server.
+    const [reloadKey, setReloadKey] = useState(0);
+    const [actionBusy, setActionBusy] = useState<string | null>(null);
+    const [actionMessage, setActionMessage] = useState<{ ok: boolean; text: string } | null>(null);
+    const [mergeFor, setMergeFor] = useState<string | null>(null);
+    const [mergeTarget, setMergeTarget] = useState('');
+    const runAction = async (ch: any, action: 'VERIFY' | 'REJECT' | 'MERGE', extra: Record<string, unknown> = {}) => {
+        if (action === 'REJECT') {
+            const reason = window.prompt(`Why is "${ch.title}" not being taken up? The citizen will see this (10-500 characters).`);
+            if (!reason) return;
+            extra = { reason };
+        }
+        setActionBusy(ch.id);
+        setActionMessage(null);
+        const res = await fetch(`/api/challenges/${ch.id}/actions`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ...extra }),
+        }).then((r) => r.json()).catch(() => ({ success: false, error: 'Could not reach the server.' }));
+        setActionBusy(null);
+        setMergeFor(null);
+        setActionMessage(res.success ? { ok: true, text: `"${ch.title}" is now ${String(res.data.status).toLowerCase().replace(/_/g, ' ')}.` } : { ok: false, text: res.error ?? 'Action failed.' });
+        if (res.success) setReloadKey((k) => k + 1);
+    };
+
     // Fetch challenge density & equity data
     useEffect(() => {
         fetch('/api/government/challenge-density')
@@ -148,7 +172,7 @@ export default function GovernmentDashboard() {
                 }
             })
             .catch((err) => console.warn('Risk flags fetch error:', err));
-    }, []);
+    }, [reloadKey]);
 
     const handleEscalate = async (challengeId: string) => {
         setEscalatingId(challengeId);
@@ -762,6 +786,9 @@ export default function GovernmentDashboard() {
                 </div>
 
                 {/* Challenge Cards (Grid View) */}
+                {actionMessage && (
+                    <p role="status" className={`mb-3 text-sm rounded-lg px-3 py-2 border ${actionMessage.ok ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'}`}>{actionMessage.text}</p>
+                )}
                 {viewMode === 'cards' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5">
                         {filteredChallenges.map((ch) => {
@@ -877,12 +904,16 @@ export default function GovernmentDashboard() {
                                     {/* Footer Section: University assignment & Escalation Status */}
                                     <div className="pt-3 border-t border-slate-100 flex flex-col gap-3">
                                         <div className="flex items-center justify-between text-xs">
-                                            <div className="text-[11px] text-slate-500">
-                                                <span className="text-slate-400">Status updated: </span>
-                                                <span className="font-semibold text-slate-700">
-                                                    {ch.daysSinceUpdate === 0 ? 'Today' : `${ch.daysSinceUpdate}d ago`}
-                                                </span>
+                                            <div className="text-[11px] text-slate-500" title={ch.priorityBreakdown ? `Severity ${ch.priorityBreakdown.severity} · Endorsements ${ch.priorityBreakdown.endorsements} · Area backlog ${ch.priorityBreakdown.areaBacklog} · Waiting ${ch.priorityBreakdown.waiting} (weights 35/25/20/20)` : undefined}>
+                                                <span className="text-slate-400">Priority </span>
+                                                <span className="font-bold text-slate-800">{ch.priority ?? '—'}</span>
+                                                <span className="text-slate-400"> · {ch.endorsements ?? 0} endorsed · {ch.urgency?.toLowerCase()}</span>
                                             </div>
+                                            {ch.isOverdue && (
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-rose-100 text-rose-800 border border-rose-300">
+                                                    Overdue · {ch.daysWaiting}d
+                                                </span>
+                                            )}
 
                                             {/* Escalation Due Badge */}
                                             {ch.isEscalationDue && (
@@ -902,15 +933,39 @@ export default function GovernmentDashboard() {
                                             </span>
                                         </div>
 
+                                        {ch.rejectReason && <p className="text-[11px] text-rose-700 bg-rose-50 border border-rose-100 rounded-lg p-2">Rejected: {ch.rejectReason}</p>}
+                                        {ch.status === 'MERGED' && <p className="text-[11px] text-slate-600 bg-slate-50 border border-slate-100 rounded-lg p-2">Merged into {challengesList.find((c) => c.id === ch.mergedIntoId)?.title ?? 'another report'}</p>}
+                                        {(ch.allowedActions?.includes('REJECT') || ch.allowedActions?.includes('MERGE')) && (
+                                            <div className="flex items-center gap-2">
+                                                {ch.allowedActions.includes('VERIFY') && (
+                                                    <button type="button" disabled={actionBusy === ch.id} onClick={() => runAction(ch, 'VERIFY')} className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50">Verify</button>
+                                                )}
+                                                <button type="button" disabled={actionBusy === ch.id} onClick={() => runAction(ch, 'REJECT')} className="flex-1 py-1.5 text-xs font-semibold rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50 disabled:opacity-50">Reject</button>
+                                                <button type="button" disabled={actionBusy === ch.id} onClick={() => { setMergeFor(mergeFor === ch.id ? null : ch.id); setMergeTarget(''); }} className="flex-1 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-50">Merge…</button>
+                                            </div>
+                                        )}
+                                        {mergeFor === ch.id && (
+                                            <div className="flex items-center gap-2">
+                                                <label htmlFor={`merge-${ch.id}`} className="sr-only">Merge into</label>
+                                                <select id={`merge-${ch.id}`} value={mergeTarget} onChange={(e) => setMergeTarget(e.target.value)} className="flex-1 text-xs border border-slate-300 rounded-lg px-2 py-1.5">
+                                                    <option value="">Merge into…</option>
+                                                    {challengesList.filter((c) => c.id !== ch.id && c.district === ch.district && !['COMPLETED', 'DEPLOYED', 'REJECTED', 'MERGED'].includes(c.status)).map((c) => (
+                                                        <option key={c.id} value={c.id}>{c.title}</option>
+                                                    ))}
+                                                </select>
+                                                <button type="button" disabled={!mergeTarget || actionBusy === ch.id} onClick={() => runAction(ch, 'MERGE', { targetId: mergeTarget })} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-white disabled:opacity-50">Merge</button>
+                                            </div>
+                                        )}
+
                                         {/* Action Buttons */}
                                         <div className="flex items-center gap-2 pt-1">
-                                            <button
+                                            {(ch.allowedActions?.includes('VERIFY') || ch.allowedActions?.includes('ASSIGN')) && <button
                                                 onClick={() => handleOpenValidateRoute(ch)}
                                                 className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-xs transition-colors cursor-pointer"
                                             >
                                                 <Sparkles className="w-3.5 h-3.5" />
-                                                <span>Validate &amp; Route</span>
-                                            </button>
+                                                <span>{ch.allowedActions?.includes('ASSIGN') ? 'Route to university' : 'Verify & route'}</span>
+                                            </button>}
 
                                             <a
                                                 href={`/project/${ch.projectId || ch.projectTeamId || ch.id}/ledger`}

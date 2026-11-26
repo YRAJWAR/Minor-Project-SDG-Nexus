@@ -37,6 +37,11 @@ interface AssignedHEI {
 }
 
 interface ChallengeStatusData {
+    endorsements?: number;
+    rejectReason?: string | null;
+    mergedInto?: { id: string; title: string } | null;
+    allowedActions?: string[];
+    signedIn?: boolean;
     id: string;
     title: string;
     description: string;
@@ -82,6 +87,14 @@ export default function TrackChallengePage() {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [copied, setCopied] = useState<boolean>(false);
+    const [reload, setReload] = useState(0);
+    const [endorseMsg, setEndorseMsg] = useState<string | null>(null);
+    const endorse = async () => {
+        const res = await fetch(`/api/challenges/${challengeId}/actions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'ENDORSE' }) })
+            .then((r) => r.json()).catch(() => ({ success: false, error: 'Could not reach the server.' }));
+        setEndorseMsg(res.success ? 'Thanks — your support was recorded.' : res.error);
+        if (res.success) setReload((n) => n + 1);
+    };
 
     useEffect(() => {
         if (!challengeId) return;
@@ -104,7 +117,7 @@ export default function TrackChallengePage() {
         };
 
         fetchStatus();
-    }, [challengeId]);
+    }, [challengeId, reload]);
 
     // Share Button: Copies URL to clipboard with "Share this challenge"
     const handleShare = () => {
@@ -223,6 +236,24 @@ export default function TrackChallengePage() {
                 {/* Horizontal on >= 640px, stacks vertically on < 640px      */}
                 {/* ========================================================= */}
                 <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800/90 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
+                    {data.status === 'REJECTED' && (
+                        <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-200 text-sm p-4">
+                            <strong>Not taken up by the district office.</strong> {data.rejectReason}
+                        </p>
+                    )}
+                    {data.status === 'MERGED' && data.mergedInto && (
+                        <p className="rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-200 text-sm p-4">
+                            This report was merged into <a className="underline" href={`/track/${data.mergedInto.id}`}>{data.mergedInto.title}</a>, which is being followed up. Your support was added to it.
+                        </p>
+                    )}
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-slate-300">
+                        <span><strong className="text-white">{data.endorsements ?? 0}</strong> people say this affects them too</span>
+                        {data.allowedActions?.includes('ENDORSE') && (
+                            <button type="button" onClick={endorse} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold">This affects me too</button>
+                        )}
+                        {!data.signedIn && <a href={`/login?next=/track/${challengeId}`} className="text-xs underline text-slate-400">Sign in to support this report</a>}
+                        {endorseMsg && <span role="status" className="text-xs text-emerald-300">{endorseMsg}</span>}
+                    </div>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-800">
                         <div>
                             <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">

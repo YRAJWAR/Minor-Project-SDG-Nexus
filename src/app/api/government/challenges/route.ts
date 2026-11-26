@@ -129,8 +129,8 @@ export async function GET(req: NextRequest) {
             }
         }
 
-        // Highest priority first: the officer's work queue.
-        filteredChallenges = [...filteredChallenges].sort((a, b) => b.priority - a.priority);
+        // The officer's work queue: reports needing their action first, each group by priority.
+        filteredChallenges = [...filteredChallenges].sort((a, b) => Number(b.allowedActions.length > 0) - Number(a.allowedActions.length > 0) || b.priority - a.priority);
 
         return NextResponse.json({
             success: true,

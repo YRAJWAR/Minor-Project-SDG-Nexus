@@ -1,3 +1,5 @@
+> **Status (27 Nov 2026): these prompts are finished — Phases 0–7 are done in code. For new work, start with Prompt 0, then read the latest HANDOFF.md log entry for what is next.**
+
 # Prompts for Google Antigravity — continue Phase 3
 
 Work stopped on branch `phase-3-funding` (pushed to GitHub, NOT merged to main). Phase 3 code is written and committed;

@@ -49,12 +49,12 @@ npm run dev                 # http://localhost:3000
 |---|---|
 | 0 Clean-up | done |
 | 1 Foundation (schema, auth, guards, regions) | done |
-| 5 Demo seed | pulled forward, done (smoke script still to do) |
+| 5 Demo seed + checks | done (`npm run smoke` passes end to end) |
 | 2 Lifecycle core | done |
 | 3 Proposals, funding, milestones | done |
 | 4 Closure, credentials, scores | done |
 | 6 Design (use `.claude/skills/impeccable` guidance) | done — see DESIGN.md |
-| 7 Ship | not started |
+| 7 Ship | code ready; hosting (Neon/Supabase DB + new Vercel project) is the owner's step — see README "Deploy" |
 
 ## Log (newest last — every assistant adds an entry before stopping)
 Format: date · who · branch · what changed (files) · what is unfinished · anything the next one must know.
@@ -157,4 +157,11 @@ Format: date · who · branch · what changed (files) · what is unfinished · a
   - All `initial={{ opacity: 0 ...}}` motion starts changed to opacity 1, so content is visible even when animation frames are paused.
   - Checks: 17 tests, build passes; officer, faculty and map pages checked in the browser.
   - Next: Phase 5 smoke script, Phase 7 ship.
+- 2026-11-27 · Claude Code · phase-7-ship → merged to main · Phase 5 checks + Phase 7 ship-ready.
+  - `scripts/smoke.ts` (`npm run smoke`, `BASE_URL` for a deployed copy): one report through every stage via the real API as the real
+    roles, including refusals (over-commit, wrong tranche, early close); credential verifies; ledger chain valid. Passed on fresh seed.
+  - `src/instrumentation.ts`: production refuses to start without DATABASE_URL and JWT_SECRET (32+). `npm run vercel-build` =
+    prisma generate + migrate deploy + next build. Removed the `db:push` script (against project rules). `.env.example` trimmed to what is used.
+  - README rewritten (story, run, demo accounts, five-minute demo, deploy steps, project map).
+  - Remaining owner steps: create a hosted PostgreSQL, a NEW Vercel project from this repo with DATABASE_URL + JWT_SECRET, seed it once.
 

@@ -834,8 +834,7 @@ export default function MilestoneTrackerPage() {
                                                         onClick={() => setPhotos((prev) => prev.filter((_, i) => i !== idx))}
                                                         className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-rose-600 text-white rounded-full transition text-[10px]"
                                                     >
-                                                        ✕
-                                                    </button>
+                                                                                                            </button>
                                                 </div>
                                             ))}
                                         </div>

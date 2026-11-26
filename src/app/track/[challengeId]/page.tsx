@@ -145,20 +145,20 @@ export default function TrackChallengePage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col items-center justify-center p-6">
+            <div className="min-h-screen bg-[var(--color-paper)] text-[var(--color-ink)] flex flex-col items-center justify-center p-6">
                 <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4" />
-                <p className="text-slate-400 text-sm">Loading challenge...</p>
+                <p className="text-[var(--color-ink-muted)] text-sm">Loading challenge...</p>
             </div>
         );
     }
 
     if (error || !data) {
         return (
-            <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col items-center justify-center p-6">
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full text-center">
-                    <AlertCircle className="w-12 h-12 text-rose-400 mx-auto mb-3" />
-                    <h1 className="text-xl font-bold text-white mb-2">Challenge Not Found</h1>
-                    <p className="text-sm text-slate-400 mb-6">
+            <div className="min-h-screen bg-[var(--color-paper)] text-[var(--color-ink)] flex flex-col items-center justify-center p-6">
+                <div className="bg-[var(--color-sheet)] border border-[var(--color-rule)] rounded-2xl p-8 max-w-md w-full text-center">
+                    <AlertCircle className="w-12 h-12 text-[var(--color-rust)] mx-auto mb-3" />
+                    <h1 className="text-xl font-bold text-[var(--color-ink)] mb-2">Challenge Not Found</h1>
+                    <p className="text-sm text-[var(--color-ink-muted)] mb-6">
                         {error || 'We could not find a challenge with this tracking ID.'}
                     </p>
                     <div className="flex flex-col gap-2">
@@ -170,7 +170,7 @@ export default function TrackChallengePage() {
                         </Link>
                         <Link
                             href="/citizen/submit"
-                            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition"
+                            className="px-4 py-2.5 rounded-xl bg-[var(--color-sheet)] hover:bg-[var(--color-paper)] text-[var(--color-ink-soft)] text-sm font-medium transition"
                         >
                             Submit a New Challenge
                         </Link>
@@ -194,32 +194,32 @@ export default function TrackChallengePage() {
         : `Submitted by: ${data.submittedByMasked}`;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#060a12] via-[#0b1220] to-[#080d18] text-slate-100 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-[var(--color-paper)] text-[var(--color-ink)] py-8 px-4 sm:px-6 lg:px-8">
             <div className="max-w-6xl mx-auto space-y-8">
                 {/* Header Navigation Bar */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--color-rule)] pb-6">
                     <div className="flex items-center gap-3">
                         <Link
                             href="/track"
-                            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition"
+                            className="p-2 rounded-xl bg-[var(--color-sheet)] hover:bg-[var(--color-paper)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition"
                             title="Back to search"
                         >
                             <ArrowLeft className="w-5 h-5" />
                         </Link>
                         <div>
                             <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">
+                                <span className="text-xs font-bold text-[var(--color-survey)] uppercase tracking-wider">
                                     Public Tracker
                                 </span>
                                 <span className="text-xs text-slate-600">•</span>
-                                <span className="text-xs text-slate-400 font-mono">ID: {data.id}</span>
+                                <span className="text-xs text-[var(--color-ink-muted)] font-mono">ID: {data.id}</span>
                                 {data.submittedVia === 'GRAM_PANCHAYAT_NODE' && (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-[var(--color-forest)] border border-emerald-500/20">
                                         GP Node Aggregated
                                     </span>
                                 )}
                             </div>
-                            <h1 className="text-xl sm:text-2xl font-extrabold text-white mt-1">
+                            <h1 className="text-xl sm:text-2xl font-extrabold text-[var(--color-ink)] mt-1">
                                 {data.title}
                             </h1>
                         </div>
@@ -230,17 +230,17 @@ export default function TrackChallengePage() {
                         <button
                             type="button"
                             onClick={handleShare}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 text-xs font-bold border border-blue-500/30 transition shadow-sm"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-[var(--color-survey)] text-xs font-bold border border-blue-500/30 transition shadow-sm"
                         >
-                            {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+                            {copied ? <CheckCircle2 className="w-4 h-4 text-[var(--color-forest)]" /> : <Share2 className="w-4 h-4" />}
                             <span>{copied ? 'Link Copied to Clipboard!' : 'Share this challenge'}</span>
                         </button>
 
                         <Link
                             href="/citizen/submit"
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-sheet)] hover:bg-[var(--color-paper)] text-[var(--color-ink)] text-xs font-semibold border border-[var(--color-rule)] transition"
                         >
-                            <Sparkles className="w-4 h-4 text-amber-400" />
+                            <Sparkles className="w-4 h-4 text-[var(--color-ochre)]" />
                             <span>Submit New</span>
                         </Link>
                     </div>
@@ -250,67 +250,67 @@ export default function TrackChallengePage() {
                 {/* REQUIREMENT 1: ANIMATED PIPELINE PROGRESS BAR (8 STAGES)  */}
                 {/* Horizontal on >= 640px, stacks vertically on < 640px      */}
                 {/* ========================================================= */}
-                <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800/90 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
+                <div className="bg-[var(--color-sheet)]  border border-[var(--color-rule)] rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
                     {data.status === 'REJECTED' && (
-                        <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-200 text-sm p-4">
+                        <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 text-[var(--color-rust)] text-sm p-4">
                             <strong>Not taken up by the district office.</strong> {data.rejectReason}
                         </p>
                     )}
                     {data.status === 'MERGED' && data.mergedInto && (
-                        <p className="rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-200 text-sm p-4">
+                        <p className="rounded-xl border border-blue-500/30 bg-blue-500/10 text-[var(--color-survey)] text-sm p-4">
                             This report was merged into <a className="underline" href={`/track/${data.mergedInto.id}`}>{data.mergedInto.title}</a>, which is being followed up. Your support was added to it.
                         </p>
                     )}
                     {(data.allowedActions?.includes('CONFIRM') || data.allowedActions?.includes('DISPUTE')) && (
                         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 space-y-3">
-                            <p className="text-sm text-emerald-100"><strong>The university says your problem is fixed.</strong> Is it? Your answer closes the report and counts in their score.</p>
+                            <p className="text-sm text-[var(--color-forest)]"><strong>The university says your problem is fixed.</strong> Is it? Your answer closes the report and counts in their score.</p>
                             {!disputing ? (
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-xs text-slate-300" id="rate-label">Rate the fix:</span>
+                                    <span className="text-xs text-[var(--color-ink-soft)]" id="rate-label">Rate the fix:</span>
                                     <div role="radiogroup" aria-labelledby="rate-label" className="flex gap-1">
                                         {[1, 2, 3, 4, 5].map((n) => (
                                             <button key={n} type="button" role="radio" aria-checked={rating === n} aria-label={`${n} out of 5`} onClick={() => setRating(n)}
-                                                className={`w-8 h-8 rounded-lg text-sm font-bold ${rating >= n ? 'bg-amber-400 text-slate-900' : 'bg-slate-800 text-slate-400'}`}>{n}</button>
+                                                className={`w-8 h-8 rounded-lg text-sm font-bold ${rating >= n ? 'bg-amber-400 text-slate-900' : 'bg-[var(--color-sheet)] text-[var(--color-ink-muted)]'}`}>{n}</button>
                                         ))}
                                     </div>
                                     <button type="button" disabled={!rating} onClick={() => act('CONFIRM')} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold disabled:opacity-50">Yes, it is fixed</button>
-                                    <button type="button" onClick={() => setDisputing(true)} className="px-3 py-1.5 rounded-lg border border-rose-400/40 text-rose-200 text-xs font-semibold">No, it is not fixed</button>
+                                    <button type="button" onClick={() => setDisputing(true)} className="px-3 py-1.5 rounded-lg border border-rose-400/40 text-[var(--color-rust)] text-xs font-semibold">No, it is not fixed</button>
                                 </div>
                             ) : (
                                 <div className="space-y-2">
-                                    <label htmlFor="dispute" className="text-xs text-slate-300">What is still wrong?</label>
-                                    <textarea id="dispute" rows={3} maxLength={500} value={disputeText} onChange={(e) => setDisputeText(e.target.value)} className="w-full rounded-lg bg-slate-800 border border-slate-700 p-2 text-sm text-white" />
+                                    <label htmlFor="dispute" className="text-xs text-[var(--color-ink-soft)]">What is still wrong?</label>
+                                    <textarea id="dispute" rows={3} maxLength={500} value={disputeText} onChange={(e) => setDisputeText(e.target.value)} className="w-full rounded-lg bg-[var(--color-sheet)] border border-[var(--color-rule)] p-2 text-sm text-[var(--color-ink)]" />
                                     <div className="flex gap-2">
                                         <button type="button" disabled={disputeText.trim().length < 10} onClick={() => act('DISPUTE')} className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold disabled:opacity-50">Send dispute</button>
-                                        <button type="button" onClick={() => setDisputing(false)} className="px-3 py-1.5 rounded-lg text-slate-300 text-xs">Cancel</button>
+                                        <button type="button" onClick={() => setDisputing(false)} className="px-3 py-1.5 rounded-lg text-[var(--color-ink-soft)] text-xs">Cancel</button>
                                     </div>
                                 </div>
                             )}
                         </div>
                     )}
-                    {data.confirmedAt && <p className="text-sm text-emerald-200">Confirmed fixed by the citizen · rated {data.citizenRating}/5</p>}
-                    {data.status === 'IN_PROGRESS' && data.disputeReason && <p className="text-sm text-amber-200">Reopened after a dispute: {data.disputeReason}</p>}
-                    {data.verifiedBeneficiaries != null && <p className="text-sm text-slate-300">Resolved · <strong className="text-white">{data.verifiedBeneficiaries.toLocaleString('en-IN')}</strong> people benefit (verified by the district officer)</p>}
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-slate-300">
-                        <span><strong className="text-white">{data.endorsements ?? 0}</strong> people say this affects them too</span>
+                    {data.confirmedAt && <p className="text-sm text-[var(--color-forest)]">Confirmed fixed by the citizen · rated {data.citizenRating}/5</p>}
+                    {data.status === 'IN_PROGRESS' && data.disputeReason && <p className="text-sm text-[var(--color-ochre)]">Reopened after a dispute: {data.disputeReason}</p>}
+                    {data.verifiedBeneficiaries != null && <p className="text-sm text-[var(--color-ink-soft)]">Resolved · <strong className="text-[var(--color-ink)]">{data.verifiedBeneficiaries.toLocaleString('en-IN')}</strong> people benefit (verified by the district officer)</p>}
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--color-ink-soft)]">
+                        <span><strong className="text-[var(--color-ink)]">{data.endorsements ?? 0}</strong> people say this affects them too</span>
                         {data.allowedActions?.includes('ENDORSE') && (
                             <button type="button" onClick={endorse} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold">This affects me too</button>
                         )}
-                        {!data.signedIn && <a href={`/login?next=/track/${challengeId}`} className="text-xs underline text-slate-400">Sign in to support this report</a>}
-                        {endorseMsg && <span role="status" className="text-xs text-emerald-300">{endorseMsg}</span>}
+                        {!data.signedIn && <a href={`/login?next=/track/${challengeId}`} className="text-xs underline text-[var(--color-ink-muted)]">Sign in to support this report</a>}
+                        {endorseMsg && <span role="status" className="text-xs text-[var(--color-forest)]">{endorseMsg}</span>}
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-800">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-[var(--color-rule)]">
                         <div>
-                            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                            <h2 className="text-base sm:text-lg font-bold text-[var(--color-ink)] tracking-tight">
                                 8-Stage Resolution Pipeline Status
                             </h2>
-                            <p className="text-xs text-slate-400 mt-0.5">
+                            <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">
                                 Real-time verification flow from citizen registration to on-ground village deployment.
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-[11px] text-slate-400">Current Phase:</span>
-                            <span className="text-xs font-bold font-mono px-3 py-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                            <span className="text-[11px] text-[var(--color-ink-muted)]">Current Phase:</span>
+                            <span className="text-xs font-bold font-mono px-3 py-1 rounded-lg bg-blue-500/10 text-[var(--color-survey)] border border-blue-500/30">
                                 {data.status.replace(/_/g, ' ')}
                             </span>
                         </div>
@@ -345,7 +345,7 @@ export default function TrackChallengePage() {
                                                 </div>
                                             ) : (
                                                 // Future: Grey outlined circle
-                                                <div className="w-9 h-9 rounded-full border-2 border-slate-700 bg-slate-900 text-slate-500 flex items-center justify-center font-semibold text-xs transition-colors">
+                                                <div className="w-9 h-9 rounded-full border-2 border-[var(--color-rule)] bg-[var(--color-sheet)] text-[var(--color-ink-muted)] flex items-center justify-center font-semibold text-xs transition-colors">
                                                     <span>{index + 1}</span>
                                                 </div>
                                             )}
@@ -355,10 +355,10 @@ export default function TrackChallengePage() {
                                                 <span
                                                     className={`text-[11px] font-bold leading-tight ${
                                                         isCompleted
-                                                            ? 'text-white'
+                                                            ? 'text-[var(--color-ink)]'
                                                             : isCurrent
-                                                            ? 'text-blue-400'
-                                                            : 'text-slate-500'
+                                                            ? 'text-[var(--color-survey)]'
+                                                            : 'text-[var(--color-ink-muted)]'
                                                     }`}
                                                 >
                                                     {stage.title}
@@ -366,12 +366,12 @@ export default function TrackChallengePage() {
 
                                                 {/* Timestamp below completed / current stage */}
                                                 {(isCompleted || isCurrent) && stage.timestamp && (
-                                                    <span className="text-[10px] text-slate-400 font-medium mt-0.5">
+                                                    <span className="text-[10px] text-[var(--color-ink-muted)] font-medium mt-0.5">
                                                         {stage.timestamp}
                                                     </span>
                                                 )}
                                                 {isCurrent && (
-                                                    <span className="text-[9px] text-blue-400 font-extrabold uppercase mt-0.5 tracking-wider">
+                                                    <span className="text-[9px] text-[var(--color-survey)] font-extrabold uppercase mt-0.5 tracking-wider">
                                                         Active
                                                     </span>
                                                 )}
@@ -383,7 +383,7 @@ export default function TrackChallengePage() {
                                             <div className="flex-1 h-0.5 mx-1 -mt-6 z-0">
                                                 <div
                                                     className={`h-full transition-all duration-500 ${
-                                                        nextIsCompletedOrCurrent ? 'bg-blue-600' : 'bg-slate-700'
+                                                        nextIsCompletedOrCurrent ? 'bg-blue-600' : 'bg-[var(--color-paper)]'
                                                     }`}
                                                 />
                                             </div>
@@ -409,7 +409,7 @@ export default function TrackChallengePage() {
                                     {hasNext && (
                                         <div
                                             className={`absolute left-4 top-8 bottom-0 w-0.5 -ml-px ${
-                                                isCompleted ? 'bg-blue-600' : 'bg-slate-700'
+                                                isCompleted ? 'bg-blue-600' : 'bg-[var(--color-paper)]'
                                             }`}
                                         />
                                     )}
@@ -425,7 +425,7 @@ export default function TrackChallengePage() {
                                                 <span className="w-2 h-2 bg-white rounded-full" />
                                             </div>
                                         ) : (
-                                            <div className="w-8 h-8 rounded-full border-2 border-slate-700 bg-slate-900 text-slate-500 flex items-center justify-center font-semibold text-xs">
+                                            <div className="w-8 h-8 rounded-full border-2 border-[var(--color-rule)] bg-[var(--color-sheet)] text-[var(--color-ink-muted)] flex items-center justify-center font-semibold text-xs">
                                                 <span>{index + 1}</span>
                                             </div>
                                         )}
@@ -437,21 +437,21 @@ export default function TrackChallengePage() {
                                             <h3
                                                 className={`text-xs font-bold ${
                                                     isCompleted
-                                                        ? 'text-white'
+                                                        ? 'text-[var(--color-ink)]'
                                                         : isCurrent
-                                                        ? 'text-blue-400'
-                                                        : 'text-slate-500'
+                                                        ? 'text-[var(--color-survey)]'
+                                                        : 'text-[var(--color-ink-muted)]'
                                                 }`}
                                             >
                                                 Stage {stage.step}: {stage.title}
                                             </h3>
                                             {stage.timestamp && (isCompleted || isCurrent) && (
-                                                <span className="text-[10px] text-slate-400 font-medium">
+                                                <span className="text-[10px] text-[var(--color-ink-muted)] font-medium">
                                                     {stage.timestamp}
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                                        <p className="text-[11px] text-[var(--color-ink-muted)] mt-0.5 leading-relaxed">
                                             {stage.description}
                                         </p>
                                     </div>
@@ -466,28 +466,28 @@ export default function TrackChallengePage() {
                     {/* Left 2 Columns: Challenge Details */}
                     <div className="lg:col-span-2 space-y-6">
                         {/* Challenge Description Card */}
-                        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+                        <div className="bg-[var(--color-sheet)]  border border-[var(--color-rule)] rounded-2xl p-6 shadow-sm space-y-5">
                             <div>
-                                <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">
+                                <h2 className="text-sm font-bold text-[var(--color-ink-muted)] uppercase tracking-wider mb-2">
                                     Community Problem Statement
                                 </h2>
-                                <p className="text-sm text-slate-200 leading-relaxed">
+                                <p className="text-sm text-[var(--color-ink)] leading-relaxed">
                                     {data.description}
                                 </p>
                             </div>
 
                             {/* Location & SDG Grid */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-800">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-[var(--color-rule)]">
                                 <div>
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                                    <span className="text-xs font-bold text-[var(--color-ink-muted)] uppercase tracking-wider block mb-1.5">
                                         Field Location
                                     </span>
-                                    <div className="flex items-start gap-2 text-xs text-slate-300">
-                                        <MapPin className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                                    <div className="flex items-start gap-2 text-xs text-[var(--color-ink-soft)]">
+                                        <MapPin className="w-4 h-4 text-[var(--color-survey)] flex-shrink-0 mt-0.5" />
                                         <div>
-                                            <p className="font-bold text-white">{data.district}</p>
-                                            {data.block && <p className="text-slate-400">Block: {data.block}</p>}
-                                            <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                                            <p className="font-bold text-[var(--color-ink)]">{data.district}</p>
+                                            {data.block && <p className="text-[var(--color-ink-muted)]">Block: {data.block}</p>}
+                                            <p className="text-[10px] text-[var(--color-ink-muted)] font-mono mt-0.5">
                                                 {data.gpsLat !== null && data.gpsLng !== null ? `GPS: ${data.gpsLat.toFixed(4)}°, ${data.gpsLng.toFixed(4)}°` : 'No GPS recorded'}
                                             </p>
                                         </div>
@@ -495,7 +495,7 @@ export default function TrackChallengePage() {
                                 </div>
 
                                 <div>
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                                    <span className="text-xs font-bold text-[var(--color-ink-muted)] uppercase tracking-wider block mb-1.5">
                                         Target UN SDGs
                                     </span>
                                     <div className="flex flex-wrap gap-1.5">
@@ -504,7 +504,7 @@ export default function TrackChallengePage() {
                                             return (
                                                 <span
                                                     key={tagId}
-                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-white shadow-xs"
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-[var(--color-ink)] shadow-xs"
                                                     style={{ backgroundColor: sdg ? sdg.color : '#059669' }}
                                                 >
                                                     <span>{sdg?.icon}</span>
@@ -517,14 +517,14 @@ export default function TrackChallengePage() {
                             </div>
 
                             {/* Requirement 3: Anonymous Submitter Attribution */}
-                            <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-400">
+                            <div className="pt-4 border-t border-[var(--color-rule)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[var(--color-ink-muted)]">
                                 <div className="flex items-center gap-2">
-                                    <UserCheck className="w-4 h-4 text-blue-400 flex-shrink-0" />
-                                    <span className="font-medium text-slate-200">
+                                    <UserCheck className="w-4 h-4 text-[var(--color-survey)] flex-shrink-0" />
+                                    <span className="font-medium text-[var(--color-ink)]">
                                         {submitterDisplayText}
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-1.5 text-slate-500 text-[11px]">
+                                <div className="flex items-center gap-1.5 text-[var(--color-ink-muted)] text-[11px]">
                                     <Calendar className="w-3.5 h-3.5" />
                                     <span>Logged {new Date(data.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                                 </div>
@@ -533,13 +533,13 @@ export default function TrackChallengePage() {
 
                         {/* Evidence Photos (if present) */}
                         {data.photoUrls && data.photoUrls.length > 0 && (
-                            <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-xl space-y-3">
-                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                            <div className="bg-[var(--color-sheet)]  border border-[var(--color-rule)] rounded-2xl p-6 shadow-sm space-y-3">
+                                <h3 className="text-xs font-bold text-[var(--color-ink-muted)] uppercase tracking-wider">
                                     Ground Evidence Photography
                                 </h3>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                     {data.photoUrls.map((url, i) => (
-                                        <div key={i} className="rounded-xl overflow-hidden border border-slate-800 aspect-video bg-slate-950">
+                                        <div key={i} className="rounded-xl overflow-hidden border border-[var(--color-rule)] aspect-video bg-[var(--color-paper)]">
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img src={url} alt={`Ground evidence ${i + 1}`} className="w-full h-full object-cover" />
                                         </div>
@@ -555,18 +555,18 @@ export default function TrackChallengePage() {
                             <motion.div
                                 initial={{ opacity: 0, y: 15 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="bg-gradient-to-br from-indigo-950/80 via-slate-900 to-slate-900 border border-indigo-700/50 rounded-2xl p-6 shadow-xl space-y-4"
+                                className="bg-[var(--color-paper)] border border-indigo-700/50 rounded-2xl p-6 shadow-sm space-y-4"
                             >
-                                <div className="flex items-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-wider pb-2 border-b border-indigo-900/60">
-                                    <Building2 className="w-4 h-4 text-indigo-400" />
+                                <div className="flex items-center gap-2 text-xs font-bold text-[var(--color-survey)] uppercase tracking-wider pb-2 border-b border-indigo-900/60">
+                                    <Building2 className="w-4 h-4 text-[var(--color-survey)]" />
                                     <span>Who is working on this challenge</span>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <h3 className="text-base font-extrabold text-white">
+                                    <h3 className="text-base font-extrabold text-[var(--color-ink)]">
                                         {data.assignedHEI.name}
                                     </h3>
-                                    <div className="flex items-center gap-1.5 text-xs text-indigo-300">
+                                    <div className="flex items-center gap-1.5 text-xs text-[var(--color-survey)]">
                                         <MapPin className="w-3.5 h-3.5" />
                                         <span>{data.assignedHEI.district}</span>
                                     </div>
@@ -575,9 +575,9 @@ export default function TrackChallengePage() {
                         )}
 
                         {/* How it works */}
-                        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-xl space-y-3 text-xs text-slate-400">
-                            <div className="flex items-center gap-2 text-slate-300 font-bold">
-                                <Shield className="w-4 h-4 text-blue-400" />
+                        <div className="bg-[var(--color-sheet)]  border border-[var(--color-rule)] rounded-2xl p-6 shadow-sm space-y-3 text-xs text-[var(--color-ink-muted)]">
+                            <div className="flex items-center gap-2 text-[var(--color-ink-soft)] font-bold">
+                                <Shield className="w-4 h-4 text-[var(--color-survey)]" />
                                 <span>How this works</span>
                             </div>
                             <p className="leading-relaxed">

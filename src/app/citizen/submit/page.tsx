@@ -298,28 +298,28 @@ export default function CitizenSubmitPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#080d1a] via-[#0d1726] to-[#0a121e] text-slate-100 py-10 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-[var(--color-paper)] text-[var(--color-ink)] py-10 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
                 {/* Portal Banner Header */}
-                <div className="mb-8 text-center sm:text-left flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800/80 pb-6">
+                <div className="mb-8 text-center sm:text-left flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[var(--color-rule)] pb-6">
                     <div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[var(--color-forest)] text-xs font-semibold uppercase tracking-wider mb-2">
                             <Sparkles className="w-3.5 h-3.5" />
                             SDG Nexus • Report a local problem
                         </div>
-                        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+                        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--color-ink)]">
                             Citizen Challenge Submission Portal
                         </h1>
-                        <p className="mt-1 text-sm sm:text-base text-slate-400">
+                        <p className="mt-1 text-sm sm:text-base text-[var(--color-ink-muted)]">
                             Report a problem in your area. A district officer will review it and route it to a university that can solve it.
                         </p>
                     </div>
 
                     <Link
                         href="/track"
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 border border-slate-700 transition"
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-[var(--color-sheet)] hover:bg-[var(--color-paper)] text-[var(--color-ink)] border border-[var(--color-rule)] transition"
                     >
-                        <FileText className="w-4 h-4 text-emerald-400" />
+                        <FileText className="w-4 h-4 text-[var(--color-forest)]" />
                         Track Existing Challenge
                     </Link>
                 </div>
@@ -329,42 +329,42 @@ export default function CitizenSubmitPage() {
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-slate-900/90 backdrop-blur-xl border border-emerald-500/30 rounded-2xl p-6 sm:p-10 shadow-2xl shadow-emerald-500/5 text-center"
+                        className="bg-[var(--color-sheet)]  border border-emerald-500/30 rounded-2xl p-6 sm:p-10 shadow-sm shadow-emerald-500/5 text-center"
                     >
-                        <div className="w-16 h-16 bg-emerald-500/20 border border-emerald-500/40 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-400">
+                        <div className="w-16 h-16 bg-emerald-500/20 border border-emerald-500/40 rounded-full flex items-center justify-center mx-auto mb-4 text-[var(--color-forest)]">
                             <CheckCircle2 className="w-8 h-8" />
                         </div>
-                        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-[var(--color-ink)] mb-2">
                             Challenge Submitted Successfully!
                         </h2>
-                        <p className="text-slate-300 max-w-xl mx-auto text-sm sm:text-base mb-6">
+                        <p className="text-[var(--color-ink-soft)] max-w-xl mx-auto text-sm sm:text-base mb-6">
                             Your report has been saved, tagged with the UN SDGs it relates to, and sent to the district officer for review.
                         </p>
 
                         {/* Tracking Code Box */}
-                        <div className="bg-slate-800/70 border border-slate-700 rounded-xl p-4 max-w-md mx-auto mb-6">
-                            <span className="text-xs text-slate-400 uppercase font-semibold tracking-wider block mb-1">
+                        <div className="bg-[var(--color-sheet)] border border-[var(--color-rule)] rounded-xl p-4 max-w-md mx-auto mb-6">
+                            <span className="text-xs text-[var(--color-ink-muted)] uppercase font-semibold tracking-wider block mb-1">
                                 Unique Challenge ID / Tracking Token
                             </span>
-                            <div className="flex items-center justify-between gap-3 bg-slate-950/60 px-3 py-2 rounded-lg border border-slate-800">
-                                <code className="text-emerald-400 font-mono text-sm sm:text-base break-all">
+                            <div className="flex items-center justify-between gap-3 bg-[var(--color-paper)] px-3 py-2 rounded-lg border border-[var(--color-rule)]">
+                                <code className="text-[var(--color-forest)] font-mono text-sm sm:text-base break-all">
                                     {submittedData.challengeId}
                                 </code>
                                 <button
                                     onClick={() => copyTrackingId(submittedData.challengeId)}
-                                    className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded transition"
+                                    className="p-1.5 hover:bg-[var(--color-sheet)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] rounded transition"
                                     title="Copy to clipboard"
                                 >
-                                    {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                                    {copied ? <CheckCircle2 className="w-4 h-4 text-[var(--color-forest)]" /> : <Copy className="w-4 h-4" />}
                                 </button>
                             </div>
-                            {copied && <span className="text-xs text-emerald-400 mt-1 block">Copied to clipboard!</span>}
+                            {copied && <span className="text-xs text-[var(--color-forest)] mt-1 block">Copied to clipboard!</span>}
                         </div>
 
                         {/* AI Classification Feedback */}
                         {submittedData.sdgTags && submittedData.sdgTags.length > 0 && (
-                            <div className="mb-8 p-4 bg-slate-800/40 border border-slate-700/60 rounded-xl max-w-lg mx-auto">
-                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+                            <div className="mb-8 p-4 bg-[var(--color-sheet)] border border-[var(--color-rule)] rounded-xl max-w-lg mx-auto">
+                                <span className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wider block mb-2">
                                     AI Tagged UN Sustainable Development Goals
                                 </span>
                                 <div className="flex flex-wrap items-center justify-center gap-2">
@@ -373,17 +373,17 @@ export default function CitizenSubmitPage() {
                                         return (
                                             <span
                                                 key={tagId}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-white shadow-sm"
+                                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-[var(--color-ink)] shadow-sm"
                                                 style={{ backgroundColor: sdg ? sdg.color : '#059669' }}
                                             >
-                                                <span>{sdg?.icon || '🎯'}</span>
+                                                <span>{sdg?.icon || ''}</span>
                                                 <span>SDG {tagId}: {sdg?.name || 'Sustainable Goal'}</span>
                                             </span>
                                         );
                                     })}
                                 </div>
                                 {submittedData.reasoning && (
-                                    <p className="text-xs text-slate-400 mt-3 italic text-center">
+                                    <p className="text-xs text-[var(--color-ink-muted)] mt-3 italic text-center">
                                         &ldquo;{submittedData.reasoning}&rdquo;
                                     </p>
                                 )}
@@ -394,7 +394,7 @@ export default function CitizenSubmitPage() {
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                             <Link
                                 href={`/track/${submittedData.challengeId}`}
-                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium shadow-lg shadow-emerald-600/20 transition"
+                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[var(--color-forest)] hover:from-emerald-500 hover:to-teal-500 text-[var(--color-ink)] font-medium shadow-lg shadow-emerald-600/20 transition"
                             >
                                 Track Visual 8-Stage Progress
                                 <ExternalLink className="w-4 h-4" />
@@ -411,7 +411,7 @@ export default function CitizenSubmitPage() {
                                     setGpsLng(null);
                                     setGpsStatus(null);
                                 }}
-                                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition"
+                                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[var(--color-sheet)] hover:bg-[var(--color-paper)] text-[var(--color-ink-soft)] font-medium transition"
                             >
                                 Submit Another Challenge
                             </button>
@@ -419,7 +419,7 @@ export default function CitizenSubmitPage() {
                     </motion.div>
                 ) : (
                     /* 4-Step Form Wizard */
-                    <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/40">
+                    <div className="bg-[var(--color-sheet)]  border border-[var(--color-rule)] rounded-2xl p-6 sm:p-8 shadow-sm shadow-black/40">
                         {/* Progress Stepper Indicator */}
                         <div className="mb-8">
                             <div className="flex items-center justify-between mb-2">
@@ -432,23 +432,23 @@ export default function CitizenSubmitPage() {
                                     <div
                                         key={s.num}
                                         className={`flex items-center gap-2 text-xs sm:text-sm font-medium ${
-                                            step >= s.num ? 'text-emerald-400' : 'text-slate-500'
+                                            step >= s.num ? 'text-[var(--color-forest)]' : 'text-[var(--color-ink-muted)]'
                                         }`}
                                     >
                                         <div
                                             className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs border ${
                                                 step >= s.num
-                                                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
-                                                    : 'bg-slate-800 border-slate-700 text-slate-500'
+                                                    ? 'bg-emerald-500/20 border-emerald-400 text-[var(--color-forest)]'
+                                                    : 'bg-[var(--color-sheet)] border-[var(--color-rule)] text-[var(--color-ink-muted)]'
                                             }`}
                                         >
-                                            {step > s.num ? '✓' : s.num}
+                                            {step > s.num ? <CheckCircle2 className="w-4 h-4" aria-label="done" /> : s.num}
                                         </div>
                                         <span className="hidden sm:inline">{s.name}</span>
                                     </div>
                                 ))}
                             </div>
-                            <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                            <div className="w-full bg-[var(--color-sheet)] h-1.5 rounded-full overflow-hidden">
                                 <div
                                     className="bg-emerald-500 h-full transition-all duration-300 ease-out"
                                     style={{ width: `${((step - 1) / 3) * 100}%` }}
@@ -457,7 +457,7 @@ export default function CitizenSubmitPage() {
                         </div>
 
                         {submitError && (
-                            <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-start gap-3">
+                            <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-[var(--color-rust)] flex items-start gap-3">
                                 <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                                 <div className="text-sm">
                                     <p className="font-semibold">Submission failed</p>
@@ -477,8 +477,8 @@ export default function CitizenSubmitPage() {
                                     className="space-y-6"
                                 >
                                     <div>
-                                        <h2 className="text-xl font-bold text-white mb-1">Select Challenge Category</h2>
-                                        <p className="text-sm text-slate-400">
+                                        <h2 className="text-xl font-bold text-[var(--color-ink)] mb-1">Select Challenge Category</h2>
+                                        <p className="text-sm text-[var(--color-ink-muted)]">
                                             Choose the civic domain that best represents the challenge faced in your community.
                                         </p>
                                     </div>
@@ -495,7 +495,7 @@ export default function CitizenSubmitPage() {
                                                     className={`p-4 rounded-xl border text-left flex items-start gap-3.5 transition-all ${
                                                         isSelected
                                                             ? 'bg-emerald-500/10 border-emerald-500/80 shadow-md shadow-emerald-500/10 ring-1 ring-emerald-500'
-                                                            : 'bg-slate-800/40 border-slate-700/60 hover:bg-slate-800 hover:border-slate-600'
+                                                            : 'bg-[var(--color-sheet)] border-[var(--color-rule)] hover:bg-[var(--color-sheet)] hover:border-[var(--color-rule)]'
                                                     }`}
                                                 >
                                                     <div
@@ -509,11 +509,11 @@ export default function CitizenSubmitPage() {
                                                         <Icon className="w-5 h-5" />
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <span className="text-sm font-semibold text-white block">
+                                                        <span className="text-sm font-semibold text-[var(--color-ink)] block">
                                                             {cat.label}
                                                         </span>
-                                                        <span className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                                                            Target: <span className="text-emerald-400 font-medium">{cat.sdgHint}</span>
+                                                        <span className="text-xs text-[var(--color-ink-muted)] flex items-center gap-1 mt-0.5">
+                                                            Target: <span className="text-[var(--color-forest)] font-medium">{cat.sdgHint}</span>
                                                         </span>
                                                     </div>
                                                 </button>
@@ -521,8 +521,8 @@ export default function CitizenSubmitPage() {
                                         })}
                                     </div>
 
-                                    <div className="pt-4 border-t border-slate-800">
-                                        <label className="block text-sm font-medium text-slate-300 mb-2">
+                                    <div className="pt-4 border-t border-[var(--color-rule)]">
+                                        <label className="block text-sm font-medium text-[var(--color-ink-soft)] mb-2">
                                             Perceived Severity / Urgency
                                         </label>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -533,15 +533,15 @@ export default function CitizenSubmitPage() {
                                                     onClick={() => setUrgency(u.id)}
                                                     className={`p-3 rounded-lg border text-left transition ${
                                                         urgency === u.id
-                                                            ? 'bg-slate-800 border-emerald-500/80 text-white'
-                                                            : 'bg-slate-850 border-slate-700/60 text-slate-400 hover:text-slate-200'
+                                                            ? 'bg-[var(--color-sheet)] border-emerald-500/80 text-[var(--color-ink)]'
+                                                            : 'bg-slate-850 border-[var(--color-rule)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
                                                     }`}
                                                 >
                                                     <div className="flex items-center justify-between text-xs font-semibold">
                                                         <span>{u.label}</span>
-                                                        {urgency === u.id && <span className="text-emerald-400">● Selected</span>}
+                                                        {urgency === u.id && <span className="text-[var(--color-forest)]">● Selected</span>}
                                                     </div>
-                                                    <p className="text-xs text-slate-400 mt-1">{u.desc}</p>
+                                                    <p className="text-xs text-[var(--color-ink-muted)] mt-1">{u.desc}</p>
                                                 </button>
                                             ))}
                                         </div>
@@ -570,34 +570,34 @@ export default function CitizenSubmitPage() {
                                     className="space-y-6"
                                 >
                                     <div>
-                                        <h2 className="text-xl font-bold text-white mb-1">Geographic Location</h2>
-                                        <p className="text-sm text-slate-400">
+                                        <h2 className="text-xl font-bold text-[var(--color-ink)] mb-1">Geographic Location</h2>
+                                        <p className="text-sm text-[var(--color-ink-muted)]">
                                             Tell us where the problem is.
                                         </p>
                                     </div>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label htmlFor="cs-state" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                                            <label htmlFor="cs-state" className="block text-xs font-semibold text-[var(--color-ink-soft)] uppercase tracking-wider mb-1.5">
                                                 State / UT *
                                             </label>
-                                            <select id="cs-state" value={state} onChange={(e) => { setState(e.target.value); setDistrict(''); }} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                            <select id="cs-state" value={state} onChange={(e) => { setState(e.target.value); setDistrict(''); }} className="w-full bg-[var(--color-sheet)] border border-[var(--color-rule)] rounded-xl px-3.5 py-2.5 text-[var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-emerald-500">
                                                 <option value="">{regions.length ? 'Choose a state…' : 'Loading…'}</option>
                                                 {regions.map((s) => <option key={s.name} value={s.name}>{s.name}</option>)}
                                             </select>
                                         </div>
                                         <div>
-                                            <label htmlFor="cs-district" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                                            <label htmlFor="cs-district" className="block text-xs font-semibold text-[var(--color-ink-soft)] uppercase tracking-wider mb-1.5">
                                                 District *
                                             </label>
-                                            <select id="cs-district" value={district} onChange={(e) => setDistrict(e.target.value)} disabled={!state} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50">
+                                            <select id="cs-district" value={district} onChange={(e) => setDistrict(e.target.value)} disabled={!state} className="w-full bg-[var(--color-sheet)] border border-[var(--color-rule)] rounded-xl px-3.5 py-2.5 text-[var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50">
                                                 <option value="">{state ? 'Choose a district…' : 'Pick a state first'}</option>
                                                 {districtOptions.map((d) => <option key={d} value={d}>{d}</option>)}
                                             </select>
                                         </div>
 
                                         <div>
-                                            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                                            <label className="block text-xs font-semibold text-[var(--color-ink-soft)] uppercase tracking-wider mb-1.5">
                                                 Block / Tehsil
                                             </label>
                                             <input
@@ -605,12 +605,12 @@ export default function CitizenSubmitPage() {
                                                 placeholder="e.g. Kanke, Namkum, Chas, etc."
                                                 value={block}
                                                 onChange={(e) => setBlock(e.target.value)}
-                                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                className="w-full bg-[var(--color-sheet)] border border-[var(--color-rule)] rounded-xl px-3.5 py-2.5 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                             />
                                         </div>
 
                                         <div className="sm:col-span-2">
-                                            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                                            <label className="block text-xs font-semibold text-[var(--color-ink-soft)] uppercase tracking-wider mb-1.5">
                                                 Village / Ward / Locality
                                             </label>
                                             <input
@@ -618,31 +618,31 @@ export default function CitizenSubmitPage() {
                                                 placeholder="e.g. Boreya Village, Ward 4, Near Primary Health Center"
                                                 value={village}
                                                 onChange={(e) => setVillage(e.target.value)}
-                                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                className="w-full bg-[var(--color-sheet)] border border-[var(--color-rule)] rounded-xl px-3.5 py-2.5 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                             />
                                         </div>
                                     </div>
 
                                     {/* GPS Coordinate Auto-Detection */}
-                                    <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div className="p-4 rounded-xl bg-[var(--color-sheet)] border border-[var(--color-rule)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                         <div className="flex items-start gap-3">
-                                            <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                            <div className="p-2.5 rounded-lg bg-emerald-500/10 text-[var(--color-forest)] border border-emerald-500/20">
                                                 <MapPin className="w-5 h-5" />
                                             </div>
                                             <div>
-                                                <h3 className="text-sm font-semibold text-white">GPS Coordinate Precision</h3>
-                                                <p className="text-xs text-slate-400">
+                                                <h3 className="text-sm font-semibold text-[var(--color-ink)]">GPS Coordinate Precision</h3>
+                                                <p className="text-xs text-[var(--color-ink-muted)]">
                                                     Pinpoint coordinates feed our Leaflet SDG Heatmap and District Command Center.
                                                 </p>
                                                 {gpsLat && gpsLng && (
-                                                    <div className="mt-2 inline-flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-mono">
+                                                    <div className="mt-2 inline-flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-500/20 border border-emerald-500/30 text-[var(--color-forest)] text-xs font-mono">
                                                         <span>Lat: {gpsLat}</span>
                                                         <span>•</span>
                                                         <span>Lng: {gpsLng}</span>
                                                     </div>
                                                 )}
                                                 {gpsStatus && !gpsLat && (
-                                                    <p className="text-xs text-amber-400 mt-1">{gpsStatus}</p>
+                                                    <p className="text-xs text-[var(--color-ochre)] mt-1">{gpsStatus}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -651,9 +651,9 @@ export default function CitizenSubmitPage() {
                                             type="button"
                                             onClick={handleDetectLocation}
                                             disabled={gpsDetecting}
-                                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold transition disabled:opacity-50"
+                                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-paper)] hover:bg-slate-600 text-[var(--color-ink)] text-xs font-semibold transition disabled:opacity-50"
                                         >
-                                            <Navigation className={`w-4 h-4 ${gpsDetecting ? 'animate-spin' : 'text-emerald-400'}`} />
+                                            <Navigation className={`w-4 h-4 ${gpsDetecting ? 'animate-spin' : 'text-[var(--color-forest)]'}`} />
                                             {gpsDetecting ? 'Detecting...' : 'Detect My Location'}
                                         </button>
                                     </div>
@@ -662,7 +662,7 @@ export default function CitizenSubmitPage() {
                                         <button
                                             type="button"
                                             onClick={() => setStep(1)}
-                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition"
+                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-sheet)] hover:bg-[var(--color-paper)] text-[var(--color-ink-soft)] font-medium transition"
                                         >
                                             <ArrowLeft className="w-4 h-4" />
                                             Back
@@ -690,14 +690,14 @@ export default function CitizenSubmitPage() {
                                     className="space-y-6"
                                 >
                                     <div>
-                                        <h2 className="text-xl font-bold text-white mb-1">Challenge Details & Evidence</h2>
-                                        <p className="text-sm text-slate-400">
+                                        <h2 className="text-xl font-bold text-[var(--color-ink)] mb-1">Challenge Details & Evidence</h2>
+                                        <p className="text-sm text-[var(--color-ink-muted)]">
                                             Provide a detailed summary. Our AI engine uses this description to identify UN SDG targets.
                                         </p>
                                     </div>
 
                                     <div>
-                                        <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                                        <label className="block text-xs font-semibold text-[var(--color-ink-soft)] uppercase tracking-wider mb-1.5">
                                             Challenge Title *
                                         </label>
                                         <input
@@ -706,16 +706,16 @@ export default function CitizenSubmitPage() {
                                             value={title}
                                             maxLength={120}
                                             onChange={(e) => setTitle(e.target.value)}
-                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                                            className="w-full bg-[var(--color-sheet)] border border-[var(--color-rule)] rounded-xl px-3.5 py-2.5 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                                         />
                                     </div>
 
                                     <div>
                                         <div className="flex items-center justify-between mb-1.5">
-                                            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                            <label className="block text-xs font-semibold text-[var(--color-ink-soft)] uppercase tracking-wider">
                                                 Detailed Problem Description *
                                             </label>
-                                            <span className="text-xs text-slate-500">
+                                            <span className="text-xs text-[var(--color-ink-muted)]">
                                                 {description.trim().length} / 2000 characters (minimum 30)
                                             </span>
                                         </div>
@@ -725,7 +725,7 @@ export default function CitizenSubmitPage() {
                                             value={description}
                                             maxLength={2000}
                                             onChange={(e) => setDescription(e.target.value)}
-                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                                            className="w-full bg-[var(--color-sheet)] border border-[var(--color-rule)] rounded-xl p-3.5 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                                         />
                                     </div>
 
@@ -735,19 +735,19 @@ export default function CitizenSubmitPage() {
 
                                     {/* Media Upload with Client-Side Canvas Compression */}
                                     <div>
-                                        <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                                        <label className="block text-xs font-semibold text-[var(--color-ink-soft)] uppercase tracking-wider mb-1.5">
                                             Ground Evidence Photos (Max 5, auto-compressed to &lt;1200px)
                                         </label>
 
                                         <div
                                             onClick={() => fileInputRef.current?.click()}
-                                            className="border-2 border-dashed border-slate-700 hover:border-emerald-500/60 bg-slate-800/30 hover:bg-slate-800/60 rounded-xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center"
+                                            className="border-2 border-dashed border-[var(--color-rule)] hover:border-emerald-500/60 bg-[var(--color-sheet)] hover:bg-[var(--color-sheet)] rounded-xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center"
                                         >
-                                            <UploadCloud className="w-8 h-8 text-slate-400 mb-2" />
-                                            <p className="text-sm font-medium text-slate-200">
+                                            <UploadCloud className="w-8 h-8 text-[var(--color-ink-muted)] mb-2" />
+                                            <p className="text-sm font-medium text-[var(--color-ink)]">
                                                 Click to upload ground photos or drag and drop
                                             </p>
-                                            <p className="text-xs text-slate-500 mt-1">
+                                            <p className="text-xs text-[var(--color-ink-muted)] mt-1">
                                                 Images are compressed client-side via HTML5 Canvas API before uploading.
                                             </p>
                                         </div>
@@ -762,8 +762,8 @@ export default function CitizenSubmitPage() {
                                         />
 
                                         {isCompressing && (
-                                            <p className="text-xs text-emerald-400 mt-2 flex items-center gap-2">
-                                                <span className="animate-spin">⏳</span> Compressing images client-side...
+                                            <p className="text-xs text-[var(--color-forest)] mt-2 flex items-center gap-2">
+                                                Compressing images client-side...
                                             </p>
                                         )}
 
@@ -773,7 +773,7 @@ export default function CitizenSubmitPage() {
                                                 {photos.map((p, idx) => (
                                                     <div
                                                         key={idx}
-                                                        className="relative rounded-lg overflow-hidden border border-slate-700 bg-slate-800 aspect-square group"
+                                                        className="relative rounded-lg overflow-hidden border border-[var(--color-rule)] bg-[var(--color-sheet)] aspect-square group"
                                                     >
                                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                                         <img
@@ -791,7 +791,7 @@ export default function CitizenSubmitPage() {
                                                         >
                                                             <X className="w-3.5 h-3.5" />
                                                         </button>
-                                                        <div className="absolute bottom-0 inset-x-0 bg-black/60 text-[10px] text-slate-300 px-1 py-0.5 truncate text-center">
+                                                        <div className="absolute bottom-0 inset-x-0 bg-black/60 text-[10px] text-[var(--color-ink-soft)] px-1 py-0.5 truncate text-center">
                                                             {(p.compressedSize / 1024).toFixed(0)} KB
                                                         </div>
                                                     </div>
@@ -804,7 +804,7 @@ export default function CitizenSubmitPage() {
                                         <button
                                             type="button"
                                             onClick={() => setStep(2)}
-                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition"
+                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-sheet)] hover:bg-[var(--color-paper)] text-[var(--color-ink-soft)] font-medium transition"
                                         >
                                             <ArrowLeft className="w-4 h-4" />
                                             Back
@@ -817,7 +817,6 @@ export default function CitizenSubmitPage() {
                                         >
                                             {isCheckingDuplicate ? (
                                                 <>
-                                                    <span className="animate-spin text-xs">⏳</span>
                                                     Checking Duplicates...
                                                 </>
                                             ) : (
@@ -841,8 +840,8 @@ export default function CitizenSubmitPage() {
                                     className="space-y-6"
                                 >
                                     <div>
-                                        <h2 className="text-xl font-bold text-white mb-1">Submitter Identity & Final Review</h2>
-                                        <p className="text-sm text-slate-400">
+                                        <h2 className="text-xl font-bold text-[var(--color-ink)] mb-1">Submitter Identity & Final Review</h2>
+                                        <p className="text-sm text-[var(--color-ink-muted)]">
                                             Choose whether to submit anonymously or provide contact details for verification updates.
                                         </p>
                                     </div>
@@ -852,17 +851,17 @@ export default function CitizenSubmitPage() {
                                         <motion.div
                                             initial={{ opacity: 0, y: -8 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className="p-5 rounded-2xl bg-amber-500/10 border-2 border-amber-500/40 text-amber-200 space-y-3 shadow-lg shadow-amber-500/5"
+                                            className="p-5 rounded-2xl bg-amber-500/10 border-2 border-amber-500/40 text-[var(--color-ochre)] space-y-3 shadow-lg shadow-amber-500/5"
                                         >
                                             <div className="flex items-start gap-3">
-                                                <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                                                <AlertTriangle className="w-5 h-5 text-[var(--color-ochre)] flex-shrink-0 mt-0.5" />
                                                 <div>
-                                                    <h4 className="font-bold text-amber-300 text-sm">
+                                                    <h4 className="font-bold text-[var(--color-ochre)] text-sm">
                                                         Potential Duplicate Challenge Detected
                                                     </h4>
-                                                    <p className="text-xs text-amber-200/90 mt-1 leading-relaxed">
+                                                    <p className="text-xs text-[var(--color-ochre)]/90 mt-1 leading-relaxed">
                                                         A similar challenge was submitted {duplicateResult.similarChallengeDaysAgo || 14} days ago in {district}:
-                                                        <span className="font-semibold text-white italic"> "{duplicateResult.similarChallengeTitle}"</span>.
+                                                        <span className="font-semibold text-[var(--color-ink)] italic"> "{duplicateResult.similarChallengeTitle}"</span>.
                                                         Is your problem the same one?
                                                     </p>
                                                 </div>
@@ -881,33 +880,33 @@ export default function CitizenSubmitPage() {
                                                     onClick={() => {
                                                         setDuplicateDecision('dismissed');
                                                     }}
-                                                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition cursor-pointer"
+                                                    className="px-4 py-2 rounded-xl bg-[var(--color-sheet)] hover:bg-[var(--color-paper)] text-[var(--color-ink)] font-semibold text-xs border border-[var(--color-rule)] transition cursor-pointer"
                                                 >
                                                     No, this is different
                                                 </button>
                                             </div>
-                                            {endorseError && <p role="alert" className="pl-8 text-xs text-rose-300">{endorseError}</p>}
+                                            {endorseError && <p role="alert" className="pl-8 text-xs text-[var(--color-rust)]">{endorseError}</p>}
                                         </motion.div>
                                     )}
 
                                     {duplicateDecision === 'merged' && (
-                                        <div role="status" className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-200 text-sm">
+                                        <div role="status" className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[var(--color-forest)] text-sm">
                                             Your support was added to &ldquo;{duplicateResult?.similarChallengeTitle}&rdquo;. No new report is needed; you can follow it here:{' '}
                                             <Link href={`/track/${duplicateResult?.similarChallengeId}`} className="underline font-semibold">track that report</Link>.
                                         </div>
                                     )}
 
                                     {/* Anonymous Toggle */}
-                                    <div className="p-4 rounded-xl bg-slate-800/60 border border-slate-700 flex items-center justify-between gap-4">
+                                    <div className="p-4 rounded-xl bg-[var(--color-sheet)] border border-[var(--color-rule)] flex items-center justify-between gap-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-2.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                            <div className="p-2.5 rounded-lg bg-indigo-500/10 text-[var(--color-survey)] border border-indigo-500/20">
                                                 <EyeOff className="w-5 h-5" />
                                             </div>
                                             <div>
-                                                <span className="text-sm font-semibold text-white block">
+                                                <span className="text-sm font-semibold text-[var(--color-ink)] block">
                                                     Submit Anonymously
                                                 </span>
-                                                <span className="text-xs text-slate-400 block">
+                                                <span className="text-xs text-[var(--color-ink-muted)] block">
                                                     Your name and phone will not be shared publicly or displayed on tracking pages.
                                                 </span>
                                             </div>
@@ -924,7 +923,7 @@ export default function CitizenSubmitPage() {
                                     {!isAnonymous && (
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                                                <label className="block text-xs font-semibold text-[var(--color-ink-soft)] uppercase tracking-wider mb-1.5">
                                                     Your Full Name (Optional)
                                                 </label>
                                                 <input
@@ -932,12 +931,12 @@ export default function CitizenSubmitPage() {
                                                     placeholder="e.g. Ramesh Mahto"
                                                     value={submitterName}
                                                     onChange={(e) => setSubmitterName(e.target.value)}
-                                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                                                    className="w-full bg-[var(--color-sheet)] border border-[var(--color-rule)] rounded-xl px-3.5 py-2.5 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                                                 />
                                             </div>
 
                                             <div>
-                                                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                                                <label className="block text-xs font-semibold text-[var(--color-ink-soft)] uppercase tracking-wider mb-1.5">
                                                     Mobile Number (Optional)
                                                 </label>
                                                 <input
@@ -945,32 +944,32 @@ export default function CitizenSubmitPage() {
                                                     placeholder="e.g. 9876543210"
                                                     value={submitterPhone}
                                                     onChange={(e) => setSubmitterPhone(e.target.value)}
-                                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                                                    className="w-full bg-[var(--color-sheet)] border border-[var(--color-rule)] rounded-xl px-3.5 py-2.5 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                                                 />
                                             </div>
                                         </div>
                                     )}
 
                                     {/* Privacy Assurance Banner */}
-                                    <div className="p-3.5 rounded-xl bg-slate-850 border border-slate-700/80 flex items-start gap-3 text-xs text-slate-400">
-                                        <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                                    <div className="p-3.5 rounded-xl bg-slate-850 border border-[var(--color-rule)] flex items-start gap-3 text-xs text-[var(--color-ink-muted)]">
+                                        <ShieldCheck className="w-4 h-4 text-[var(--color-forest)] flex-shrink-0 mt-0.5" />
                                         <span>
                                             Strict Data Protection: In compliance with digital privacy standards, SDG Nexus does not store Aadhaar numbers or biometric information. Submitter identity is masked for public ledger records.
                                         </span>
                                     </div>
 
                                     {/* Gram Panchayat / CSC Node Submission Toggle */}
-                                    <div className="p-4 rounded-xl bg-slate-800/60 border border-slate-700 space-y-3">
+                                    <div className="p-4 rounded-xl bg-[var(--color-sheet)] border border-[var(--color-rule)] space-y-3">
                                         <div className="flex items-center justify-between gap-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                                <div className="p-2.5 rounded-lg bg-emerald-500/10 text-[var(--color-forest)] border border-emerald-500/20">
                                                     <Building2 className="w-5 h-5" />
                                                 </div>
                                                 <div>
-                                                    <span className="text-sm font-semibold text-white block">
+                                                    <span className="text-sm font-semibold text-[var(--color-ink)] block">
                                                         Submitting for someone else (CSC / local body)
                                                     </span>
-                                                    <span className="text-xs text-slate-400 block">
+                                                    <span className="text-xs text-[var(--color-ink-muted)] block">
                                                         Is this being submitted on behalf of a community member at a CSC/GP Node?
                                                     </span>
                                                 </div>
@@ -985,51 +984,51 @@ export default function CitizenSubmitPage() {
                                         </div>
 
                                         {isGpNode && (
-                                            <div className="pt-2 border-t border-slate-700/60">
-                                                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                                                    CSC / VLE Operator Code <span className="text-emerald-400">*</span>
+                                            <div className="pt-2 border-t border-[var(--color-rule)]">
+                                                <label className="block text-xs font-semibold text-[var(--color-ink-soft)] uppercase tracking-wider mb-1.5">
+                                                    CSC / VLE Operator Code <span className="text-[var(--color-forest)]">*</span>
                                                 </label>
                                                 <input
                                                     type="text"
                                                     placeholder="e.g. VLE-JH-RAN-0824"
                                                     value={vleOperatorCode}
                                                     onChange={(e) => setVleOperatorCode(e.target.value)}
-                                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-mono"
+                                                    className="w-full bg-[var(--color-sheet)] border border-[var(--color-rule)] rounded-xl px-3.5 py-2.5 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-mono"
                                                 />
-                                                <p className="text-[11px] text-slate-400 mt-1">
-                                                    This challenge will be tagged as <span className="text-emerald-400 font-semibold">GP Node</span> in the Government verification queue.
+                                                <p className="text-[11px] text-[var(--color-ink-muted)] mt-1">
+                                                    This challenge will be tagged as <span className="text-[var(--color-forest)] font-semibold">GP Node</span> in the Government verification queue.
                                                 </p>
                                             </div>
                                         )}
                                     </div>
 
                                     {/* Challenge Summary Card */}
-                                    <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-3">
-                                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                    <div className="bg-[var(--color-paper)] border border-[var(--color-rule)] rounded-xl p-4 space-y-3">
+                                        <h3 className="text-xs font-bold text-[var(--color-ink-muted)] uppercase tracking-wider">
                                             Submission Summary
                                         </h3>
                                         <div className="text-sm space-y-2">
                                             <div>
-                                                <span className="text-slate-400">Category: </span>
-                                                <span className="text-white font-medium">{category}</span>
+                                                <span className="text-[var(--color-ink-muted)]">Category: </span>
+                                                <span className="text-[var(--color-ink)] font-medium">{category}</span>
                                             </div>
                                             <div>
-                                                <span className="text-slate-400">Location: </span>
-                                                <span className="text-white font-medium">
+                                                <span className="text-[var(--color-ink-muted)]">Location: </span>
+                                                <span className="text-[var(--color-ink)] font-medium">
                                                     {district}, {state} {block ? `• Block: ${block}` : ''} {village ? `• Village: ${village}` : ''}
                                                 </span>
                                             </div>
                                             <div>
-                                                <span className="text-slate-400">Title: </span>
-                                                <span className="text-white font-medium">{title}</span>
+                                                <span className="text-[var(--color-ink-muted)]">Title: </span>
+                                                <span className="text-[var(--color-ink)] font-medium">{title}</span>
                                             </div>
                                             <div>
-                                                <span className="text-slate-400">Evidence: </span>
-                                                <span className="text-white font-medium">{photos.length} photo(s) attached</span>
+                                                <span className="text-[var(--color-ink-muted)]">Evidence: </span>
+                                                <span className="text-[var(--color-ink)] font-medium">{photos.length} photo(s) attached</span>
                                             </div>
                                             <div>
-                                                <span className="text-slate-400">Submitter: </span>
-                                                <span className="text-white font-medium">
+                                                <span className="text-[var(--color-ink-muted)]">Submitter: </span>
+                                                <span className="text-[var(--color-ink)] font-medium">
                                                     {isAnonymous ? 'Anonymous Citizen' : (submitterName || 'Citizen')}
                                                 </span>
                                             </div>
@@ -1040,7 +1039,7 @@ export default function CitizenSubmitPage() {
                                         <button
                                             type="button"
                                             onClick={() => setStep(3)}
-                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition"
+                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-sheet)] hover:bg-[var(--color-paper)] text-[var(--color-ink-soft)] font-medium transition"
                                         >
                                             <ArrowLeft className="w-4 h-4" />
                                             Back
@@ -1049,11 +1048,10 @@ export default function CitizenSubmitPage() {
                                             type="button"
                                             disabled={submitting || duplicateDecision === 'merged'}
                                             onClick={handleSubmit}
-                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold shadow-lg shadow-emerald-600/30 transition disabled:opacity-50"
+                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 rounded-xl bg-[var(--color-forest)] hover:from-emerald-500 hover:to-teal-500 text-[var(--color-ink)] font-semibold shadow-lg shadow-emerald-600/30 transition disabled:opacity-50"
                                         >
                                             {submitting ? (
                                                 <>
-                                                    <span className="animate-spin">⏳</span>
                                                     Processing & Tagging SDGs...
                                                 </>
                                             ) : (

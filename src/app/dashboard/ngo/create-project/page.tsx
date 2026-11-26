@@ -246,11 +246,11 @@ export default function CreateProjectPage() {
                         </div>
 
                         <div className="p-3 rounded-xl text-xs text-slate-500" style={{ background: 'rgba(6,182,212,0.05)', border: '1px solid rgba(6,182,212,0.1)' }}>
-                            ⚠️ All fields marked with * are required. Projects cannot be saved without complete structured data.
+                            All fields marked with * are required. Projects cannot be saved without complete structured data.
                         </div>
 
                         <button type="submit" className="btn-neon w-full py-3 text-sm">
-                            🤖 Analyze & Classify SDGs →
+                            Analyze & Classify SDGs →
                         </button>
                     </motion.form>
                 )}
@@ -263,7 +263,7 @@ export default function CreateProjectPage() {
                         exit={{ opacity: 0, scale: 0.95 }}
                         className="glass-card p-12 text-center"
                     >
-                        <div className="inline-block animate-spin text-4xl mb-4">🤖</div>
+                        <div className="inline-block animate-spin text-4xl mb-4"></div>
                         <h2 className="text-xl font-bold text-slate-900 mb-2">AI is Analyzing...</h2>
                         <p className="text-sm text-slate-500">Classifying your project into relevant UN SDGs (1–17)</p>
                         <div className="mt-6 flex justify-center gap-2">
@@ -285,7 +285,6 @@ export default function CreateProjectPage() {
                         <div className="glass-card p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-xl">✅</span>
                                     <h2 className="text-lg font-bold text-slate-900">SDG Classification Complete</h2>
                                 </div>
                                 <span className="text-[10px] px-2.5 py-1 rounded-lg font-medium"
@@ -294,7 +293,7 @@ export default function CreateProjectPage() {
                                         color: sdgResults.source === 'openai' ? '#10b981' : '#f59e0b',
                                         border: `1px solid ${sdgResults.source === 'openai' ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}`,
                                     }}>
-                                    {sdgResults.source === 'openai' ? '🤖 OpenAI Classified' : '📊 Local Classifier'}
+                                    {sdgResults.source === 'openai' ? 'OpenAI Classified' : 'Local Classifier'}
                                 </span>
                             </div>
 
@@ -335,7 +334,7 @@ export default function CreateProjectPage() {
                             </div>
 
                             <div className="p-4 rounded-xl" style={{ background: 'rgba(6,182,212,0.05)', border: '1px solid rgba(6,182,212,0.1)' }}>
-                                <p className="text-xs font-medium text-blue-500 mb-1">🧠 AI Reasoning</p>
+                                <p className="text-xs font-medium text-blue-500 mb-1">AI Reasoning</p>
                                 <p className="text-sm text-gray-300">{sdgResults.reasoning}</p>
                             </div>
                         </div>
@@ -356,7 +355,7 @@ export default function CreateProjectPage() {
                         <div className="flex gap-3">
                             <button onClick={handleSaveProject} disabled={saveStatus !== 'idle'}
                                 className="btn-neon flex-1 py-3 text-sm disabled:opacity-50">
-                                {saveStatus === 'saving' ? '⏳ Saving to backend...' : saveStatus === 'saved' ? '✅ Project Saved!' : '💾 Save Project'}
+                                {saveStatus === 'saving' ? 'Saving to backend...' : saveStatus === 'saved' ? 'Project Saved!' : 'Save Project'}
                             </button>
                             <button onClick={() => setStep('form')} disabled={saveStatus !== 'idle'}
                                 className="flex-1 py-3 rounded-xl text-sm font-medium text-slate-500 disabled:opacity-50"

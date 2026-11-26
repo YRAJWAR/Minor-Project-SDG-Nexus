@@ -118,10 +118,10 @@ export default function CorporateDashboard() {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
-                    { label: 'CSR Funds Disbursed', value: disbursedLakh, icon: '💰', color: '#3b82f6', prefix: '₹', suffix: ' Lakh' },
-                    { label: 'Projects Funded', value: projectsFunded, icon: '📁', color: '#10b981' },
-                    { label: 'SDGs Impacted', value: sdgsSupported, icon: '🎯', color: '#8b5cf6' },
-                    { label: 'Lives Impacted', value: livesImpacted, icon: '👥', color: '#f59e0b' },
+                    { label: 'CSR Funds Disbursed', value: disbursedLakh, icon: '', color: '#3b82f6', prefix: '₹', suffix: ' Lakh' },
+                    { label: 'Projects Funded', value: projectsFunded, icon: '', color: '#10b981' },
+                    { label: 'SDGs Impacted', value: sdgsSupported, icon: '', color: '#8b5cf6' },
+                    { label: 'Lives Impacted', value: livesImpacted, icon: '', color: '#f59e0b' },
                 ].map((stat, i) => (
                     <StatCard
                         key={i}
@@ -172,7 +172,7 @@ export default function CorporateDashboard() {
                                     >
                                         <div>
                                             <div className="flex items-center gap-1.5 font-bold">
-                                                <span>🚩 {flag.challenge_title || flag.organization?.name || 'Unknown organisation'}</span>
+                                                <span>{flag.challenge_title || flag.organization?.name || 'Unknown organisation'}</span>
                                                 <span className="text-rose-600 font-medium">({flag.district || 'Pakur District'})</span>
                                             </div>
                                             <div className="text-[11px] text-slate-600 mt-0.5 leading-normal">{flag.description}</div>
@@ -192,7 +192,7 @@ export default function CorporateDashboard() {
             <motion.div {...fadeIn(0.3)} className="glass-card p-6">
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h2 className="text-lg font-semibold text-slate-900">🤝 Recommended partners</h2>
+                        <h2 className="text-lg font-semibold text-slate-900">Recommended partners</h2>
                         <p className="text-xs text-slate-500 mt-1">AI-powered NGO recommendations based on your CSR focus areas</p>
                     </div>
                 </div>
@@ -228,7 +228,7 @@ export default function CorporateDashboard() {
                                 />
                                 <div className="absolute top-2 right-2 flex gap-1">
                                     {match.ngo.verified && (
-                                        <span className="text-[10px] px-2 py-0.5 rounded-md shadow-sm border border-emerald-500/20 backdrop-blur-sm bg-emerald-500 text-white font-semibold">✓ Verified</span>
+                                        <span className="text-[10px] px-2 py-0.5 rounded-md shadow-sm border border-emerald-500/20 backdrop-blur-sm bg-emerald-500 text-white font-semibold">Verified</span>
                                     )}
                                 </div>
                             </div>
@@ -273,7 +273,7 @@ export default function CorporateDashboard() {
                             {match.reasons.length > 0 && (
                                 <div className="mt-3 text-xs text-slate-500">
                                     {match.reasons.map((r, ri) => (
-                                        <span key={ri} className="inline-block mr-2">✓ {r}</span>
+                                        <span key={ri} className="inline-block mr-2">{r}</span>
                                     ))}
                                 </div>
                             )}

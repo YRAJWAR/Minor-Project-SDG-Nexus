@@ -46,7 +46,7 @@ export default function AnalyticsPage() {
         <div className="space-y-6">
             <motion.div {...fadeIn(0)}>
                 <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                    📈 Trend & Risk Analysis
+                    Trend & Risk Analysis
                     <span title="Overview of systemic risks, performance tracking and predictive efficiency calculations based on our diverse impact datasets."><Info className="w-5 h-5 text-slate-400 hover:text-blue-500 cursor-help transition-colors" /></span>
                 </h1>
                 <p className="text-sm text-slate-500 mt-1">Performance tracking, efficiency trends, and risk detection across organizations</p>
@@ -67,8 +67,7 @@ export default function AnalyticsPage() {
                                 style={{
                                     background: risk.riskLevel === 'high' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
                                 }}>
-                                ⚠️
-                            </div>
+                                                            </div>
                             <div className="flex-1">
                                 <p className="text-sm font-semibold text-slate-900">{org.name}</p>
                                 <p className="text-xs text-slate-500">{risk.message}</p>
@@ -78,7 +77,7 @@ export default function AnalyticsPage() {
                                     background: risk.riskLevel === 'high' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)',
                                     color: risk.riskLevel === 'high' ? '#ef4444' : '#f59e0b',
                                 }}>
-                                {risk.riskLevel === 'high' ? '🔴 High Risk' : '🟡 Medium Risk'}
+                                {risk.riskLevel === 'high' ? 'High Risk' : 'Medium Risk'}
                             </span>
                         </div>
                     ))}
@@ -118,7 +117,7 @@ export default function AnalyticsPage() {
                 <motion.div {...fadeIn(0.15)} className="glass-card p-6">
                     <h2 className="text-sm font-semibold text-slate-900 mb-4 flex items-center justify-between">
                         <span className="flex items-center gap-2">
-                            💰 Funding Trend (₹ Lakhs)
+                            Funding Trend (₹ Lakhs)
                             <span title="Visualizes the correlation between CSR and Government cash infusions versus project initiation velocities over time."><Info className="w-4 h-4 text-slate-400 hover:text-blue-500 cursor-help" /></span>
                         </span>
                     </h2>
@@ -149,7 +148,7 @@ export default function AnalyticsPage() {
                 <motion.div {...fadeIn(0.2)} className="glass-card p-6">
                     <h2 className="text-sm font-semibold text-slate-900 mb-4 flex items-center justify-between">
                         <span className="flex items-center gap-2">
-                            ⚡ Efficiency: Lives per ₹1 Lakh
+                            Efficiency: Lives per ₹1 Lakh
                             <span title="ROB (Return on Beneficiary) metric. Calculated by dividing total beneficiaries by utilized budget. This logic powers our NGO verification funnel."><Info className="w-4 h-4 text-slate-400 hover:text-blue-500 cursor-help" /></span>
                         </span>
                     </h2>
@@ -173,7 +172,7 @@ export default function AnalyticsPage() {
 
             {/* Individual Org Trends */}
             <motion.div {...fadeIn(0.25)} className="glass-card p-6">
-                <h2 className="text-sm font-semibold text-slate-900 mb-4">📊 Organization Performance Trends</h2>
+                <h2 className="text-sm font-semibold text-slate-900 mb-4">Organization Performance Trends</h2>
                 <div className="grid grid-cols-2 gap-6">
                     {orgAnalytics.slice(0, 4).map(({ org, trend, risk }) => (
                         <div key={org.id} className="p-4 rounded-xl" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
@@ -194,7 +193,7 @@ export default function AnalyticsPage() {
                                             background: risk.riskLevel === 'high' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
                                             color: risk.riskLevel === 'high' ? '#ef4444' : '#f59e0b',
                                         }}>
-                                        ⚠️ {risk.riskType === 'efficiency_decline' ? 'Efficiency Risk' : risk.riskType === 'funding_decline' ? 'Performance Risk' : 'High Risk'}
+                                        {risk.riskType === 'efficiency_decline' ? 'Efficiency Risk' : risk.riskType === 'funding_decline' ? 'Performance Risk' : 'High Risk'}
                                     </span>
                                 )}
                             </div>

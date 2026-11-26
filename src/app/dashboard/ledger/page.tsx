@@ -49,7 +49,7 @@ export default function LedgerPage() {
                     <p className="text-sm text-slate-500 mt-1">SHA-256 hashed, timestamped, geo-tagged, and immutable activity records</p>
                 </div>
                 <button onClick={() => setShowForm(!showForm)} className="btn-neon text-sm py-2 px-4">
-                    {showForm ? '✕ Cancel' : '+ Log Activity'}
+                    {showForm ? 'Cancel' : '+ Log Activity'}
                 </button>
             </motion.div>
 
@@ -102,7 +102,7 @@ export default function LedgerPage() {
                                 className="input-dark" placeholder="https://..." />
                         </div>
                         <button type="submit" disabled={isSubmitting} className="btn-neon w-full py-3 text-sm">
-                            {isSubmitting ? '⏳ Generating SHA-256 Hash...' : '🔒 Submit & Hash Activity'}
+                            {isSubmitting ? 'Generating SHA-256 Hash...' : 'Submit & Hash Activity'}
                         </button>
                     </motion.form>
                 )}
@@ -167,13 +167,12 @@ export default function LedgerPage() {
                                             background: activity.verified ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
                                             color: activity.verified ? '#10b981' : '#f59e0b',
                                         }}>
-                                        {activity.verified ? '✓ Verified' : '⏳ Pending'}
+                                        {activity.verified ? 'Verified' : 'Pending'}
                                     </span>
                                 </div>
 
                                 <div className="flex items-center gap-4 mt-3 flex-wrap">
                                     <div className="flex items-center gap-1.5">
-                                        <span className="text-[10px] text-slate-500">🕐</span>
                                         <span className="text-xs text-slate-500">
                                             {new Date(activity.timestamp).toLocaleString()}
                                         </span>
@@ -181,7 +180,7 @@ export default function LedgerPage() {
                                     {activity.media_url && (
                                         <a href={activity.media_url} target="_blank" rel="noopener noreferrer"
                                             className="text-xs text-blue-500 hover:text-blue-400 transition-colors">
-                                            📎 View Proof
+                                            View Proof
                                         </a>
                                     )}
                                 </div>
@@ -192,7 +191,7 @@ export default function LedgerPage() {
                                         <p className="text-[10px] text-slate-400">SHA-256 Hash</p>
                                         <span className="text-[9px] px-1.5 py-0.5 rounded"
                                             style={{ background: 'rgba(6,182,212,0.1)', color: '#3b82f6' }}>
-                                            🔒 Immutable
+                                            Immutable
                                         </span>
                                     </div>
                                     <code className="text-xs font-mono text-blue-500 break-all">{activity.hash}</code>

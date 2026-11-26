@@ -97,7 +97,7 @@ export default function OrganizationPublicProfile({ params }: { params: Promise<
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0f1e' }}>
+            <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--color-paper)' }}>
                 <div className="text-center">
                     <Image src="/logo.png" alt="Loading" width={56} height={56} className="animate-pulse mx-auto mb-4" />
                     <p className="text-gray-400">Loading organization profile...</p>
@@ -108,11 +108,11 @@ export default function OrganizationPublicProfile({ params }: { params: Promise<
 
     if (!org) {
         return (
-            <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0f1e' }}>
+            <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--color-paper)' }}>
                 <div className="text-center">
-                    <div className="text-5xl mb-4">❌</div>
+                    <div className="text-5xl mb-4"></div>
                     <p className="text-gray-400 text-lg">Organization not found</p>
-                    <Link href="/explore" className="text-cyan-400 text-sm mt-4 inline-block no-underline">← Back to Explorer</Link>
+                    <Link href="/explore" className="text-[var(--color-survey)] text-sm mt-4 inline-block no-underline">← Back to Explorer</Link>
                 </div>
             </div>
         );
@@ -129,7 +129,7 @@ export default function OrganizationPublicProfile({ params }: { params: Promise<
     ] : [];
 
     return (
-        <div className="min-h-screen" style={{ background: '#0a0f1e' }}>
+        <div className="min-h-screen" style={{ background: 'var(--color-paper)' }}>
             {/* Nav */}
             <nav className="fixed top-0 w-full z-50 px-6 py-4"
                 style={{ background: 'rgba(10,15,30,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -140,9 +140,9 @@ export default function OrganizationPublicProfile({ params }: { params: Promise<
                         <span className="text-xl font-bold gradient-text">SDG Nexus</span>
                     </Link>
                     <div className="flex items-center gap-4">
-                        <Link href="/explore" className="text-sm font-medium text-cyan-400 no-underline">← Explorer</Link>
+                        <Link href="/explore" className="text-sm font-medium text-[var(--color-survey)] no-underline">← Explorer</Link>
                         <Link href="/login"
-                            className="px-5 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white transition no-underline"
+                            className="px-5 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-[var(--color-ink)] transition no-underline"
                             style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
                             Sign In
                         </Link>
@@ -159,15 +159,15 @@ export default function OrganizationPublicProfile({ params }: { params: Promise<
                             ← Back to Explorer
                         </Link>
                         <div className="flex items-center gap-5 mt-2">
-                            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold text-white flex-shrink-0"
+                            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold text-[var(--color-ink)] flex-shrink-0"
                                 style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}>
                                 {org.name.charAt(0)}
                             </div>
                             <div className="flex-1">
-                                <h1 className="text-3xl font-extrabold text-white">{org.name}</h1>
+                                <h1 className="text-3xl font-extrabold text-[var(--color-ink)]">{org.name}</h1>
                                 <p className="text-sm text-gray-400 mt-1">
                                     {org.type} • {org.district ? `${org.district}, ` : ''}{org.state}
-                                    <span className="ml-3 text-emerald-400 text-xs font-medium">✓ {org.verification_status}</span>
+                                    <span className="ml-3 text-[var(--color-forest)] text-xs font-medium">{org.verification_status}</span>
                                 </p>
                             </div>
                             {org.impact && (
@@ -184,15 +184,15 @@ export default function OrganizationPublicProfile({ params }: { params: Promise<
                     {/* Quick Stats */}
                     <motion.div {...fadeIn(0.1)} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                         {[
-                            { label: 'Projects', value: org.projects.length, icon: '📁', color: '#3b82f6' },
-                            { label: 'Beneficiaries', value: `${(totalBeneficiaries / 1000).toFixed(0)}K`, icon: '👥', color: '#10b981' },
-                            { label: 'SDGs Covered', value: org.sdg_focus.length, icon: '🎯', color: '#8b5cf6' },
-                            { label: 'Transparency', value: org.transparency.level, icon: '🔍', color: getTransparencyColor(org.transparency.level) },
+                            { label: 'Projects', value: org.projects.length, icon: '', color: '#3b82f6' },
+                            { label: 'Beneficiaries', value: `${(totalBeneficiaries / 1000).toFixed(0)}K`, icon: '', color: '#10b981' },
+                            { label: 'SDGs Covered', value: org.sdg_focus.length, icon: '', color: '#8b5cf6' },
+                            { label: 'Transparency', value: org.transparency.level, icon: '', color: getTransparencyColor(org.transparency.level) },
                         ].map((stat, i) => (
                             <div key={i} className="p-5 rounded-2xl text-center"
                                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                                 <div className="text-2xl mb-2">{stat.icon}</div>
-                                <div className="text-xl font-bold text-white">{stat.value}</div>
+                                <div className="text-xl font-bold text-[var(--color-ink)]">{stat.value}</div>
                                 <div className="text-[10px] text-gray-500 mt-1">{stat.label}</div>
                             </div>
                         ))}
@@ -202,8 +202,8 @@ export default function OrganizationPublicProfile({ params }: { params: Promise<
                         {/* Impact Breakdown */}
                         <motion.div {...fadeIn(0.2)} className="p-6 rounded-2xl"
                             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <h2 className="text-lg font-semibold text-white mb-5 flex items-center gap-2">
-                                ⚡ Innovation Outcome Score Breakdown
+                            <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-5 flex items-center gap-2">
+                                Innovation Outcome Score Breakdown
                                 {org.impact && (
                                     <span className="text-[10px] px-2 py-0.5 rounded-full text-gray-500 font-medium"
                                         style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -250,7 +250,7 @@ export default function OrganizationPublicProfile({ params }: { params: Promise<
                             {/* SDG Breakdown */}
                             <motion.div {...fadeIn(0.25)} className="p-6 rounded-2xl"
                                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                <h2 className="text-lg font-semibold text-white mb-4">🎯 SDG Alignment</h2>
+                                <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4">SDG Alignment</h2>
                                 <div className="flex flex-wrap gap-2">
                                     {org.sdg_focus.map(s => {
                                         const info = SDG_INFO.find(i => i.id === s);
@@ -271,7 +271,7 @@ export default function OrganizationPublicProfile({ params }: { params: Promise<
                             {/* Transparency */}
                             <motion.div {...fadeIn(0.3)} className="p-6 rounded-2xl"
                                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                <h2 className="text-lg font-semibold text-white mb-4">🔍 Transparency Level</h2>
+                                <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4">Transparency Level</h2>
                                 <div className="flex items-center gap-4 mb-4">
                                     <div className="text-3xl font-extrabold" style={{ color: getTransparencyColor(org.transparency.level) }}>
                                         {org.transparency.level}
@@ -284,8 +284,8 @@ export default function OrganizationPublicProfile({ params }: { params: Promise<
                                     {[
                                         { label: 'Total Activities', value: org.transparency.total_activities, ok: true },
                                         { label: 'Verified', value: org.transparency.verified_activities, ok: org.transparency.verified_activities > 0 },
-                                        { label: 'Geo Tags', value: org.transparency.has_geo_tags ? '✓ Yes' : '✗ No', ok: org.transparency.has_geo_tags },
-                                        { label: 'Proof Uploads', value: org.transparency.has_proof_uploads ? '✓ Yes' : '✗ No', ok: org.transparency.has_proof_uploads },
+                                        { label: 'Geo Tags', value: org.transparency.has_geo_tags ? 'Yes' : 'No', ok: org.transparency.has_geo_tags },
+                                        { label: 'Proof Uploads', value: org.transparency.has_proof_uploads ? 'Yes' : 'No', ok: org.transparency.has_proof_uploads },
                                     ].map((item, i) => (
                                         <div key={i} className="p-3 rounded-xl text-center" style={{ background: 'rgba(255,255,255,0.03)' }}>
                                             <div className="text-sm font-bold" style={{ color: item.ok ? '#10b981' : '#f43f5e' }}>
@@ -302,7 +302,7 @@ export default function OrganizationPublicProfile({ params }: { params: Promise<
                     {/* Projects (Public — no financial info) */}
                     <motion.div {...fadeIn(0.35)} className="p-6 rounded-2xl mb-8"
                         style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                        <h2 className="text-lg font-semibold text-white mb-4">📁 Active Projects</h2>
+                        <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4">Active Projects</h2>
                         <div className="space-y-3">
                             {org.projects.map((p, i) => (
                                 <motion.div key={p.id}
@@ -312,7 +312,7 @@ export default function OrganizationPublicProfile({ params }: { params: Promise<
                                     className="p-4 rounded-xl flex items-center justify-between"
                                     style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
                                     <div className="flex-1">
-                                        <p className="text-sm font-semibold text-white">{p.title}</p>
+                                        <p className="text-sm font-semibold text-[var(--color-ink)]">{p.title}</p>
                                         <div className="flex items-center gap-2 mt-1.5">
                                             {p.sdg_tags.map(s => (
                                                 <span key={s} className={`sdg-${s} text-[9px] px-1.5 py-0.5 rounded`}>SDG {s}</span>
@@ -321,7 +321,7 @@ export default function OrganizationPublicProfile({ params }: { params: Promise<
                                     </div>
                                     <div className="flex items-center gap-4 ml-4">
                                         <div className="text-right">
-                                            <p className="text-xs font-bold text-white">{p.beneficiaries.toLocaleString()}</p>
+                                            <p className="text-xs font-bold text-[var(--color-ink)]">{p.beneficiaries.toLocaleString()}</p>
                                             <p className="text-[10px] text-gray-500">Beneficiaries</p>
                                         </div>
                                         <span className="text-xs font-semibold px-2.5 py-1 rounded-lg"
@@ -341,12 +341,12 @@ export default function OrganizationPublicProfile({ params }: { params: Promise<
                     {org.geo_impact && org.geo_impact.length > 0 && (
                         <motion.div {...fadeIn(0.4)} className="p-6 rounded-2xl"
                             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <h2 className="text-lg font-semibold text-white mb-4">🗺️ Geographic Impact</h2>
+                            <h2 className="text-lg font-semibold text-[var(--color-ink)] mb-4">Geographic Impact</h2>
                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {org.geo_impact.map((g, i) => (
                                     <div key={i} className="p-4 rounded-xl text-center"
                                         style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                                        <p className="text-sm font-semibold text-white">
+                                        <p className="text-sm font-semibold text-[var(--color-ink)]">
                                             {g.project_title || `${g.district || g.state}`}
                                         </p>
                                         <p className="text-xs text-gray-500 mt-1">

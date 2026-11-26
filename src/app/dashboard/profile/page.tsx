@@ -57,7 +57,7 @@ export default function ProfilePage() {
                             </div>
                             <div>
                                 <p className="text-xs text-slate-500 uppercase">Registered Role</p>
-                                <p className="text-sm font-medium text-slate-800 mt-0.5">{user.role.toUpperCase()} 🏢</p>
+                                <p className="text-sm font-medium text-slate-800 mt-0.5">{user.role.toUpperCase()} </p>
                             </div>
                             <div>
                                 <p className="text-xs text-slate-500 uppercase">Email Address</p>
@@ -79,24 +79,20 @@ export default function ProfilePage() {
                         <div className="space-y-3">
                             <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
                                 <div className="flex items-center gap-3">
-                                    <span className="text-lg">📄</span>
                                     <div>
                                         <p className="text-xs font-bold text-slate-800">Registration Certificate</p>
                                         <p className="text-[10px] text-slate-500">Verified on {new Date().toLocaleDateString()}</p>
                                     </div>
                                 </div>
-                                <span className="text-green-500 text-sm">✓</span>
-                            </div>
+                                </div>
                             <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
                                 <div className="flex items-center gap-3">
-                                    <span className="text-lg">🏦</span>
                                     <div>
                                         <p className="text-xs font-bold text-slate-800">Financial Audit FY24-25</p>
                                         <p className="text-[10px] text-slate-500">Secure Vault Storage</p>
                                     </div>
                                 </div>
-                                <span className="text-green-500 text-sm">✓</span>
-                            </div>
+                                </div>
                         </div>
                         <button className="w-full mt-4 py-2 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
                             + Upload New Document
@@ -130,9 +126,9 @@ export default function ProfilePage() {
 
                         <div className="space-y-4">
                             {[
-                                { action: 'Logged in from new device', date: 'Just now', ip: '192.168.1.1', location: 'Mumbai, India', icon: '💻' },
-                                { action: 'Downloaded Impact Report', date: '2 days ago', ip: '192.168.1.1', location: 'Mumbai, India', icon: '📥' },
-                                { action: 'Profile Details Updated', date: '5 days ago', ip: '192.168.1.1', location: 'Mumbai, India', icon: '⚙️' },
+                                { action: 'Logged in from new device', date: 'Just now', ip: '192.168.1.1', location: 'Mumbai, India', icon: '' },
+                                { action: 'Downloaded Impact Report', date: '2 days ago', ip: '192.168.1.1', location: 'Mumbai, India', icon: '' },
+                                { action: 'Profile Details Updated', date: '5 days ago', ip: '192.168.1.1', location: 'Mumbai, India', icon: '' },
                             ].map((log, idx) => (
                                 <div key={idx} className="flex items-start gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors">
                                     <div className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center shadow-sm text-lg">

@@ -36,23 +36,20 @@ export default function LoginPage() {
 
     // Fictional demo accounts created by prisma/seed.ts.
     const demoAccounts = [
-        { label: 'Citizen', email: 'citizen@demo.sdgnexus.in', icon: '👤' },
-        { label: 'District Officer', email: 'officer.nalgonda@demo.sdgnexus.in', icon: '🏛️' },
-        { label: 'Faculty', email: 'faculty@demo.sdgnexus.in', icon: '🎓' },
-        { label: 'Student', email: 'student@demo.sdgnexus.in', icon: '📚' },
-        { label: 'NGO', email: 'ngo@demo.sdgnexus.in', icon: '🏢' },
-        { label: 'CSR Partner', email: 'csr@demo.sdgnexus.in', icon: '💼' },
-        { label: 'Admin', email: 'admin@demo.sdgnexus.in', icon: '🛡️' },
+        { label: 'Citizen', email: 'citizen@demo.sdgnexus.in' },
+        { label: 'District Officer', email: 'officer.nalgonda@demo.sdgnexus.in' },
+        { label: 'Faculty', email: 'faculty@demo.sdgnexus.in' },
+        { label: 'Student', email: 'student@demo.sdgnexus.in' },
+        { label: 'NGO', email: 'ngo@demo.sdgnexus.in' },
+        { label: 'CSR Partner', email: 'csr@demo.sdgnexus.in' },
+        { label: 'Admin', email: 'admin@demo.sdgnexus.in' },
     ];
 
     return (
         <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden"
-            style={{ background: '#0a0f1e' }}>
-            {/* Background glow */}
-            <div className="absolute top-1/4 left-1/3 w-96 h-96 rounded-full opacity-10 blur-3xl"
-                style={{ background: 'radial-gradient(circle, #06b6d4, transparent)' }} />
-            <div className="absolute bottom-1/4 right-1/3 w-96 h-96 rounded-full opacity-10 blur-3xl"
-                style={{ background: 'radial-gradient(circle, #8b5cf6, transparent)' }} />
+            style={{ background: 'var(--color-paper)' }}>
+            
+
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -80,7 +77,7 @@ export default function LoginPage() {
                     </div>
 
                     {error && (
-                        <p className="text-xs text-red-400 text-center bg-red-400/10 rounded-lg py-2">{error}</p>
+                        <p role="alert" className="text-sm text-[var(--color-rust)] text-center bg-[var(--color-rust-wash)] rounded py-2">{error}</p>
                     )}
 
                     <button type="submit" disabled={loading}
@@ -96,9 +93,7 @@ export default function LoginPage() {
                         {demoAccounts.map(acc => (
                             <button key={acc.email}
                                 type="button" disabled={loading} onClick={() => { setEmail(acc.email); signIn(acc.email, DEMO_PASSWORD); }}
-                                className="px-3 py-2.5 rounded-lg text-xs font-medium transition-all hover:bg-white/10 flex items-center gap-2"
-                                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#cbd5e1' }}>
-                                <span>{acc.icon}</span>
+                                className="px-3 py-2.5 rounded text-sm font-medium transition-colors flex items-center gap-2 border border-[var(--color-rule)] bg-[var(--color-sheet)] text-[var(--color-ink)] hover:border-[var(--color-survey)] hover:text-[var(--color-survey)] disabled:opacity-50">
                                 <span>{acc.label}</span>
                             </button>
                         ))}
@@ -106,7 +101,7 @@ export default function LoginPage() {
                 </div>
 
                 <p className="text-center text-xs text-slate-500 mt-6">
-                    Don&apos;t have an account? <Link href="/register" className="text-cyan-400 hover:underline">Register</Link>
+                    Don&apos;t have an account? <Link href="/register" className="text-[var(--color-survey)] font-semibold hover:underline">Register</Link>
                 </p>
             </motion.div>
         </div>

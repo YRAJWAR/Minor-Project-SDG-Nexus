@@ -440,7 +440,6 @@ export default function GovernmentDashboard() {
                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                     }`}
                 >
-                    <span>🗺️</span>
                     <span>Overview &amp; Map</span>
                 </button>
                 <button
@@ -454,7 +453,6 @@ export default function GovernmentDashboard() {
                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                     }`}
                 >
-                    <span>💡</span>
                     <span>Policy Insights</span>
                     <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded-full ${activeTab === 'insights' ? 'bg-indigo-500 text-white' : 'bg-indigo-100 text-indigo-700'}`}>
                         5 Live
@@ -471,7 +469,6 @@ export default function GovernmentDashboard() {
                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                     }`}
                 >
-                    <span>📜</span>
                     <span>Audit Trail</span>
                 </button>
             </div>
@@ -482,10 +479,10 @@ export default function GovernmentDashboard() {
                     {/* Stats */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total Funding Tracked', value: Math.round(totalFunding / 10000000), icon: '💰', color: '#3b82f6', prefix: '₹', suffix: ' Cr' },
-                    { label: 'Active NGOs', value: totalNGOs, icon: '🏢', color: '#10b981' },
-                    { label: 'Total Beneficiaries', value: totalBeneficiaries, icon: '👥', color: '#8b5cf6' },
-                    { label: 'NGO Projects', value: totalProjects, icon: '📁', color: '#f59e0b' },
+                    { label: 'Total Funding Tracked', value: Math.round(totalFunding / 10000000), icon: '', color: '#3b82f6', prefix: '₹', suffix: ' Cr' },
+                    { label: 'Active NGOs', value: totalNGOs, icon: '', color: '#10b981' },
+                    { label: 'Total Beneficiaries', value: totalBeneficiaries, icon: '', color: '#8b5cf6' },
+                    { label: 'NGO Projects', value: totalProjects, icon: '', color: '#f59e0b' },
                 ].map((stat, i) => (
                     <StatCard
                         key={i}
@@ -507,7 +504,6 @@ export default function GovernmentDashboard() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
                     <div>
                         <div className="flex items-center gap-2">
-                            <span className="text-xl">🗺️</span>
                             <h2 className="text-lg font-semibold text-slate-900">
                                 India Problem & Impact Map
                             </h2>
@@ -520,10 +516,10 @@ export default function GovernmentDashboard() {
                     {/* Mode Selector */}
                     <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-1 rounded-xl">
                         {[
-                            { key: 'challenge_density' as ColorMode, label: 'Reported', icon: '📍', color: '#ec4899' },
-                            { key: 'composite' as ColorMode, label: 'Resolution rate', icon: '✅', color: '#f59e0b' },
-                            { key: 'funding' as ColorMode, label: 'Funding', icon: '💰', color: '#22c55e' },
-                            { key: 'risk' as ColorMode, label: 'Open problems', icon: '⚠️', color: '#ef4444' },
+                            { key: 'challenge_density' as ColorMode, label: 'Reported', icon: '', color: '#ec4899' },
+                            { key: 'composite' as ColorMode, label: 'Resolution rate', icon: '', color: '#f59e0b' },
+                            { key: 'funding' as ColorMode, label: 'Funding', icon: '', color: '#22c55e' },
+                            { key: 'risk' as ColorMode, label: 'Open problems', icon: '', color: '#ef4444' },
                         ].map((m) => (
                             <button
                                 key={m.key}
@@ -551,7 +547,6 @@ export default function GovernmentDashboard() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
                     <div>
                         <div className="flex items-center gap-2">
-                            <span className="text-xl">⚖️</span>
                             <h2 className="text-lg font-semibold text-slate-900">
                                 District Challenge Resolution Rate
                             </h2>
@@ -654,7 +649,6 @@ export default function GovernmentDashboard() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                     <div>
                         <div className="flex items-center gap-2">
-                            <span className="text-xl">📌</span>
                             <h2 className="text-lg font-semibold text-slate-900">
                                 Government Innovation Challenge Queue
                             </h2>
@@ -679,8 +673,7 @@ export default function GovernmentDashboard() {
                                 onChange={(e) => setChallengeSearch(e.target.value)}
                                 className="bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-lg pl-8 pr-3 py-2 w-64 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all shadow-xs"
                             />
-                            <span className="absolute left-2.5 top-2.5 text-slate-400 text-xs">🔍</span>
-                        </div>
+                            </div>
 
                         {/* View Toggle */}
                         <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
@@ -737,7 +730,7 @@ export default function GovernmentDashboard() {
                                             : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300'
                                     }`}
                                 >
-                                    <span>⚠️ Needs Action ({escalationDueCount})</span>
+                                    <span>Needs Action ({escalationDueCount})</span>
                                 </button>
                             )}
                             {/* Outcome filters; counts come from the same list the cards use. */}
@@ -757,14 +750,14 @@ export default function GovernmentDashboard() {
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
                         {[
-                            { key: 'SUBMITTED', label: 'SUBMITTED', icon: '📝' },
-                            { key: 'AI_PROCESSED', label: 'AI PROCESSED', icon: '🤖' },
-                            { key: 'VALIDATED', label: 'VALIDATED', icon: '✅' },
-                            { key: 'UNIVERSITY_ASSIGNED', label: 'UNIV ASSIGNED', icon: '🏛️' },
-                            { key: 'TEAM_FORMED', label: 'TEAM FORMED', icon: '👥' },
-                            { key: 'IN_PROGRESS', label: 'IN PROGRESS', icon: '⚙️' },
-                            { key: 'COMPLETED', label: 'COMPLETED', icon: '🏁' },
-                            { key: 'DEPLOYED', label: 'DEPLOYED', icon: '🚀' },
+                            { key: 'SUBMITTED', label: 'SUBMITTED', icon: '' },
+                            { key: 'AI_PROCESSED', label: 'AI PROCESSED', icon: '' },
+                            { key: 'VALIDATED', label: 'VALIDATED', icon: '' },
+                            { key: 'UNIVERSITY_ASSIGNED', label: 'UNIV ASSIGNED', icon: '' },
+                            { key: 'TEAM_FORMED', label: 'TEAM FORMED', icon: '' },
+                            { key: 'IN_PROGRESS', label: 'IN PROGRESS', icon: '' },
+                            { key: 'COMPLETED', label: 'COMPLETED', icon: '' },
+                            { key: 'DEPLOYED', label: 'DEPLOYED', icon: '' },
                         ].map((stage) => {
                             const count = statusCounts[stage.key] || 0;
                             const isActive = statusFilter === stage.key;
@@ -817,14 +810,14 @@ export default function GovernmentDashboard() {
                             const isGpNode = ch.submittedVia === 'GRAM_PANCHAYAT_NODE';
                             const categoryIcon = (() => {
                                 const cat = (ch.category || '').toLowerCase();
-                                if (cat.includes('water') || cat.includes('sanitation')) return '💧';
-                                if (cat.includes('health') || cat.includes('malnutrition')) return '🏥';
-                                if (cat.includes('education') || cat.includes('literacy')) return '📚';
-                                if (cat.includes('agri') || cat.includes('farm') || cat.includes('crop')) return '🌾';
-                                if (cat.includes('energy') || cat.includes('solar') || cat.includes('power')) return '⚡';
-                                if (cat.includes('infra') || cat.includes('road')) return '🏗️';
-                                if (cat.includes('environment') || cat.includes('forest')) return '🌲';
-                                return '🎯';
+                                if (cat.includes('water') || cat.includes('sanitation')) return '';
+                                if (cat.includes('health') || cat.includes('malnutrition')) return '';
+                                if (cat.includes('education') || cat.includes('literacy')) return '';
+                                if (cat.includes('agri') || cat.includes('farm') || cat.includes('crop')) return '';
+                                if (cat.includes('energy') || cat.includes('solar') || cat.includes('power')) return '';
+                                if (cat.includes('infra') || cat.includes('road')) return '';
+                                if (cat.includes('environment') || cat.includes('forest')) return '';
+                                return '';
                             })();
 
                             const sdgs = ch.sdgTags || [6];
@@ -846,7 +839,7 @@ export default function GovernmentDashboard() {
                                                 {/* GP Node Tag */}
                                                 {isGpNode && (
                                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-md bg-purple-50 text-purple-700 border border-purple-200">
-                                                        🏛️ GP Node
+                                                        GP Node
                                                     </span>
                                                 )}
 
@@ -899,7 +892,7 @@ export default function GovernmentDashboard() {
                                         </h3>
                                         <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
                                             <span className="inline-flex items-center gap-0.5 text-slate-700 font-medium">
-                                                📍 {ch.block ? `${ch.block}, ` : ''}{ch.district}{ch.state ? `, ${ch.state}` : ''}
+                                                {ch.block ? `${ch.block}, ` : ''}{ch.district}{ch.state ? `, ${ch.state}` : ''}
                                             </span>
                                             <span>•</span>
                                             <span className="text-[11px] text-slate-400">ID: {ch.id.slice(0, 10)}...</span>
@@ -940,7 +933,7 @@ export default function GovernmentDashboard() {
                                             {/* Escalation Due Badge */}
                                             {ch.isEscalationDue && (
                                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
-                                                    ⚠️ Escalation Due
+                                                    Escalation Due
                                                 </span>
                                             )}
                                         </div>
@@ -1054,7 +1047,6 @@ export default function GovernmentDashboard() {
 
                         {filteredChallenges.length === 0 && (
                             <div className="col-span-full py-12 text-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-                                <span className="text-2xl block mb-2">🔍</span>
                                 <div className="text-sm font-semibold text-slate-600">No innovation challenges found</div>
                                 <div className="text-xs text-slate-400 mt-1">Try selecting another stage from the status funnel or clear the search.</div>
                             </div>
@@ -1097,7 +1089,7 @@ export default function GovernmentDashboard() {
                                                                 </span>
                                                                 <div className="absolute left-0 bottom-full mb-1 hidden group-hover:block z-50 w-56 p-2 bg-slate-900 text-white rounded-lg shadow-xl text-[11px] pointer-events-none">
                                                                     <div className="font-bold text-rose-400 flex items-center gap-1">
-                                                                        <span>⚠️</span> {flag.risk_type.replace(/_/g, ' ').toUpperCase()}
+                                                                        {flag.risk_type.replace(/_/g, ' ').toUpperCase()}
                                                                     </div>
                                                                     <div className="text-slate-300 mt-0.5 text-[10px]">Severity: <span className="font-semibold text-white uppercase">{flag.risk_level}</span></div>
                                                                     <div className="text-slate-400 text-[10px] mt-1">{flag.description}</div>
@@ -1142,7 +1134,7 @@ export default function GovernmentDashboard() {
                                             <td className="px-4 py-3.5 text-xs text-slate-700">
                                                 {ch.assignedInstitutions && ch.assignedInstitutions.length > 0 ? (
                                                     <span className="inline-flex items-center gap-1 font-semibold text-slate-800">
-                                                        🏛️ {ch.assignedInstitutions.join(', ')}
+                                                        {ch.assignedInstitutions.join(', ')}
                                                     </span>
                                                 ) : (
                                                     <span className="text-slate-400 italic text-[11px]">Pending Allocation</span>
@@ -1257,7 +1249,7 @@ export default function GovernmentDashboard() {
                                 <div className="px-6 py-3.5 bg-slate-50 border-b border-slate-200 text-xs">
                                     <div className="font-bold text-slate-800 text-sm mb-1">{routingChallenge.title}</div>
                                     <div className="flex flex-wrap items-center gap-2 text-slate-500">
-                                        <span>📍 {routingChallenge.district}</span>
+                                        <span>{routingChallenge.district}</span>
                                         <span>•</span>
                                         <span>Category: {routingChallenge.category}</span>
                                         <span>•</span>
@@ -1354,7 +1346,7 @@ export default function GovernmentDashboard() {
             <motion.div {...fadeIn(0.15)} className="glass-card p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
                     <div>
-                        <h2 className="text-lg font-semibold text-slate-900">📋 Platform Partners Directory</h2>
+                        <h2 className="text-lg font-semibold text-slate-900">Platform Partners Directory</h2>
                         <p className="text-xs text-slate-500">Click any organization to view full transaction & project details</p>
                     </div>
                     <div className="flex gap-3 items-center">
@@ -1370,8 +1362,7 @@ export default function GovernmentDashboard() {
                         {/* Search */}
                         <div className="relative w-full md:w-72">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <span className="text-slate-400">🔍</span>
-                            </div>
+                                </div>
                             <input
                                 type="text"
                                 placeholder="Search name, state, district..."
@@ -1433,7 +1424,7 @@ export default function GovernmentDashboard() {
 
             <div>
                 <motion.div {...fadeIn(0.5)} className="glass-card p-6">
-                    <h2 className="text-lg font-semibold text-slate-900 mb-4">🏆 Top Performing NGOs</h2>
+                    <h2 className="text-lg font-semibold text-slate-900 mb-4">Top Performing NGOs</h2>
                     <div className="space-y-3">
                         {topNGOs.map((ngo, i) => (
                             <div key={ngo.id} className="flex items-center gap-3 p-3 rounded-xl"
@@ -1469,7 +1460,6 @@ export default function GovernmentDashboard() {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card p-6">
                         <div>
                             <div className="flex items-center gap-2">
-                                <span className="text-2xl">💡</span>
                                 <h2 className="text-xl font-bold text-slate-900">
                                     Policy Insights
                                 </h2>
@@ -1504,7 +1494,7 @@ export default function GovernmentDashboard() {
                                 <div>
                                     <div className="flex items-center justify-between mb-3">
                                         <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-rose-50 text-rose-700 border border-rose-200 uppercase">
-                                            🚨 Critical Equity Alert
+                                            Critical Equity Alert
                                         </span>
                                         <span className="text-xs text-slate-400 font-mono">INSIGHT #1</span>
                                     </div>
@@ -1539,7 +1529,7 @@ export default function GovernmentDashboard() {
                                 <div>
                                     <div className="flex items-center justify-between mb-3">
                                         <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
-                                            ⚡ Velocity Benchmark
+                                            Velocity Benchmark
                                         </span>
                                         <span className="text-xs text-slate-400 font-mono">INSIGHT #2</span>
                                     </div>
@@ -1567,7 +1557,7 @@ export default function GovernmentDashboard() {
                                 <div>
                                     <div className="flex items-center justify-between mb-3">
                                         <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-50 text-amber-700 border border-amber-200 uppercase">
-                                            🎯 SDG Under-Funding Gap
+                                            SDG Under-Funding Gap
                                         </span>
                                         <span className="text-xs text-slate-400 font-mono">INSIGHT #3</span>
                                     </div>
@@ -1603,7 +1593,7 @@ export default function GovernmentDashboard() {
                                 <div>
                                     <div className="flex items-center justify-between mb-3">
                                         <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-blue-50 text-blue-700 border border-blue-200 uppercase">
-                                            💼 CSR Capital Utilization
+                                            CSR Capital Utilization
                                         </span>
                                         <span className="text-xs text-slate-400 font-mono">INSIGHT #4</span>
                                     </div>
@@ -1636,7 +1626,7 @@ export default function GovernmentDashboard() {
                                 <div>
                                     <div className="flex items-center justify-between mb-3">
                                         <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-purple-50 text-purple-700 border border-purple-200 uppercase">
-                                            🏛️ University Engagement
+                                            University Engagement
                                         </span>
                                         <span className="text-xs text-slate-400 font-mono">INSIGHT #5</span>
                                     </div>
@@ -1673,7 +1663,6 @@ export default function GovernmentDashboard() {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card p-6">
                         <div>
                             <div className="flex items-center gap-2">
-                                <span className="text-2xl">📜</span>
                                 <h2 className="text-xl font-bold text-slate-900">
                                     Government &amp; System Audit Trail
                                 </h2>
@@ -1841,7 +1830,7 @@ export default function GovernmentDashboard() {
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         <span className="font-semibold text-slate-700">
-                                                            {log.district && log.district !== '-' ? `📍 ${log.district}` : '—'}
+                                                            {log.district && log.district !== '-' ? `${log.district}` : '—'}
                                                         </span>
                                                     </td>
                                                     <td className="px-4 py-3 text-slate-600 max-w-xs truncate">
@@ -1924,7 +1913,7 @@ export default function GovernmentDashboard() {
                                             <div>
                                                 <div className="flex items-center justify-between mb-2">
                                                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                                        <span>🎯</span> Top SDG Pressure Indicators
+                                                        Top SDG Pressure Indicators
                                                     </h3>
                                                     <span className="text-[10px] text-slate-400">From open reports</span>
                                                 </div>
@@ -1951,7 +1940,7 @@ export default function GovernmentDashboard() {
                                             {/* 5 Aggregated Stats Grid */}
                                             <div>
                                                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                                    <span>📊</span> District Key Metrics
+                                                    District Key Metrics
                                                 </h3>
                                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                                     <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
@@ -2008,7 +1997,7 @@ export default function GovernmentDashboard() {
                                             >
                                                 <div className="flex items-start gap-2.5">
                                                     <div className="text-lg shrink-0">
-                                                        {districtDrillData.stats.resolutionRate < 40 ? '⚠️' : districtDrillData.stats.resolutionRate <= 70 ? '📊' : '✅'}
+                                                        {districtDrillData.stats.resolutionRate < 40 ? '' : districtDrillData.stats.resolutionRate <= 70 ? '' : ''}
                                                     </div>
                                                     <div>
                                                         <div className="text-xs font-bold uppercase tracking-wider mb-0.5 opacity-75">
@@ -2025,7 +2014,7 @@ export default function GovernmentDashboard() {
                                             <div>
                                                 <div className="flex items-center justify-between mb-2">
                                                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                                        <span>⏳</span> Top Pending Challenges ({districtDrillData.topPendingChallenges?.length || 0})
+                                                        Top Pending Challenges ({districtDrillData.topPendingChallenges?.length || 0})
                                                     </h3>
                                                     <span className="text-[10px] text-slate-400">Needs Academic Routing</span>
                                                 </div>

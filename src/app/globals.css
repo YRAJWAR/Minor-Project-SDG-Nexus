@@ -1,417 +1,298 @@
 @import "tailwindcss";
 
+/* Survey-sheet world (see PRODUCT.md, .impeccable/briefs/landing.md).
+   Paper, ink-blue linework, forest and ochre fields, rust for alerts. Light, daylight scenes. */
 @theme {
-  /* ─── ImpactBridge Light Theme ───────────────────────────── */
-  --color-primary-50: #f0fdf4;
-  --color-primary-100: #dcfce7;
-  --color-primary-200: #bbf7d0;
-  --color-primary-500: #22c55e;
-  --color-primary-600: #16a34a;
-  --color-primary-700: #15803d;
-  --color-sidebar: #ffffff;
-  --color-sidebar-hover: #f8fafc;
-  --color-sidebar-active: #22c55e;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f8fafc;
-  --color-body-bg: #f1f5f9;
-  --color-border: #e2e8f0;
-  --color-border-light: #f1f5f9;
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-muted: #94a3b8;
-  --color-accent-green: #10b981;
-  --color-accent-orange: #f59e0b;
-  --color-accent-red: #ef4444;
-  --color-accent-violet: #8b5cf6;
-  --color-accent-cyan: #06b6d4;
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --color-paper: #eef1ea;
+  --color-paper-deep: #e3e8de;
+  --color-sheet: #fbfcf9;
+  --color-ink: #16212c;
+  --color-ink-soft: #3c4a57;
+  --color-ink-muted: #5d6b77;
+  --color-survey: #1f4e8c;
+  --color-survey-deep: #173d6e;
+  --color-survey-wash: #e3ebf5;
+  --color-forest: #2f5d3a;
+  --color-forest-wash: #e2ece3;
+  --color-ochre: #b7791f;
+  --color-ochre-wash: #f6ead3;
+  --color-rust: #a4372a;
+  --color-rust-wash: #f6e3df;
+  --color-rule: #c9d2c4;
+  --color-rule-soft: #dde3d8;
+
+  /* Older token names still used across the app, mapped into the new world. */
+  --color-primary-50: #e2ece3;
+  --color-primary-100: #d3e3d5;
+  --color-primary-200: #b5cfb9;
+  --color-primary-500: #2f5d3a;
+  --color-primary-600: #264c2f;
+  --color-primary-700: #1d3b24;
+  --color-sidebar: #fbfcf9;
+  --color-sidebar-hover: #eef1ea;
+  --color-sidebar-active: #1f4e8c;
+  --color-surface: #fbfcf9;
+  --color-surface-muted: #eef1ea;
+  --color-body-bg: #eef1ea;
+  --color-border: #c9d2c4;
+  --color-border-light: #dde3d8;
+  --color-text-primary: #16212c;
+  --color-text-secondary: #3c4a57;
+  --color-text-muted: #5d6b77;
+  --color-accent-green: #2f5d3a;
+  --color-accent-orange: #b7791f;
+  --color-accent-red: #a4372a;
+  --color-accent-violet: #5a4b8a;
+  --color-accent-cyan: #1f4e8c;
+
+
+  /* Tailwind scales remapped into the survey world, so existing utility classes inherit it. */
+  --color-slate-50: #f5f7f2; --color-slate-100: #eef1ea; --color-slate-200: #dde3d8; --color-slate-300: #c9d2c4; --color-slate-400: #9aa6a0; --color-slate-500: #5d6b77; --color-slate-600: #46535f; --color-slate-700: #3c4a57; --color-slate-800: #26323d; --color-slate-900: #16212c; --color-slate-950: #0e161e;
+  --color-blue-50: #eef3f9; --color-blue-100: #e3ebf5; --color-blue-200: #c6d6ea; --color-blue-300: #9db8da; --color-blue-400: #5f88bd; --color-blue-500: #3a6aa6; --color-blue-600: #1f4e8c; --color-blue-700: #173d6e; --color-blue-800: #133259; --color-blue-900: #10294a; --color-blue-950: #0b1c33;
+  --color-indigo-50: #eef3f9; --color-indigo-100: #e3ebf5; --color-indigo-200: #c6d6ea; --color-indigo-300: #9db8da; --color-indigo-400: #5f88bd; --color-indigo-500: #3a6aa6; --color-indigo-600: #1f4e8c; --color-indigo-700: #173d6e; --color-indigo-800: #133259; --color-indigo-900: #10294a; --color-indigo-950: #0b1c33;
+  --color-emerald-50: #eef4ef; --color-emerald-100: #e2ece3; --color-emerald-200: #c3d8c6; --color-emerald-300: #9bbfa1; --color-emerald-400: #5f9168; --color-emerald-500: #3d7348; --color-emerald-600: #2f5d3a; --color-emerald-700: #264c2f; --color-emerald-800: #1d3b24; --color-emerald-900: #16301d; --color-emerald-950: #0e2013;
+  --color-green-50: #eef4ef; --color-green-100: #e2ece3; --color-green-200: #c3d8c6; --color-green-300: #9bbfa1; --color-green-400: #5f9168; --color-green-500: #3d7348; --color-green-600: #2f5d3a; --color-green-700: #264c2f; --color-green-800: #1d3b24; --color-green-900: #16301d; --color-green-950: #0e2013;
+  --color-amber-50: #fbf5ea; --color-amber-100: #f6ead3; --color-amber-200: #eed5a8; --color-amber-300: #e2b96e; --color-amber-400: #cf9a3d; --color-amber-500: #b7791f; --color-amber-600: #9a6418; --color-amber-700: #7c5014; --color-amber-800: #5f3d10; --color-amber-900: #4a300d; --color-amber-950: #2e1d08;
+  --color-rose-50: #fbf0ee; --color-rose-100: #f6e3df; --color-rose-200: #ecc4bc; --color-rose-300: #dd998c; --color-rose-400: #c86a5a; --color-rose-500: #b44d3d; --color-rose-600: #a4372a; --color-rose-700: #852c22; --color-rose-800: #66221a; --color-rose-900: #4f1a14; --color-rose-950: #33110d;
+  --color-red-50: #fbf0ee; --color-red-100: #f6e3df; --color-red-200: #ecc4bc; --color-red-300: #dd998c; --color-red-400: #c86a5a; --color-red-500: #b44d3d; --color-red-600: #a4372a; --color-red-700: #852c22; --color-red-800: #66221a; --color-red-900: #4f1a14; --color-red-950: #33110d;
+
+  --font-sans: var(--font-text), 'Mukta', system-ui, sans-serif;
+  --font-display: var(--font-anek), 'Anek Latin', var(--font-sans);
 }
 
 @layer base {
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  html {
+    background: var(--color-paper);
+    scrollbar-color: var(--color-rule) var(--color-paper);
   }
 
   body {
-    background: var(--color-body-bg);
-    color: var(--color-text-primary);
+    background: var(--color-paper);
+    color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
-  ::-webkit-scrollbar {
-    width: 6px;
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+    letter-spacing: -0.01em;
   }
 
-  ::-webkit-scrollbar-track {
-    background: var(--color-body-bg);
+  ::selection {
+    background: var(--color-survey);
+    color: var(--color-sheet);
   }
 
-  ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 3px;
+  :focus-visible {
+    outline: 2px solid var(--color-survey);
+    outline-offset: 2px;
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+  }
+
+  table, .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  input, textarea, select {
+    caret-color: var(--color-survey);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
-/* ─── Card Styles ──────────────────────────────────────────── */
+/* ─── Sheets (was: glass cards) ───────────────────────────── */
 .glass-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  transition: all 0.3s ease;
+  background: var(--color-sheet);
+  border: 1px solid var(--color-rule);
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(22, 33, 44, 0.05), 0 6px 18px -12px rgba(22, 33, 44, 0.18);
 }
 
-.glass-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03);
-  transform: translateY(-1px);
-}
-
-/* Dark glass card — for pages with dark backgrounds (login, register, landing) */
 .glass-card-dark {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(16px);
-  transition: all 0.3s ease;
+  background: var(--color-sheet);
+  border: 1px solid var(--color-rule);
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(22, 33, 44, 0.05), 0 10px 30px -18px rgba(22, 33, 44, 0.3);
+  color: var(--color-ink);
 }
 
-.glass-card-dark:hover {
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-  transform: translateY(-1px);
-}
+/* Old dark-theme pages put light text inside these; keep it readable on paper. */
+.glass-card-dark .text-white { color: var(--color-ink); }
+.glass-card-dark .text-slate-400,
+.glass-card-dark .text-slate-500 { color: var(--color-ink-muted); }
 
-/* ─── Stat Card Icon Circles ──────────────────────────────── */
 .stat-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
 }
 
-/* ─── Gradient Text ────────────────────────────────────────── */
-.gradient-text {
-  background: linear-gradient(135deg, #22c55e, #06b6d4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
+/* Emphasis comes from weight, never gradient text. */
+.gradient-text,
 .gradient-text-cyan {
-  background: linear-gradient(135deg, #22c55e, #06b6d4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--color-survey);
+  font-weight: 700;
 }
 
-/* ─── Buttons ──────────────────────────────────────────────── */
+/* ─── Actions ─────────────────────────────────────────────── */
 .btn-neon {
-  background: var(--color-primary-500);
-  color: white;
-  padding: 10px 24px;
-  border-radius: 10px;
+  background: var(--color-survey);
+  color: var(--color-sheet);
+  border: 1px solid var(--color-survey-deep);
+  border-radius: 4px;
   font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.875rem;
+  transition: background-color 160ms cubic-bezier(0.16, 1, 0.3, 1), transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.btn-neon:hover {
-  background: var(--color-primary-600);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
-}
+.btn-neon:hover { background: var(--color-survey-deep); }
+.btn-neon:active { transform: translateY(1px); }
+.btn-neon:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .btn-outline {
   background: transparent;
-  color: var(--color-primary-500);
-  padding: 10px 24px;
-  border-radius: 10px;
+  color: var(--color-survey);
+  border: 1px solid var(--color-survey);
+  border-radius: 4px;
   font-weight: 600;
-  border: 1.5px solid var(--color-primary-500);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.875rem;
+  transition: background-color 160ms ease-out;
 }
 
-.btn-outline:hover {
-  background: var(--color-primary-50);
-}
+.btn-outline:hover { background: var(--color-survey-wash); }
 
-/* ─── SDG Tag Colors (solid pills) ─────────────────────────── */
-.sdg-1 {
-  background: #e5243b;
-  color: white;
-  border: none;
-}
+/* ─── UN SDG colours (official) ───────────────────────────── */
+.sdg-1 { background: #e5243b; color: white; }
+.sdg-2 { background: #dda63a; color: #16212c; }
+.sdg-3 { background: #4c9f38; color: white; }
+.sdg-4 { background: #c5192d; color: white; }
+.sdg-5 { background: #ff3a21; color: white; }
+.sdg-6 { background: #26bde2; color: #16212c; }
+.sdg-7 { background: #fcc30b; color: #16212c; }
+.sdg-8 { background: #a21942; color: white; }
+.sdg-9 { background: #fd6925; color: #16212c; }
+.sdg-10 { background: #dd1367; color: white; }
+.sdg-11 { background: #fd9d24; color: #16212c; }
+.sdg-12 { background: #bf8b2e; color: #16212c; }
+.sdg-13 { background: #3f7e44; color: white; }
+.sdg-14 { background: #0a97d9; color: white; }
+.sdg-15 { background: #56c02b; color: #16212c; }
+.sdg-16 { background: #00689d; color: white; }
+.sdg-17 { background: #19486a; color: white; }
 
-.sdg-2 {
-  background: #dda63a;
-  color: white;
-  border: none;
-}
+.status-active { color: var(--color-forest); font-weight: 600; }
+.status-completed { color: var(--color-survey); font-weight: 600; }
+.status-ongoing { color: var(--color-ochre); font-weight: 600; }
 
-.sdg-3 {
-  background: #4c9f38;
-  color: white;
-  border: none;
-}
-
-.sdg-4 {
-  background: #c5192d;
-  color: white;
-  border: none;
-}
-
-.sdg-5 {
-  background: #ff3a21;
-  color: white;
-  border: none;
-}
-
-.sdg-6 {
-  background: #26bde2;
-  color: white;
-  border: none;
-}
-
-.sdg-7 {
-  background: #fcc30b;
-  color: #1a1f36;
-  border: none;
-}
-
-.sdg-8 {
-  background: #a21949;
-  color: white;
-  border: none;
-}
-
-.sdg-9 {
-  background: #fd6e25;
-  color: white;
-  border: none;
-}
-
-.sdg-10 {
-  background: #dd1367;
-  color: white;
-  border: none;
-}
-
-.sdg-11 {
-  background: #fd9d24;
-  color: white;
-  border: none;
-}
-
-.sdg-12 {
-  background: #bf8b2e;
-  color: white;
-  border: none;
-}
-
-.sdg-13 {
-  background: #3f7e44;
-  color: white;
-  border: none;
-}
-
-.sdg-14 {
-  background: #0a97d9;
-  color: white;
-  border: none;
-}
-
-.sdg-15 {
-  background: #56c02b;
-  color: white;
-  border: none;
-}
-
-.sdg-16 {
-  background: #0056c8;
-  color: white;
-  border: none;
-}
-
-.sdg-17 {
-  background: #19486a;
-  color: white;
-  border: none;
-}
-
-/* ─── Status Badges ────────────────────────────────────────── */
-.status-active {
-  color: #10b981;
-  font-weight: 600;
-}
-
-.status-completed {
-  color: #22c55e;
-  font-weight: 600;
-}
-
-.status-ongoing {
-  color: #f59e0b;
-  font-weight: 600;
-}
-
-/* ─── Animations ───────────────────────────────────────────── */
+/* ─── Motion ──────────────────────────────────────────────── */
 @keyframes gauge-fill {
-  from {
-    stroke-dashoffset: 283;
-  }
+  from { stroke-dashoffset: 283; }
 }
 
 @keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-
-  100% {
-    background-position: 200% 0;
-  }
+  from { opacity: 0.001; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in-up {
-  animation: fade-in-up 0.5s ease-out forwards;
+  animation: fade-in-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* ─── Progress bar animation ───────────────────────────────── */
-@keyframes progress-fill {
-  from {
-    width: 0%;
-  }
-}
-
-.progress-bar-animated {
-  animation: progress-fill 1.2s ease-out forwards;
-}
-
-/* ─── Input Styling ────────────────────────────────────────── */
-.input-dark {
-  background: var(--color-surface);
-  border: 1.5px solid var(--color-border);
-  border-radius: 10px;
-  padding: 12px 16px;
-  color: var(--color-text-primary);
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
-  width: 100%;
-  outline: none;
-}
-
-.input-dark:focus {
-  border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
-}
-
-.input-dark::placeholder {
-  color: var(--color-text-muted);
-}
-
-/* Dark-themed input — for login/register on dark backgrounds */
+/* ─── Inputs ──────────────────────────────────────────────── */
+.input-dark,
 .input-dark-theme {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1.5px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  padding: 12px 16px;
-  color: #e2e8f0;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
   width: 100%;
-  outline: none;
+  background: var(--color-sheet);
+  border: 1px solid var(--color-rule);
+  border-radius: 4px;
+  padding: 10px 12px;
+  color: var(--color-ink);
+  font-size: 0.9375rem;
+  transition: border-color 140ms ease-out, box-shadow 140ms ease-out;
 }
 
+.input-dark:focus,
 .input-dark-theme:focus {
-  border-color: #06b6d4;
-  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
-  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+  border-color: var(--color-survey);
+  box-shadow: 0 0 0 3px var(--color-survey-wash);
 }
 
+.input-dark::placeholder,
 .input-dark-theme::placeholder {
-  color: #64748b;
+  color: var(--color-ink-muted);
 }
 
-/* Select dropdowns inside dark-theme forms */
 select.input-dark-theme {
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%233c4a57' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 14px center;
-  padding-right: 36px;
+  background-position: right 12px center;
+  padding-right: 34px;
   cursor: pointer;
 }
 
-select.input-dark-theme option {
-  background: #1e293b;
-  color: #e2e8f0;
+/* ─── Maps ────────────────────────────────────────────────── */
+.leaflet-container {
+  background: var(--color-paper) !important;
+  font-family: var(--font-sans) !important;
 }
 
-/* ─── Leaflet Light Theme ──────────────────────────────────── */
-.leaflet-container {
-  background: var(--color-surface) !important;
+/* Base tiles printed in survey-sheet tones (a filter over the neutral basemap). */
+.survey-tiles {
+  filter: sepia(0.35) hue-rotate(45deg) saturate(0.7) brightness(1.02) contrast(0.95);
 }
 
 .leaflet-control-zoom a {
-  background: var(--color-surface) !important;
-  color: var(--color-text-primary) !important;
-  border-color: var(--color-border) !important;
+  background: var(--color-sheet) !important;
+  color: var(--color-ink) !important;
+  border-color: var(--color-rule) !important;
 }
 
+.leaflet-tooltip,
 .leaflet-popup-content-wrapper {
-  background: var(--color-surface) !important;
-  color: var(--color-text-primary) !important;
-  border-radius: 12px !important;
-  border: 1px solid var(--color-border) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+  background: var(--color-sheet) !important;
+  color: var(--color-ink) !important;
+  border: 1px solid var(--color-rule) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 14px -6px rgba(22, 33, 44, 0.25) !important;
 }
 
 .leaflet-popup-tip {
-  background: var(--color-surface) !important;
+  background: var(--color-sheet) !important;
 }
 
-/* ─── Table Styles ─────────────────────────────────────────── */
+/* ─── Tables ──────────────────────────────────────────────── */
 .data-table th {
-  background: var(--color-surface-muted);
-  color: var(--color-text-secondary);
+  background: var(--color-paper);
+  color: var(--color-ink-soft);
   font-weight: 600;
   font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 12px 16px;
+  letter-spacing: 0.04em;
+  padding: 10px 16px;
   text-align: left;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-rule);
 }
 
 .data-table td {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--color-border-light);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-rule-soft);
   font-size: 0.875rem;
-  color: var(--color-text-primary);
+  color: var(--color-ink);
 }
 
 .data-table tr:hover td {
-  background: var(--color-surface-muted);
+  background: var(--color-paper);
 }

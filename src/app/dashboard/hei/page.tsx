@@ -350,7 +350,7 @@ export default function HEIChallengeInboxPage() {
 
                                         <button
                                             type="button"
-                                            onClick={() => router.push(`/dashboard/hei/team-formation/${challenge.id}`)}
+                                            onClick={() => router.push(`/dashboard/hei/proposal/${challenge.id}`)}
                                             className="flex-1 sm:flex-initial justify-center px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm shadow-indigo-600/20 transition flex items-center gap-1.5 cursor-pointer"
                                         >
                                             <span>Accept Challenge</span>

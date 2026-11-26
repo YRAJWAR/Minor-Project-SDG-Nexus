@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import type { MilestoneStatus, Role } from '@prisma/client';
 import { requireUser, inJurisdiction } from '@/server/middleware/auth';
+import { transition } from '@/server/lifecycle';
+import { appendLedger } from '@/server/ledger';
 
 const fail = (error: string, status: number) =>
     NextResponse.json({ success: false, error, timestamp: new Date().toISOString() }, { status });
@@ -95,16 +97,47 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ p
             return fail(`A milestone cannot move from ${current.status} to ${next}.`, 409);
         }
 
-        milestone = await prisma.milestone.update({
-            where: { id: milestoneId },
-            data: {
-                status: next,
-                ...(typeof verifierCode === 'string' ? { verifierCode } : {}),
-                ...(next === 'CSR_APPROVED' ? { fundReleased: amount } : {}),
-            },
-        });
-
         const challengeId = current.team.proposal.challengeId;
+        if (next === 'CSR_APPROVED' && current.amount !== null && Math.round(amount!) !== Math.round(current.amount)) {
+            return fail(`This milestone's agreed tranche is ₹${Math.round(current.amount).toLocaleString('en-IN')}.`, 400);
+        }
+        const planned = current.amount !== null;
+        milestone = await prisma.$transaction(async (tx) => {
+            if (next === 'CSR_APPROVED' && planned) {
+                // Only a funder who committed to this project may release, and never more than they committed.
+                if (!user.organizationId) throw new Error('NO_ORG');
+                const c = await tx.fundingCommitment.findUnique({ where: { challengeId_csrOrgId: { challengeId, csrOrgId: user.organizationId } } });
+                if (!c || c.amount - c.released < amount!) throw new Error('OVER_COMMITMENT');
+                await tx.fundingCommitment.update({ where: { id: c.id }, data: { released: { increment: amount! } } });
+            }
+            const { count } = await tx.milestone.updateMany({
+                where: { id: milestoneId, status: current.status },
+                data: {
+                    status: next,
+                    ...(typeof verifierCode === 'string' ? { verifierCode } : {}),
+                    ...(next === 'CSR_APPROVED' ? { fundReleased: amount } : {}),
+                },
+            });
+            if (count !== 1) throw new Error('CHANGED');
+            await appendLedger({
+                actor_id: user.id, actor_role: user.role, action: `MILESTONE_${next}`, entity_type: 'Milestone', entity_id: milestoneId,
+                previous_value: { status: current.status }, new_value: { status: next, ...(next === 'CSR_APPROVED' ? { released: amount } : {}), challengeId },
+            }, tx);
+            return tx.milestone.findUniqueOrThrow({ where: { id: milestoneId } });
+        }).catch((err: Error) => {
+            if (err.message === 'NO_ORG' || err.message === 'OVER_COMMITMENT') return 'OVER_COMMITMENT' as const;
+            if (err.message === 'CHANGED') return 'CHANGED' as const;
+            throw err;
+        });
+        if (milestone === 'OVER_COMMITMENT') return fail('Your organisation has not committed enough to this project to release this tranche.', 403);
+        if (milestone === 'CHANGED') return fail('This milestone was just changed by someone else. Reload and try again.', 409);
+
+        // Last tranche paid → the project is complete.
+        if (next === 'CSR_APPROVED' && planned) {
+            const unpaid = await prisma.milestone.count({ where: { teamId: current.teamId, status: { not: 'CSR_APPROVED' } } });
+            if (unpaid === 0) await transition(challengeId, 'COMPLETE', user).catch((e) => console.warn('Could not complete project:', e));
+        }
+
         const heiUserIds = current.team.hei.users.map((u) => u.id);
         const studentUserIds = current.team.members.map((m) => m.student.userId);
         try {

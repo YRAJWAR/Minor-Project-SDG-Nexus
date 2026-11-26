@@ -172,6 +172,17 @@ const MILESTONE_PLAN = [
     ['Handover and 30-day impact check', 'Before/after numbers and a handover note signed by the panchayat.', 0.2],
 ] as const;
 
+// A complete proposal plan in the shape the app validates (validatePlan in src/server/lifecycle.ts).
+function planFor(facultyId: string, members: string[], budget: number, weeks: number) {
+    const amounts = MILESTONE_PLAN.map(([, , share]) => Math.round(budget * share));
+    amounts[amounts.length - 1] += budget - amounts.reduce((a, b) => a + b, 0); // rounding goes to the last tranche
+    return {
+        teamPlan: { facultyId, members: members.map((id, i) => ({ studentProfileId: id, role: i === 0 ? 'Team Lead' : 'Member' })) },
+        milestonePlan: MILESTONE_PLAN.map(([title], i) => ({ title, week: Math.max(1, Math.round(((i + 1) * weeks) / 4)), amount: amounts[i] })),
+        amounts,
+    };
+}
+
 const STAGE: Record<ChallengeStatus, number> = {
     SUBMITTED: 0, AI_PROCESSED: 1, VALIDATED: 2, UNIVERSITY_ASSIGNED: 3, TEAM_FORMED: 4, IN_PROGRESS: 5, COMPLETED: 6, DEPLOYED: 7,
 };
@@ -179,7 +190,7 @@ const STAGE: Record<ChallengeStatus, number> = {
 async function main() {
     // Children before parents.
     await prisma.$transaction([
-        prisma.endorsement.deleteMany(), prisma.notification.deleteMany(), prisma.studentCredential.deleteMany(), prisma.milestone.deleteMany(),
+        prisma.fundingCommitment.deleteMany(), prisma.endorsement.deleteMany(), prisma.notification.deleteMany(), prisma.studentCredential.deleteMany(), prisma.milestone.deleteMany(),
         prisma.teamMember.deleteMany(), prisma.projectTeam.deleteMany(), prisma.challengeProposal.deleteMany(),
         prisma.challenge.deleteMany(), prisma.studentProfile.deleteMany(), prisma.auditLog.deleteMany(),
         prisma.riskFlag.deleteMany(), prisma.cSRAllocation.deleteMany(), prisma.impactScore.deleteMany(),
@@ -314,14 +325,24 @@ async function main() {
         // A proposal waiting for the officer on some validated challenges.
         if (status === 'VALIDATED' && ci % 2 === 0) {
             const near = UNIVERSITIES.find((u) => PLACES[u.district].state === place.state) ?? UNIVERSITIES[ci % UNIVERSITIES.length];
-            await prisma.challengeProposal.create({
-                data: {
-                    challengeId: challenge.id, heiId: unis[near.key].id, status: 'SUBMITTED', timelineWeeks: 10,
-                    approach: `Field survey with the panchayat, then a low-cost pilot designed by ${near.depts[0]} students, reviewed by the community before roll-out.`,
-                    budgetRequested: 300000 + Math.round(rand() * 6) * 50000, fundingSource: 'CSR', ipDeclaration: 'Open design; the community and district may reuse it freely.',
-                    aiQualityScore: Number((0.65 + rand() * 0.25).toFixed(2)), createdAt: ago(daysAgo - 4),
-                },
-            });
+            const bidders = district === 'Nalgonda' ? [near, UNIVERSITIES.find((u) => u.key === 'scer')!] : [near];
+            for (const [bi, uni] of bidders.entries()) {
+                const budget = 300000 + Math.round(rand() * 6) * 50000;
+                const weeks = 10 + bi * 4;
+                const pool = students[uni.key];
+                const plan = planFor(facultyIds[uni.key], [pool[(ci + 3) % pool.length].profileId, pool[(ci + 4) % pool.length].profileId, pool[(ci + 5) % pool.length].profileId], budget, weeks);
+                await prisma.challengeProposal.create({
+                    data: {
+                        challengeId: challenge.id, heiId: unis[uni.key].id, status: 'SUBMITTED', timelineWeeks: weeks,
+                        approach: bi === 0
+                            ? `Field survey with the panchayat, then a low-cost pilot designed by ${uni.depts[0]} students, reviewed by the community before roll-out. Local caretakers are trained so it keeps working after handover.`
+                            : `A larger study across nearby villages first, then a design that can be replicated district-wide, built by ${uni.depts.slice(0, 2).join(' and ')} students with a remote monitoring dashboard.`,
+                        budgetRequested: budget, fundingSource: 'CSR', ipDeclaration: 'Open design; the community and district may reuse it freely.',
+                        aiQualityScore: Number((0.65 + rand() * 0.25).toFixed(2)), createdAt: ago(daysAgo - 4 + bi),
+                        teamPlan: plan.teamPlan, milestonePlan: plan.milestonePlan,
+                    },
+                });
+            }
         }
         if (!uniKey) continue;
 
@@ -347,7 +368,19 @@ async function main() {
                 members: { create: [...new Map(members.map((m) => [m.profileId, m])).values()].map((m, i) => ({ studentProfileId: m.profileId, role: i === 0 ? 'Team Lead' : pick(['Field Lead', 'Design', 'Data & Reporting']) })) },
             },
         });
-        if (STAGE[status] < 5) continue;
+        const agreed = planFor(facultyIds[uniKey], [...new Map(members.map((m) => [m.profileId, m])).keys()], budget, proposal.timelineWeeks);
+        await prisma.challengeProposal.update({ where: { id: proposal.id }, data: { teamPlan: agreed.teamPlan, milestonePlan: agreed.milestonePlan } });
+        // Who funds it: Deccan Polymers in Telangana (the demo CSR), otherwise another partner.
+        const funderId = place.state === 'Telangana' ? orgByName['Deccan Polymers Ltd'] : csrIds[1 + (ci % (csrIds.length - 1))];
+        if (STAGE[status] === 4) {
+            // Plan selected, waiting for money: milestones planned, 40% committed by another partner, the rest open.
+            for (const [mi, [mTitle, mDesc]] of MILESTONE_PLAN.entries()) {
+                await prisma.milestone.create({ data: { teamId: team.id, title: mTitle, description: mDesc, status: 'PENDING', proofUrls: [], amount: agreed.amounts[mi], dueDate: new Date(NOW + agreed.milestonePlan[mi].week * 7 * DAY) } });
+            }
+            await prisma.fundingCommitment.create({ data: { challengeId: challenge.id, csrOrgId: orgByName['Westcoast Infra Holdings'], amount: Math.round(budget * 0.4), createdAt: ago(daysAgo - 8) } });
+            continue;
+        }
+        await prisma.fundingCommitment.create({ data: { challengeId: challenge.id, csrOrgId: funderId, amount: budget, released: 0, createdAt: ago(daysAgo - 8) } });
 
         // How far each project has got: completed = all released; in progress varies.
         const plan: MilestoneStatus[] =
@@ -373,10 +406,14 @@ async function main() {
                     dueDate: new Date(NOW - (daysAgo - 10) * DAY + ((mi + 1) * (proposal.timelineWeeks * 7 * DAY)) / 4),
                     hashValue, gpsLat: sealed ? lat : null, gpsLng: sealed ? lng : null, createdAt,
                     verifierCode: st === 'GP_VERIFIED' || st === 'CSR_APPROVED' ? `GP-${district.slice(0, 3).toUpperCase()}-${100 + ci * 4 + mi}` : null,
-                    fundReleased: st === 'CSR_APPROVED' ? Math.round(budget * share) : null,
+                    fundReleased: st === 'CSR_APPROVED' ? agreed.amounts[mi] : null,
+                    amount: agreed.amounts[mi],
                 },
             });
         }
+
+        const released = (await prisma.milestone.aggregate({ where: { teamId: team.id, status: 'CSR_APPROVED' }, _sum: { fundReleased: true } }))._sum.fundReleased ?? 0;
+        await prisma.fundingCommitment.update({ where: { challengeId_csrOrgId: { challengeId: challenge.id, csrOrgId: funderId } }, data: { released } });
 
         if (STAGE[status] >= 6) {
             const issuedAt = ago(Math.max(5, daysAgo - 120));

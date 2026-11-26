@@ -49,7 +49,6 @@ const NAV_ITEMS: Record<string, { label: string; href: string; icon: string }[]>
     ],
     hei: [
         { label: 'Challenge Inbox', href: '/dashboard/hei', icon: '📥' },
-        { label: 'Team Formation', href: '/dashboard/hei/team-formation', icon: '👥' },
         { label: 'Proposal Builder', href: '/dashboard/hei/proposals', icon: '📝' },
         { label: 'Milestone Tracker', href: '/dashboard/hei/milestones', icon: '🎯' },
         { label: 'Student Credentials', href: '/dashboard/hei/credentials', icon: '🎓' },

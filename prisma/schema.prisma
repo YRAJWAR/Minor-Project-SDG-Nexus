@@ -97,6 +97,7 @@ model Organization {
   projects        Project[]
   impact_scores   ImpactScore[]
   csr_allocations CSRAllocation[] @relation("CorporateCSR")
+  commitments     FundingCommitment[]
   risk_flags      RiskFlag[]
 
   @@index([type])
@@ -294,6 +295,7 @@ enum ChallengeStatus {
   VALIDATED
   UNIVERSITY_ASSIGNED
   TEAM_FORMED
+  FUNDED // CSR commitments cover the selected proposal's budget
   IN_PROGRESS
   COMPLETED
   DEPLOYED
@@ -391,6 +393,7 @@ model Challenge {
   proposals     ChallengeProposal[]
   notifications Notification[]
   endorsements  Endorsement[]
+  commitments   FundingCommitment[]
 
   @@index([district])
   @@index([status])
@@ -413,6 +416,8 @@ model ChallengeProposal {
   ipDeclaration   String
   status          ProposalStatus @default(DRAFT)
   aiQualityScore  Float?
+  teamPlan        Json? // [{ studentProfileId, role }] — 2–8 students of the same university
+  milestonePlan   Json? // [{ title, week, amount }] — 2–6 items; amounts add up to budgetRequested
   createdAt       DateTime       @default(now())
   team            ProjectTeam?
 
@@ -472,6 +477,7 @@ model Milestone {
   exifTimestamp DateTime?
   verifierCode  String?
   fundReleased  Float?
+  amount        Float? // tranche agreed in the selected proposal; a release must equal it
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
@@ -530,3 +536,19 @@ model Endorsement {
   @@unique([challengeId, userId])
   @@map("endorsements")
 }
+
+// A CSR partner's promise to fund part of a selected proposal. Releases draw from it, never beyond it.
+model FundingCommitment {
+  id          String       @id @default(cuid())
+  challengeId String
+  challenge   Challenge    @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  csrOrgId    String
+  csrOrg      Organization @relation(fields: [csrOrgId], references: [id])
+  amount      Float
+  released    Float        @default(0)
+  createdAt   DateTime     @default(now())
+
+  @@unique([challengeId, csrOrgId])
+  @@map("funding_commitments")
+}
+

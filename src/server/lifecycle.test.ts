@@ -2,7 +2,7 @@
 // Guards the Phase 2 rules: who may do what from which status, the priority score, and the ledger hash chain.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { allowedActions, blockedReason, priority } from './lifecycle';
+import { allowedActions, blockedReason, priority, validatePlan } from './lifecycle';
 import { entryHash } from './ledger';
 
 const ch = (status: 'SUBMITTED' | 'VALIDATED' | 'REJECTED', district = 'Nalgonda') => ({ id: 'c1', status, district, submitterId: 'citizen1' });
@@ -11,7 +11,7 @@ const officer = (district: string) => ({ id: 'o1', role: 'OFFICER' as const, dis
 test('lifecycle: officers act only in their district and only from the right status', () => {
     assert.deepEqual(allowedActions(ch('SUBMITTED'), officer('Nalgonda')).sort(), ['MERGE', 'REJECT', 'VERIFY']);
     assert.deepEqual(allowedActions(ch('SUBMITTED'), officer('Pune')), []);
-    assert.deepEqual(allowedActions(ch('VALIDATED'), officer('Nalgonda')), ['ASSIGN']);
+    assert.deepEqual(allowedActions(ch('VALIDATED'), officer('Nalgonda')).sort(), ['ASSIGN', 'SELECT_PROPOSAL']);
     assert.deepEqual(allowedActions(ch('REJECTED'), officer('Nalgonda')), []);
     assert.deepEqual(allowedActions(ch('SUBMITTED'), { id: 'a', role: 'ADMIN' }).sort(), ['MERGE', 'REJECT', 'VERIFY']);
 });
@@ -44,4 +44,22 @@ test('ledger: chained hashes detect an edited old entry', () => {
     const edited = entryHash({ ...e1, new_value: '{"status":"REJECTED"}' });
     assert.notEqual(edited, h1, 'editing an entry changes its hash');
     assert.notEqual(entryHash({ ...e2, prev_hash: edited }), h2, 'so the next entry no longer matches either');
+});
+
+test('proposal plan: team size, milestone count and amounts that add up exactly to the budget', () => {
+    const team = { facultyId: 'f1', members: [{ studentProfileId: 's1' }, { studentProfileId: 's2' }] };
+    const ms = [{ title: 'Survey', week: 2, amount: 100000 }, { title: 'Install', week: 8, amount: 200000 }];
+    assert.deepEqual(validatePlan(team, ms, 300000, 12), []);
+    assert.match(validatePlan(team, ms, 350000, 12).join(' '), /add up to ₹3,00,000/);
+    assert.match(validatePlan({ ...team, members: [{ studentProfileId: 's1' }] }, ms, 300000, 12).join(' '), /2–8 students/);
+    assert.match(validatePlan({ ...team, members: [{ studentProfileId: 's1' }, { studentProfileId: 's1' }] }, ms, 300000, 12).join(' '), /twice/);
+    assert.match(validatePlan(team, [ms[0]], 100000, 12).join(' '), /2–6 milestones/);
+    assert.match(validatePlan(team, [{ ...ms[0], week: 20 }, ms[1]], 300000, 12).join(' '), /weeks 1–12/);
+});
+
+test('funding and work stages: only CSR commits, work starts once funded', () => {
+    const csr = { id: 'k1', role: 'CSR' as const, organizationId: 'org1' };
+    assert.deepEqual(allowedActions({ id: 'c', status: 'TEAM_FORMED', district: 'Nalgonda', submitterId: null }, csr), ['COMMIT_FUNDS']);
+    assert.deepEqual(allowedActions({ id: 'c', status: 'TEAM_FORMED', district: 'Nalgonda', submitterId: null }, officer('Nalgonda')), []);
+    assert.ok(allowedActions({ id: 'c', status: 'FUNDED', district: 'Nalgonda', submitterId: null }, { id: 's', role: 'STUDENT' }).includes('START'));
 });

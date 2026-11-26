@@ -60,6 +60,7 @@ interface MilestoneItem {
     gpsLng?: number | null;
     verifierCode?: string | null;
     fundReleased?: number | null;
+    amount?: number | null; // planned tranche (Phase 3 projects)
     createdAt?: string;
 }
 
@@ -133,6 +134,10 @@ export default function MilestoneTrackerPage() {
     const [sealedHash, setSealedHash] = useState<string | null>(null);
     const [sealedSuccess, setSealedSuccess] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
+    // Planned milestones (from the selected proposal) waiting for proof; the proof is attached to one of them.
+    const [plannedId, setPlannedId] = useState('');
+    const plannedOpen = milestones.filter((m) => m.amount != null && (m.status === 'PENDING' || m.status === 'REJECTED'));
+    const isPlannedProject = milestones.some((m) => m.amount != null);
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const videoInputRef = useRef<HTMLInputElement | null>(null);
@@ -254,6 +259,10 @@ export default function MilestoneTrackerPage() {
 
     // ON MILESTONE SUBMISSION (Key Technical Requirement)
     const handleSubmitMilestone = async () => {
+        if (isPlannedProject && !plannedId) {
+            setFormError('Choose which planned milestone this proof is for');
+            return;
+        }
         if (!newTitle.trim()) {
             setFormError('Milestone title is required');
             return;
@@ -276,6 +285,7 @@ export default function MilestoneTrackerPage() {
                 body: JSON.stringify({
                     projectId: selectedProject?.projectId || selectedProject?.id,
                     teamId: selectedProject?.teamId || selectedProject?.id,
+                    ...(plannedId ? { milestoneId: plannedId } : {}),
                     title: newTitle.trim(),
                     description: newDescription.trim(),
                     dueDate: newDueDate,
@@ -293,7 +303,8 @@ export default function MilestoneTrackerPage() {
             // Show exactly what the server saved.
             const submittedMilestone: MilestoneItem = json.data.milestone;
             setSealedHash(json.data.hashValue);
-            setMilestones((prev) => [submittedMilestone, ...prev]);
+            setMilestones((prev) => (plannedId ? prev.map((m) => (m.id === submittedMilestone.id ? submittedMilestone : m)) : [submittedMilestone, ...prev]));
+            setPlannedId('');
             setSealedSuccess(true);
         } catch (err: any) {
             setFormError(err.message || 'Error sealing milestone');
@@ -676,6 +687,26 @@ export default function MilestoneTrackerPage() {
                                             </button>
                                         </div>
                                     </motion.div>
+                                )}
+
+                                {isPlannedProject && (
+                                    <div className="space-y-1.5">
+                                        <label htmlFor="planned-ms" className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                            Planned milestone <span className="text-rose-500">*</span>
+                                        </label>
+                                        <select id="planned-ms" value={plannedId}
+                                            onChange={(e) => {
+                                                const m = plannedOpen.find((x) => x.id === e.target.value);
+                                                setPlannedId(e.target.value);
+                                                if (m) { setNewTitle(m.title); setNewDueDate(m.dueDate.slice(0, 10)); }
+                                            }}
+                                            className="w-full text-xs sm:text-sm p-3 rounded-xl border border-slate-200 text-slate-800">
+                                            <option value="">{plannedOpen.length ? 'Choose the milestone this proof is for…' : 'All planned milestones are submitted'}</option>
+                                            {plannedOpen.map((m) => (
+                                                <option key={m.id} value={m.id}>{m.title} — ₹{Math.round(m.amount ?? 0).toLocaleString('en-IN')}{m.status === 'REJECTED' ? ' (redo)' : ''}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 )}
 
                                 {/* 1. Title */}

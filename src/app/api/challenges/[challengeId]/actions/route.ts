@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/server/middleware/auth';
 import { transition, LifecycleError, type Action } from '@/server/lifecycle';
 
-// POST { action: 'VERIFY' | 'REJECT' | 'MERGE' | 'ASSIGN' | 'ENDORSE', reason?, targetId?, heiId?, sdgTags? }
+// POST { action: 'VERIFY'|'REJECT'|'MERGE'|'ASSIGN'|'ENDORSE'|'SELECT_PROPOSAL'|'COMMIT_FUNDS', reason?, targetId?, heiId?, sdgTags?, proposalId?, amount? }
 // All rules live in src/server/lifecycle.ts; this route only passes the request through.
 export async function POST(req: NextRequest, context: { params: Promise<{ challengeId: string }> }) {
     const user = await requireUser(req);
@@ -17,6 +17,8 @@ export async function POST(req: NextRequest, context: { params: Promise<{ challe
             targetId: typeof body.targetId === 'string' ? body.targetId : undefined,
             heiId: typeof body.heiId === 'string' ? body.heiId : undefined,
             sdgTags: Array.isArray(body.sdgTags) ? body.sdgTags.map(Number) : undefined,
+            proposalId: typeof body.proposalId === 'string' ? body.proposalId : undefined,
+            amount: body.amount !== undefined ? Number(body.amount) : undefined,
         });
         return NextResponse.json({ success: true, data: result });
     } catch (err) {

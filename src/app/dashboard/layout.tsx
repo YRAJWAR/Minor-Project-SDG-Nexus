@@ -21,7 +21,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center" style={{ background: '#f1f5f9' }}>
+            <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--color-paper)' }}>
                 <div className="text-center">
                     <Image src="/logo.png" alt="SDG Nexus" width={48} height={48}
                         className="rounded-xl mx-auto mb-4 animate-pulse" style={{ objectFit: 'contain' }} />
@@ -34,9 +34,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!user) return null;
 
     return (
-        <div className="min-h-screen" style={{ background: '#f1f5f9' }}>
+        <div className="min-h-screen" style={{ background: 'var(--color-paper)' }}>
             {/* Mobile Top Header Bar */}
-            <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-40 shadow-xs">
+            <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-[var(--color-sheet)] border-b border-[var(--color-rule)] flex items-center justify-between px-4 z-40 shadow-xs">
                 <div className="flex items-center gap-2.5">
                     <button
                         type="button"
@@ -47,7 +47,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                     </button>
                     <Link href="/" className="flex items-center gap-2 no-underline">
-                        <div className="w-7 h-7 rounded-lg bg-[#0f172a] p-1 flex items-center justify-center">
+                        <div className="w-7 h-7 rounded-lg p-0.5 flex items-center justify-center">
                             <Image src="/logo.png" alt="SDG Nexus" width={22} height={22} style={{ objectFit: 'contain' }} />
                         </div>
                         <span className="font-bold text-slate-900 text-sm">SDG Nexus</span>

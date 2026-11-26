@@ -212,21 +212,21 @@ export default function PublicProjectLedgerPage({
         switch (status) {
             case 'CSR_APPROVED':
                 return (
-                    <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 w-fit">
+                    <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-emerald-500/15 text-[var(--color-forest)] border border-emerald-500/30 flex items-center gap-1 w-fit">
                         <ShieldCheck className="w-3.5 h-3.5" />
                         CSR_APPROVED
                     </span>
                 );
             case 'GP_VERIFIED':
                 return (
-                    <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1 w-fit">
+                    <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-amber-500/15 text-[var(--color-ochre)] border border-amber-500/30 flex items-center gap-1 w-fit">
                         <Check className="w-3.5 h-3.5" />
                         GP_VERIFIED
                     </span>
                 );
             case 'SUBMITTED':
                 return (
-                    <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center gap-1 w-fit">
+                    <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-blue-500/15 text-[var(--color-survey)] border border-blue-500/30 flex items-center gap-1 w-fit">
                         <Clock className="w-3.5 h-3.5" />
                         SUBMITTED
                     </span>
@@ -234,7 +234,7 @@ export default function PublicProjectLedgerPage({
             case 'PENDING':
             default:
                 return (
-                    <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-slate-700/40 text-slate-300 border border-slate-600/40 flex items-center gap-1 w-fit">
+                    <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-[var(--color-paper)] text-[var(--color-ink-soft)] border border-[var(--color-rule)] flex items-center gap-1 w-fit">
                         PENDING
                     </span>
                 );
@@ -243,21 +243,21 @@ export default function PublicProjectLedgerPage({
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6">
+            <div className="min-h-screen bg-[var(--color-paper)] text-[var(--color-ink)] flex flex-col items-center justify-center p-6">
                 <div className="w-12 h-12 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" />
-                <h2 className="text-base font-bold text-white">Accessing Cryptographic Ledger</h2>
-                <p className="text-xs text-slate-400 mt-1 font-mono">Synchronizing SHA-256 Merkle root...</p>
+                <h2 className="text-base font-bold text-[var(--color-ink)]">Accessing Cryptographic Ledger</h2>
+                <p className="text-xs text-[var(--color-ink-muted)] mt-1 font-mono">Synchronizing SHA-256 Merkle root...</p>
             </div>
         );
     }
 
     if (!project) {
         return (
-            <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center">
-                <AlertTriangle className="w-10 h-10 text-rose-400 mb-3" />
-                <h2 className="text-base font-bold text-white">Ledger not available</h2>
-                <p className="text-xs text-slate-400 mt-1 mb-5">{loadError || 'No project found.'}</p>
-                <Link href="/track" className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold">
+            <div className="min-h-screen bg-[var(--color-paper)] text-[var(--color-ink)] flex flex-col items-center justify-center p-6 text-center">
+                <AlertTriangle className="w-10 h-10 text-[var(--color-rust)] mb-3" />
+                <h2 className="text-base font-bold text-[var(--color-ink)]">Ledger not available</h2>
+                <p className="text-xs text-[var(--color-ink-muted)] mt-1 mb-5">{loadError || 'No project found.'}</p>
+                <Link href="/track" className="px-4 py-2 rounded-xl bg-[var(--color-sheet)] hover:bg-[var(--color-paper)] text-xs font-semibold">
                     Back to tracking
                 </Link>
             </div>
@@ -266,20 +266,20 @@ export default function PublicProjectLedgerPage({
     const effectiveProject = project;
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white">
+        <div className="min-h-screen bg-[var(--color-paper)] text-white selection:bg-indigo-500 selection:text-white">
             {/* Top Navigation & Breadcrumb */}
-            <div className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-40">
+            <div className="border-b border-[var(--color-rule)] bg-[var(--color-paper)] backdrop-blur sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                         <Link
                             href="/track"
-                            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800"
+                            className="inline-flex items-center gap-1.5 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition px-2.5 py-1 rounded-lg bg-[var(--color-sheet)] border border-[var(--color-rule)]"
                         >
                             <ArrowLeft className="w-3.5 h-3.5" />
                             <span>Public Tracker</span>
                         </Link>
                         <span className="text-slate-600 text-xs hidden sm:inline">•</span>
-                        <div className="flex items-center gap-1.5 text-xs text-indigo-400 font-semibold">
+                        <div className="flex items-center gap-1.5 text-xs text-[var(--color-survey)] font-semibold">
                             <Database className="w-3.5 h-3.5" />
                             <span>SHA-256 Public Proof Ledger</span>
                         </div>
@@ -287,13 +287,13 @@ export default function PublicProjectLedgerPage({
 
                     <div className="flex items-center gap-2 text-xs">
                         {user ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-950/60 text-emerald-300 border border-emerald-800 text-[11px] font-semibold">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-950/60 text-[var(--color-forest)] border border-emerald-800 text-[11px] font-semibold">
                                 <Eye className="w-3 h-3" />
                                 Reviewer Mode ({user.role})
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900 text-slate-400 border border-slate-800 text-[11px]">
-                                <EyeOff className="w-3 h-3 text-slate-500" />
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--color-sheet)] text-[var(--color-ink-muted)] border border-[var(--color-rule)] text-[11px]">
+                                <EyeOff className="w-3 h-3 text-[var(--color-ink-muted)]" />
                                 Public Access (Proofs Redacted)
                             </span>
                         )}
@@ -303,40 +303,40 @@ export default function PublicProjectLedgerPage({
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
                 {/* ─── HEADER ──────────────────────────────────────────────── */}
-                <header className="rounded-2xl border border-slate-800/90 bg-gradient-to-br from-slate-900 via-slate-900/90 to-indigo-950/40 p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+                <header className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper)] p-6 sm:p-8 shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-                        <Binary className="w-64 h-64 text-indigo-400" />
+                        <Binary className="w-64 h-64 text-[var(--color-survey)]" />
                     </div>
 
                     <div className="relative z-10 space-y-4 max-w-4xl">
                         <div className="flex flex-wrap items-center gap-2.5">
-                            <span className="px-2.5 py-1 rounded-md text-[11px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="px-2.5 py-1 rounded-md text-[11px] font-extrabold bg-indigo-500/20 text-[var(--color-survey)] border border-indigo-500/30 uppercase tracking-wider flex items-center gap-1.5">
                                 <Sparkles className="w-3.5 h-3.5" />
                                 Immutable Impact Ledger
                             </span>
                             {/* Current ChallengeStatus Badge */}
-                            <span className="px-2.5 py-1 rounded-md text-[11px] font-extrabold bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase tracking-wider">
+                            <span className="px-2.5 py-1 rounded-md text-[11px] font-extrabold bg-blue-500/20 text-[var(--color-survey)] border border-blue-500/30 uppercase tracking-wider">
                                 {effectiveProject.status.replace(/_/g, ' ')}
                             </span>
-                            <span className="text-xs text-slate-400 flex items-center gap-1">
-                                <MapPin className="w-3.5 h-3.5 text-slate-500" />
+                            <span className="text-xs text-[var(--color-ink-muted)] flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5 text-[var(--color-ink-muted)]" />
                                 {effectiveProject.district} District
                             </span>
                         </div>
 
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+                            <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-ink)] tracking-tight leading-tight">
                                 SDG Nexus — Project Impact Ledger
                             </h1>
-                            <p className="text-base sm:text-lg font-semibold text-slate-200 mt-1">
+                            <p className="text-base sm:text-lg font-semibold text-[var(--color-ink)] mt-1">
                                 {effectiveProject.title}
                             </p>
                         </div>
 
                         {/* District, University & SDG tags */}
                         <div className="flex flex-wrap items-center gap-3 text-xs pt-1">
-                            <div className="flex items-center gap-1.5 text-slate-300 font-medium bg-slate-800/80 px-3 py-1 rounded-lg border border-slate-700">
-                                <Building2 className="w-3.5 h-3.5 text-indigo-400" />
+                            <div className="flex items-center gap-1.5 text-[var(--color-ink-soft)] font-medium bg-[var(--color-sheet)] px-3 py-1 rounded-lg border border-[var(--color-rule)]">
+                                <Building2 className="w-3.5 h-3.5 text-[var(--color-survey)]" />
                                 <span>{effectiveProject.universityName}</span>
                             </div>
 
@@ -346,7 +346,7 @@ export default function PublicProjectLedgerPage({
                                     return (
                                         <span
                                             key={tagId}
-                                            className="px-2.5 py-0.5 rounded text-[11px] font-bold text-white shadow-xs"
+                                            className="px-2.5 py-0.5 rounded text-[11px] font-bold text-[var(--color-ink)] shadow-xs"
                                             style={{ backgroundColor: sdg ? sdg.color : '#059669' }}
                                         >
                                             SDG {tagId}
@@ -357,10 +357,10 @@ export default function PublicProjectLedgerPage({
                         </div>
 
                         {/* Cryptographic Immutability Notice (Mandated text) */}
-                        <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-300 flex items-start gap-3 mt-4">
-                            <Lock className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
+                        <div className="p-3.5 rounded-xl bg-[var(--color-paper)] border border-[var(--color-rule)] text-xs text-[var(--color-ink-soft)] flex items-start gap-3 mt-4">
+                            <Lock className="w-4 h-4 text-[var(--color-survey)] mt-0.5 shrink-0" />
                             <p className="leading-relaxed">
-                                <span className="font-semibold text-white">Cryptographic Assurance: </span>
+                                <span className="font-semibold text-[var(--color-ink)]">Cryptographic Assurance: </span>
                                 This ledger is cryptographically immutable. Every entry below was sealed at the moment
                                 of submission. Any modification to the underlying database will be detected instantly.
                             </p>
@@ -369,18 +369,18 @@ export default function PublicProjectLedgerPage({
                 </header>
 
                 {/* ─── MILESTONE LEDGER TABLE ──────────────────────────────── */}
-                <section className="rounded-2xl border border-slate-800 bg-slate-900/80 shadow-xl overflow-hidden">
-                    <div className="p-5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900">
+                <section className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-sheet)] shadow-sm overflow-hidden">
+                    <div className="p-5 border-b border-[var(--color-rule)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--color-sheet)]">
                         <div>
-                            <h2 className="text-base font-bold text-white flex items-center gap-2">
-                                <Database className="w-4 h-4 text-emerald-400" />
+                            <h2 className="text-base font-bold text-[var(--color-ink)] flex items-center gap-2">
+                                <Database className="w-4 h-4 text-[var(--color-forest)]" />
                                 Verified Milestone Ledger Entries
                             </h2>
-                            <p className="text-xs text-slate-400 mt-0.5">
+                            <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">
                                 SHA-256 sealed field telemetry, on-site GP endorsements, and CSR tranche release hashes
                             </p>
                         </div>
-                        <div className="text-xs text-slate-400 font-mono">
+                        <div className="text-xs text-[var(--color-ink-muted)] font-mono">
                             {milestones.length} sealed payload{milestones.length === 1 ? '' : 's'}
                         </div>
                     </div>
@@ -388,7 +388,7 @@ export default function PublicProjectLedgerPage({
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse text-xs">
                             <thead>
-                                <tr className="border-b border-slate-800 bg-slate-950/50 text-slate-400 text-[11px] uppercase tracking-wider font-semibold">
+                                <tr className="border-b border-[var(--color-rule)] bg-[var(--color-paper)] text-[var(--color-ink-muted)] text-[11px] uppercase tracking-wider font-semibold">
                                     <th className="py-3.5 px-4 w-12 text-center">#</th>
                                     <th className="py-3.5 px-4 min-w-[220px]">Milestone Title</th>
                                     <th className="py-3.5 px-4 whitespace-nowrap">Submitted</th>
@@ -398,7 +398,7 @@ export default function PublicProjectLedgerPage({
                                     <th className="py-3.5 px-4 text-right">Verification</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-800/70">
+                            <tbody className="divide-y divide-[var(--color-rule)]">
                                 {milestones.map((m, idx) => {
                                     const coords = formatCoordinates(m.gpsLat, m.gpsLng);
                                     const vResult = verificationResults[m.id];
@@ -408,18 +408,18 @@ export default function PublicProjectLedgerPage({
 
                                     return (
                                         <React.Fragment key={m.id}>
-                                            <tr className="hover:bg-slate-800/40 transition-colors">
+                                            <tr className="hover:bg-[var(--color-sheet)] transition-colors">
                                                 {/* Index */}
-                                                <td className="py-4 px-4 text-center font-mono text-slate-500 font-bold">
+                                                <td className="py-4 px-4 text-center font-mono text-[var(--color-ink-muted)] font-bold">
                                                     0{idx + 1}
                                                 </td>
 
                                                 {/* Milestone Title + Expand Toggle */}
                                                 <td className="py-4 px-4">
-                                                    <div className="font-bold text-white text-sm leading-snug">
+                                                    <div className="font-bold text-[var(--color-ink)] text-sm leading-snug">
                                                         {m.title}
                                                     </div>
-                                                    <div className="text-slate-400 text-[11px] mt-0.5 line-clamp-1">
+                                                    <div className="text-[var(--color-ink-muted)] text-[11px] mt-0.5 line-clamp-1">
                                                         {m.description}
                                                     </div>
                                                     <button
@@ -427,7 +427,7 @@ export default function PublicProjectLedgerPage({
                                                         onClick={() =>
                                                             setExpandedMilestoneId(isExpanded ? null : m.id)
                                                         }
-                                                        className="mt-1.5 text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 inline-flex items-center gap-1 transition"
+                                                        className="mt-1.5 text-[11px] font-semibold text-[var(--color-survey)] hover:text-[var(--color-survey)] inline-flex items-center gap-1 transition"
                                                     >
                                                         {isExpanded ? (
                                                             <>
@@ -444,7 +444,7 @@ export default function PublicProjectLedgerPage({
                                                 </td>
 
                                                 {/* Submitted Timestamp */}
-                                                <td className="py-4 px-4 whitespace-nowrap text-slate-300 font-mono text-[11px]">
+                                                <td className="py-4 px-4 whitespace-nowrap text-[var(--color-ink-soft)] font-mono text-[11px]">
                                                     {new Date(m.createdAt).toLocaleString('en-IN', {
                                                         day: '2-digit',
                                                         month: 'short',
@@ -456,18 +456,18 @@ export default function PublicProjectLedgerPage({
 
                                                 {/* SHA-256 Hash */}
                                                 <td className="py-4 px-4 font-mono">
-                                                    <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800 w-fit">
-                                                        <span className="text-slate-300" title={m.hashValue ?? undefined}>
+                                                    <div className="flex items-center gap-1.5 bg-[var(--color-paper)] px-2.5 py-1 rounded-lg border border-[var(--color-rule)] w-fit">
+                                                        <span className="text-[var(--color-ink-soft)]" title={m.hashValue ?? undefined}>
                                                             {formatTruncatedHash(m.hashValue)}
                                                         </span>
                                                         <button
                                                             type="button"
                                                             onClick={() => m.hashValue && copyToClipboard(m.hashValue, m.id)}
-                                                            className="text-slate-500 hover:text-slate-200 transition p-0.5"
+                                                            className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition p-0.5"
                                                             title="Copy full SHA-256 hash"
                                                         >
                                                             {copiedHashId === m.id ? (
-                                                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                                <Check className="w-3.5 h-3.5 text-[var(--color-forest)]" />
                                                             ) : (
                                                                 <Copy className="w-3.5 h-3.5" />
                                                             )}
@@ -482,7 +482,7 @@ export default function PublicProjectLedgerPage({
                                                             href={coords.href}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="inline-flex items-center gap-1 text-sky-400 hover:text-sky-300 hover:underline transition font-mono text-[11px]"
+                                                            className="inline-flex items-center gap-1 text-[var(--color-survey)] hover:text-[var(--color-survey)] hover:underline transition font-mono text-[11px]"
                                                             title="Open in Google Maps"
                                                         >
                                                             <MapPin className="w-3 h-3 text-sky-500 shrink-0" />
@@ -490,7 +490,7 @@ export default function PublicProjectLedgerPage({
                                                             <ExternalLink className="w-2.5 h-2.5 opacity-75" />
                                                         </a>
                                                     ) : (
-                                                        <span className="text-[11px] text-slate-500">No GPS recorded</span>
+                                                        <span className="text-[11px] text-[var(--color-ink-muted)]">No GPS recorded</span>
                                                     )}
                                                 </td>
 
@@ -507,7 +507,7 @@ export default function PublicProjectLedgerPage({
                                                         disabled={isVerifying}
                                                         className={`px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 ml-auto cursor-pointer ${
                                                             isVerifying
-                                                                ? 'bg-indigo-900 text-indigo-300 border border-indigo-700'
+                                                                ? 'bg-indigo-900 text-[var(--color-survey)] border border-indigo-700'
                                                                 : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20'
                                                         }`}
                                                     >
@@ -529,46 +529,46 @@ export default function PublicProjectLedgerPage({
                                             {/* Verification Banner Row (Appears when verified or while computing) */}
                                             {(isVerifying || vResult) && (
                                                 <tr>
-                                                    <td colSpan={7} className="p-0 border-b border-slate-800">
+                                                    <td colSpan={7} className="p-0 border-b border-[var(--color-rule)]">
                                                         {isVerifying ? (
                                                             <div className="px-6 py-3 bg-indigo-950/40 border-y border-indigo-900/60 flex items-center gap-3 animate-pulse">
                                                                 <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin shrink-0" />
-                                                                <span className="text-xs font-mono text-indigo-300">
+                                                                <span className="text-xs font-mono text-[var(--color-survey)]">
                                                                     {computationPhase || 'Computing SHA-256 verification...'}
                                                                 </span>
                                                             </div>
                                                         ) : vResult?.valid ? (
-                                                            <div className="px-6 py-3.5 bg-emerald-950/40 border-y border-emerald-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-emerald-300">
+                                                            <div className="px-6 py-3.5 bg-emerald-950/40 border-y border-emerald-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[var(--color-forest)]">
                                                                 <div className="flex items-center gap-2">
-                                                                    <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                                                                    <span className="font-bold text-white">
-                                                                        ✅ VERIFIED — Hash confirmed.
+                                                                    <ShieldCheck className="w-4 h-4 text-[var(--color-forest)] shrink-0" />
+                                                                    <span className="font-bold text-[var(--color-ink)]">
+                                                                        VERIFIED — Hash confirmed.
                                                                     </span>
-                                                                    <span className="text-slate-300">
+                                                                    <span className="text-[var(--color-ink-soft)]">
                                                                         Submitted {new Date(vResult.timestamp).toLocaleString('en-IN')}.
                                                                     </span>
                                                                     {vResult.coords && (
-                                                                        <span className="text-emerald-400 font-mono">
+                                                                        <span className="text-[var(--color-forest)] font-mono">
                                                                             Location: {vResult.coords}
                                                                         </span>
                                                                     )}
                                                                 </div>
-                                                                <div className="text-[11px] font-mono text-emerald-400/80">
+                                                                <div className="text-[11px] font-mono text-[var(--color-forest)]/80">
                                                                     Payload integrity confirmed against SHA-256 seal
                                                                 </div>
                                                             </div>
                                                         ) : (
-                                                            <div className="px-6 py-3.5 bg-rose-950/50 border-y border-rose-800/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-rose-300">
+                                                            <div className="px-6 py-3.5 bg-rose-950/50 border-y border-rose-800/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[var(--color-rust)]">
                                                                 <div className="flex items-center gap-2">
-                                                                    <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
-                                                                    <span className="font-bold text-white">
+                                                                    <ShieldAlert className="w-4 h-4 text-[var(--color-rust)] shrink-0" />
+                                                                    <span className="font-bold text-[var(--color-ink)]">
                                                                         {vResult?.sealed
                                                                             ? 'Not verified — the recomputed hash does not match the stored hash.'
                                                                             : 'Not verified — no hash was stored when this milestone was submitted.'}
                                                                     </span>
                                                                 </div>
                                                                 {vResult?.sealed && (
-                                                                    <div className="text-[11px] font-mono text-rose-400">
+                                                                    <div className="text-[11px] font-mono text-[var(--color-rust)]">
                                                                         Expected: {vResult.computedHash.slice(0, 12)}... ≠ Stored: {vResult.storedHash?.slice(0, 12)}...
                                                                     </div>
                                                                 )}
@@ -580,34 +580,34 @@ export default function PublicProjectLedgerPage({
 
                                             {/* ─── PROOF PANEL (Expandable per milestone) ─────────── */}
                                             {isExpanded && (
-                                                <tr className="bg-slate-950/70 border-b border-slate-800">
+                                                <tr className="bg-[var(--color-paper)] border-b border-[var(--color-rule)]">
                                                     <td colSpan={7} className="p-6">
                                                         <div className="space-y-4 max-w-5xl">
                                                             {/* Proof Panel Header */}
-                                                            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800 text-xs">
+                                                            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[var(--color-rule)] text-xs">
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="font-bold text-white">
+                                                                    <span className="font-bold text-[var(--color-ink)]">
                                                                         Field Evidence &amp; Integrity Telemetry
                                                                     </span>
-                                                                    <span className="text-slate-500">•</span>
-                                                                    <span className="text-indigo-400 font-semibold">
+                                                                    <span className="text-[var(--color-ink-muted)]">•</span>
+                                                                    <span className="text-[var(--color-survey)] font-semibold">
                                                                         Submitted by: {effectiveProject.universityName}
                                                                     </span>
                                                                 </div>
 
                                                                 {m.verifierCode && (
-                                                                    <div className="text-slate-400 font-mono text-[11px]">
-                                                                        Endorsement Code: <span className="text-white font-bold">{m.verifierCode}</span>
+                                                                    <div className="text-[var(--color-ink-muted)] font-mono text-[11px]">
+                                                                        Endorsement Code: <span className="text-[var(--color-ink)] font-bold">{m.verifierCode}</span>
                                                                     </div>
                                                                 )}
                                                             </div>
 
                                                             {/* Photo Thumbnails */}
                                                             <div>
-                                                                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                                                                <div className="text-[11px] font-bold text-[var(--color-ink-muted)] uppercase tracking-wider mb-2 flex items-center justify-between">
                                                                     <span>Cryptographically Sealed Photographic Proofs</span>
                                                                     {!user && (
-                                                                        <span className="text-amber-400 flex items-center gap-1 text-[10px] font-medium">
+                                                                        <span className="text-[var(--color-ochre)] flex items-center gap-1 text-[10px] font-medium">
                                                                             <EyeOff className="w-3 h-3" />
                                                                             DPDP 2023: Citizen privacy blur applied
                                                                         </span>
@@ -619,7 +619,7 @@ export default function PublicProjectLedgerPage({
                                                                         {m.proofUrls.map((url, pIdx) => (
                                                                             <div
                                                                                 key={pIdx}
-                                                                                className="relative group rounded-xl overflow-hidden border border-slate-800 bg-slate-900 aspect-video shadow-md"
+                                                                                className="relative group rounded-xl overflow-hidden border border-[var(--color-rule)] bg-[var(--color-sheet)] aspect-video shadow-md"
                                                                             >
                                                                                 <img
                                                                                     src={url}
@@ -630,12 +630,12 @@ export default function PublicProjectLedgerPage({
                                                                                 />
 
                                                                                 {!user && (
-                                                                                    <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs flex flex-col items-center justify-center p-3 text-center">
-                                                                                        <Lock className="w-5 h-5 text-amber-400 mb-1" />
-                                                                                        <span className="text-[11px] font-bold text-white">
+                                                                                    <div className="absolute inset-0 bg-[var(--color-paper)] backdrop-blur-xs flex flex-col items-center justify-center p-3 text-center">
+                                                                                        <Lock className="w-5 h-5 text-[var(--color-ochre)] mb-1" />
+                                                                                        <span className="text-[11px] font-bold text-[var(--color-ink)]">
                                                                                             Privacy Redacted
                                                                                         </span>
-                                                                                        <span className="text-[9px] text-slate-300 mt-0.5">
+                                                                                        <span className="text-[9px] text-[var(--color-ink-soft)] mt-0.5">
                                                                                             Login with HEI or Government credentials to view original evidence
                                                                                         </span>
                                                                                     </div>
@@ -646,7 +646,7 @@ export default function PublicProjectLedgerPage({
                                                                                         href={url}
                                                                                         target="_blank"
                                                                                         rel="noopener noreferrer"
-                                                                                        className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-slate-900/80 text-white opacity-0 group-hover:opacity-100 transition shadow"
+                                                                                        className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-[var(--color-sheet)] text-[var(--color-ink)] opacity-0 group-hover:opacity-100 transition shadow"
                                                                                     >
                                                                                         <ExternalLink className="w-3.5 h-3.5" />
                                                                                     </a>
@@ -655,32 +655,32 @@ export default function PublicProjectLedgerPage({
                                                                         ))}
                                                                     </div>
                                                                 ) : (
-                                                                    <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 text-center text-slate-500 text-xs">
+                                                                    <div className="p-4 rounded-xl bg-[var(--color-sheet)] border border-[var(--color-rule)] text-center text-[var(--color-ink-muted)] text-xs">
                                                                         No secondary media attachments attached.
                                                                     </div>
                                                                 )}
                                                             </div>
 
                                                             {/* EXIF Timestamp Analysis */}
-                                                            <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs space-y-2">
+                                                            <div className="p-3.5 rounded-xl bg-[var(--color-sheet)] border border-[var(--color-rule)] text-xs space-y-2">
                                                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                                                     <div className="flex items-center gap-2">
-                                                                        <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-                                                                        <span className="text-slate-300">
-                                                                            <strong className="text-white">Photo capture time:</strong>{' '}
+                                                                        <Calendar className="w-3.5 h-3.5 text-[var(--color-survey)]" />
+                                                                        <span className="text-[var(--color-ink-soft)]">
+                                                                            <strong className="text-[var(--color-ink)]">Photo capture time:</strong>{' '}
                                                                             {m.exifTimestamp
                                                                                 ? new Date(m.exifTimestamp).toLocaleString('en-IN')
                                                                                 : 'Extracted from sealed JPEG metadata'}
                                                                         </span>
                                                                         <span className="text-slate-600">vs</span>
-                                                                        <span className="text-slate-300">
-                                                                            <strong className="text-white">Upload time:</strong>{' '}
+                                                                        <span className="text-[var(--color-ink-soft)]">
+                                                                            <strong className="text-[var(--color-ink)]">Upload time:</strong>{' '}
                                                                             {new Date(m.createdAt).toLocaleString('en-IN')}
                                                                         </span>
                                                                     </div>
 
                                                                     {m.fundReleased && (
-                                                                        <span className="text-emerald-400 font-bold">
+                                                                        <span className="text-[var(--color-forest)] font-bold">
                                                                             Tranche Released: ₹{m.fundReleased.toLocaleString('en-IN')}
                                                                         </span>
                                                                     )}
@@ -688,8 +688,8 @@ export default function PublicProjectLedgerPage({
 
                                                                 {/* Amber warning if capture and upload differ by > 2 hours */}
                                                                 {hasExifMismatch && (
-                                                                    <div className="p-2.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 flex items-center gap-2 text-xs">
-                                                                        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                                                                    <div className="p-2.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-[var(--color-ochre)] flex items-center gap-2 text-xs">
+                                                                        <AlertTriangle className="w-4 h-4 text-[var(--color-ochre)] shrink-0" />
                                                                         <span className="font-semibold">
                                                                             Capture/upload time mismatch:
                                                                         </span>
@@ -712,24 +712,24 @@ export default function PublicProjectLedgerPage({
                 </section>
 
                 {/* ─── MERKLE ROOT SECTION ─────────────────────────────────── */}
-                <section className="rounded-2xl border border-slate-800 bg-gradient-to-r from-slate-900 via-indigo-950/50 to-slate-900 p-6 sm:p-7 shadow-xl space-y-4">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                <section className="rounded-2xl border border-[var(--color-rule)] bg-[var(--color-paper)] p-6 sm:p-7 shadow-sm space-y-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[var(--color-rule)]">
                         <div className="flex items-center gap-2.5">
-                            <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            <div className="p-2 rounded-xl bg-indigo-500/20 text-[var(--color-survey)] border border-indigo-500/30">
                                 <Binary className="w-5 h-5" />
                             </div>
                             <div>
-                                <h3 className="text-base font-bold text-white">
+                                <h3 className="text-base font-bold text-[var(--color-ink)]">
                                     Project Cryptographic Merkle Root
                                 </h3>
-                                <p className="text-xs text-slate-400">
+                                <p className="text-xs text-[var(--color-ink-muted)]">
                                     Binary Merkle tree digest computed across all {milestones.length} milestone hashes
                                 </p>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-[var(--color-forest)] border border-emerald-500/30 flex items-center gap-1">
                                 <ShieldCheck className="w-3.5 h-3.5" />
                                 Publicly Auditable
                             </span>
@@ -737,12 +737,12 @@ export default function PublicProjectLedgerPage({
                     </div>
 
                     {/* Root Hash Display */}
-                    <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="p-4 rounded-xl bg-[var(--color-paper)] border border-[var(--color-rule)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="space-y-1">
-                            <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                            <div className="text-[10px] font-mono text-[var(--color-ink-muted)] uppercase tracking-wider">
                                 Ledger Merkle Root
                             </div>
-                            <div className="font-mono text-xs sm:text-sm font-bold text-emerald-400 break-all select-all">
+                            <div className="font-mono text-xs sm:text-sm font-bold text-[var(--color-forest)] break-all select-all">
                                 {merkleRoot || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'}
                             </div>
                         </div>
@@ -750,11 +750,11 @@ export default function PublicProjectLedgerPage({
                         <button
                             type="button"
                             onClick={() => copyToClipboard(merkleRoot, 'root')}
-                            className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5 shrink-0 self-start sm:self-auto cursor-pointer"
+                            className="px-3.5 py-2 rounded-xl bg-[var(--color-sheet)] hover:bg-[var(--color-sheet)] text-[var(--color-ink)] text-xs font-semibold border border-[var(--color-rule)] transition flex items-center gap-1.5 shrink-0 self-start sm:self-auto cursor-pointer"
                         >
                             {copiedRoot ? (
                                 <>
-                                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                    <Check className="w-3.5 h-3.5 text-[var(--color-forest)]" />
                                     <span>Root Copied</span>
                                 </>
                             ) : (
@@ -767,7 +767,7 @@ export default function PublicProjectLedgerPage({
                     </div>
 
                     {/* Instruction text (Mandated text) */}
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
                         This root hash is committed daily to a public repository for external verification. The Merkle root
                         proves the integrity of the entire ledger without revealing individual records.
                     </p>

@@ -58,7 +58,7 @@ export default function ExplorePage() {
     });
 
     return (
-        <div className="min-h-screen" style={{ background: '#0a0f1e' }}>
+        <div className="min-h-screen" style={{ background: 'var(--color-paper)' }}>
             {/* Nav */}
             <nav className="fixed top-0 w-full z-50 px-6 py-4"
                 style={{ background: 'rgba(10,15,30,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -69,9 +69,9 @@ export default function ExplorePage() {
                         <span className="text-xl font-bold gradient-text">SDG Nexus</span>
                     </Link>
                     <div className="flex items-center gap-4">
-                        <Link href="/explore" className="text-sm font-medium text-cyan-400 no-underline">Explorer</Link>
+                        <Link href="/explore" className="text-sm font-medium text-[var(--color-survey)] no-underline">Explorer</Link>
                         <Link href="/login"
-                            className="px-5 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white transition no-underline"
+                            className="px-5 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-[var(--color-ink)] transition no-underline"
                             style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
                             Sign In
                         </Link>
@@ -86,10 +86,10 @@ export default function ExplorePage() {
                 <motion.div {...fadeIn(0)} className="relative z-10 max-w-3xl mx-auto">
                     <div className="inline-block mb-4 px-4 py-1.5 rounded-full text-xs font-medium tracking-wider"
                         style={{ background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.2)', color: '#06b6d4' }}>
-                        🔍 PUBLIC EXPLORER
+                        PUBLIC EXPLORER
                     </div>
                     <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
-                        <span className="text-white">Discover </span>
+                        <span className="text-[var(--color-ink)]">Discover </span>
                         <span className="gradient-text-cyan">Verified Organizations</span>
                     </h1>
                     <p className="text-gray-400 max-w-lg mx-auto mb-8">
@@ -162,18 +162,18 @@ export default function ExplorePage() {
                                             {/* Header */}
                                             <div className="flex items-center justify-between mb-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-11 h-11 rounded-xl flex items-center justify-center text-lg font-bold text-white"
+                                                    <div className="w-11 h-11 rounded-xl flex items-center justify-center text-lg font-bold text-[var(--color-ink)]"
                                                         style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}>
                                                         {org.name.charAt(0)}
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-semibold text-white">{org.name}</p>
+                                                        <p className="text-sm font-semibold text-[var(--color-ink)]">{org.name}</p>
                                                         <p className="text-xs text-gray-500">{org.district ? `${org.district}, ` : ''}{org.state}</p>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
                                                     {org.impact_score === null
-                                                        ? <div className="text-xs font-semibold text-slate-400">No score yet</div>
+                                                        ? <div className="text-xs font-semibold text-[var(--color-ink-muted)]">No score yet</div>
                                                         : <div className="text-xl font-bold" style={{ color: getScoreColor(org.impact_score) }}>{org.impact_score}</div>}
                                                     <div className="text-[10px] text-gray-500">Impact</div>
                                                 </div>
@@ -197,15 +197,15 @@ export default function ExplorePage() {
                                             {/* Stats Row */}
                                             <div className="grid grid-cols-3 gap-2 text-center">
                                                 <div className="p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                                                    <p className="text-xs font-bold text-white">{org.project_count}</p>
+                                                    <p className="text-xs font-bold text-[var(--color-ink)]">{org.project_count}</p>
                                                     <p className="text-[10px] text-gray-500">Projects</p>
                                                 </div>
                                                 <div className="p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                                                    <p className="text-xs font-bold text-white">{(org.total_beneficiaries / 1000).toFixed(0)}K</p>
+                                                    <p className="text-xs font-bold text-[var(--color-ink)]">{(org.total_beneficiaries / 1000).toFixed(0)}K</p>
                                                     <p className="text-[10px] text-gray-500">Reach</p>
                                                 </div>
                                                 <div className="p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                                                    <p className="text-xs font-bold text-emerald-400">✓ Verified</p>
+                                                    <p className="text-xs font-bold text-[var(--color-forest)]">Verified</p>
                                                     <p className="text-[10px] text-gray-500">Status</p>
                                                 </div>
                                             </div>
@@ -218,7 +218,7 @@ export default function ExplorePage() {
 
                     {!loading && filtered.length === 0 && (
                         <div className="text-center py-16">
-                            <div className="text-5xl mb-4">🔍</div>
+                            <div className="text-5xl mb-4"></div>
                             <p className="text-gray-400 text-lg font-medium">No organizations found</p>
                             <p className="text-gray-600 text-sm mt-2">Try adjusting your search or filter criteria.</p>
                         </div>

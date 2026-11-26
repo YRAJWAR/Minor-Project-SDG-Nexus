@@ -411,8 +411,7 @@ export default function ProposalBuilderPage() {
                             onClick={() => setToastMessage(null)}
                             className="text-slate-400 hover:text-slate-600 font-bold ml-4"
                         >
-                            ✕
-                        </button>
+                                                    </button>
                     </motion.div>
                 )}
             </AnimatePresence>

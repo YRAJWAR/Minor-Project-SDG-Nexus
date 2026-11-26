@@ -21,7 +21,7 @@ const ROLES: { value: Role; label: string; desc: string }[] = [
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
     return (
         <label className="block">
-            <span className="block text-xs font-medium mb-1.5 text-slate-400">{label}</span>
+            <span className="block text-xs font-medium mb-1.5 text-[var(--color-ink-soft)]">{label}</span>
             {children}
         </label>
     );
@@ -67,7 +67,7 @@ export default function RegisterPage() {
     const districts = regions.find((s) => s.name === f.state)?.districts ?? [];
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#0a0f1e' }}>
+        <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--color-paper)' }}>
             <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
                 className="glass-card-dark p-8 w-full" style={{ maxWidth: 560 }}>
                 <div className="text-center mb-7">
@@ -84,11 +84,11 @@ export default function RegisterPage() {
                                     onClick={() => { setRole(r.value); setError(''); }}
                                     className="p-3 rounded-xl text-left transition-colors"
                                     style={{
-                                        background: role === r.value ? 'rgba(6,182,212,0.12)' : 'rgba(255,255,255,0.04)',
-                                        border: `1px solid ${role === r.value ? 'rgba(6,182,212,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                                        background: role === r.value ? 'var(--color-survey-wash)' : 'var(--color-sheet)',
+                                        border: `1px solid ${role === r.value ? 'var(--color-survey)' : 'var(--color-rule)'}`,
                                     }}>
-                                    <p className="text-sm font-semibold text-slate-100">{r.label}</p>
-                                    <p className="text-xs text-slate-400 mt-0.5">{r.desc}</p>
+                                    <p className="text-sm font-semibold text-[var(--color-ink)]">{r.label}</p>
+                                    <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">{r.desc}</p>
                                 </button>
                             ))}
                         </div>
@@ -139,7 +139,7 @@ export default function RegisterPage() {
                         </>
                     )}
 
-                    {error && <p role="alert" className="text-xs text-red-400 text-center bg-red-400/10 rounded-lg py-2 px-3">{error}</p>}
+                    {error && <p role="alert" className="text-sm text-[var(--color-rust)] text-center bg-[var(--color-rust-wash)] rounded py-2 px-3">{error}</p>}
 
                     <button type="submit" disabled={loading} className="btn-neon w-full py-3 text-sm disabled:opacity-50">
                         {loading ? 'Creating account…' : 'Create account'}
@@ -147,7 +147,7 @@ export default function RegisterPage() {
                 </form>
 
                 <p className="text-center text-xs text-slate-500 mt-6">
-                    Already registered? <Link href="/login" className="text-cyan-400 hover:underline">Sign in</Link>
+                    Already registered? <Link href="/login" className="text-[var(--color-survey)] font-semibold hover:underline">Sign in</Link>
                 </p>
             </motion.div>
         </div>

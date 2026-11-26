@@ -56,10 +56,10 @@ export default function NGODashboard() {
     };
 
     const statCards = [
-        { label: 'Active Projects', value: allProjects.length, icon: '📁', bgColor: '#eff6ff', iconBg: '#dbeafe', color: '#3b82f6' },
-        { label: 'Total Beneficiaries', value: totalBeneficiaries, icon: '👥', bgColor: '#ecfdf5', iconBg: '#d1fae5', color: '#10b981' },
-        { label: 'Budget Utilized', value: Math.round((totalSpent / totalBudget) * 100), icon: '💰', bgColor: '#fffbeb', iconBg: '#fef3c7', color: '#f59e0b', suffix: '%' },
-        { label: 'Innovation Outcome Score', value: apiScoreData?.final_score || impactData?.overall_score || 847, icon: '⚡', bgColor: '#f5f3ff', iconBg: '#ede9fe', color: '#8b5cf6' },
+        { label: 'Active Projects', value: allProjects.length, icon: '', bgColor: '#eff6ff', iconBg: '#dbeafe', color: '#3b82f6' },
+        { label: 'Total Beneficiaries', value: totalBeneficiaries, icon: '', bgColor: '#ecfdf5', iconBg: '#d1fae5', color: '#10b981' },
+        { label: 'Budget Utilized', value: Math.round((totalSpent / totalBudget) * 100), icon: '', bgColor: '#fffbeb', iconBg: '#fef3c7', color: '#f59e0b', suffix: '%' },
+        { label: 'Innovation Outcome Score', value: apiScoreData?.final_score || impactData?.overall_score || 847, icon: '', bgColor: '#f5f3ff', iconBg: '#ede9fe', color: '#8b5cf6' },
     ];
 
     return (
@@ -73,7 +73,7 @@ export default function NGODashboard() {
                     <p className="text-sm mt-1" style={{ color: '#64748b' }}>{user?.organization_name} • NGO Dashboard</p>
                 </div>
                 <button onClick={handleExportReport} className="btn-neon text-xs px-4 py-2.5 flex items-center gap-2">
-                    📄 Export Impact Report
+                    Export Impact Report
                 </button>
             </motion.div>
 
@@ -232,7 +232,7 @@ export default function NGODashboard() {
                             style={{ background: '#f8fafc' }}>
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
                                 style={{ background: act.verified ? '#d1fae5' : '#fef3c7' }}>
-                                {act.verified ? '✓' : '⏳'}
+                                {act.verified ? '' : ''}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm" style={{ color: '#0f172a' }}>{act.description}</p>

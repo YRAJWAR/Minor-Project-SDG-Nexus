@@ -38,10 +38,10 @@ const MODES: Record<ColorMode, { title: string; level: 'district' | 'state'; hig
 
 const inr = (n: number) => (n >= 1e7 ? `₹${(n / 1e7).toFixed(1)} Cr` : `₹${(n / 1e5).toFixed(1)} L`);
 
-// Low → high on one hue family: calm teal for "good", warm red for "needs attention".
+// Survey palette: ochre → rust where high needs attention, pale → deep forest where high is good.
 function colour(norm: number, highIsBad: boolean) {
     const t = Math.max(0, Math.min(1, norm));
-    return highIsBad ? `hsl(${32 - t * 28}, 85%, ${58 - t * 16}%)` : `hsl(${168 + t * 10}, 60%, ${55 - t * 20}%)`;
+    return highIsBad ? `hsl(${36 - t * 29}, ${71 - t * 13}%, ${42 - t * 3}%)` : `hsl(${130 - t * 1}, ${30 - t * 2}%, ${62 - t * 35}%)`;
 }
 
 export default function SDGHeatmap({ regions = [], colorBy = 'challenge_density', selectedSDG, intensityScale = 1, onSelectDistrict }: HeatmapProps) {
@@ -84,11 +84,12 @@ export default function SDGHeatmap({ regions = [], colorBy = 'challenge_density'
     const max = Math.max(1, ...bubbles.map((b) => b.value));
 
     return (
-        <div className="w-full h-[380px] sm:h-[480px] md:h-[560px] rounded-2xl overflow-hidden relative border border-slate-300">
+        <div className="w-full h-[380px] sm:h-[480px] md:h-[560px] overflow-hidden relative border border-[var(--color-rule)]">
             <MapContainer center={[22.5, 80.5]} zoom={5} minZoom={4} style={{ width: '100%', height: '100%' }} scrollWheelZoom>
                 <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    className="survey-tiles"
+                    attribution='Basemap &copy; Esri'
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
                 />
                 {bubbles.map((b) => {
                     const norm = b.value / max;
@@ -99,7 +100,7 @@ export default function SDGHeatmap({ regions = [], colorBy = 'challenge_density'
                             radius={(mode.level === 'district' ? 7 : 10) + norm * 18 * intensityScale}
                             pathOptions={{
                                 fillColor: colour(norm, mode.highIsBad), fillOpacity: 0.78,
-                                color: selected === b.key ? '#0f172a' : '#ffffff', weight: selected === b.key ? 3 : 1.5,
+                                color: selected === b.key ? '#16212c' : '#fbfcf9', weight: selected === b.key ? 3 : 1.5,
                             }}
                             eventHandlers={{
                                 click: () => {
@@ -119,7 +120,7 @@ export default function SDGHeatmap({ regions = [], colorBy = 'challenge_density'
                 })}
             </MapContainer>
 
-            <div className="absolute bottom-4 right-4 z-[1000] rounded-xl bg-white/95 border border-slate-200 shadow-sm px-4 py-3 text-xs text-slate-700 max-w-[calc(100%-2rem)]">
+            <div className="absolute bottom-4 right-4 z-[1000] border border-[var(--color-ink)] bg-[var(--color-sheet)] px-3 py-2 text-xs text-[var(--color-ink-soft)] max-w-[calc(100%-2rem)]">
                 <p className="font-semibold text-slate-900">
                     {mode.title}{colorBy === 'sdg' && selectedSDG ? ` — SDG ${selectedSDG} ${SDG_INFO.find((s) => s.id === selectedSDG)?.name ?? ''}` : ''}
                 </p>

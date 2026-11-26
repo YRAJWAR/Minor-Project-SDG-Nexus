@@ -53,7 +53,7 @@ npm run dev                 # http://localhost:3000
 | 2 Lifecycle core | done |
 | 3 Proposals, funding, milestones | done |
 | 4 Closure, credentials, scores | done |
-| 6 Design (use `.claude/skills/impeccable` guidance) | not started |
+| 6 Design (use `.claude/skills/impeccable` guidance) | core done — see DESIGN.md (legacy dashboard layouts not re-composed) |
 | 7 Ship | not started |
 
 ## Log (newest last — every assistant adds an entry before stopping)
@@ -136,4 +136,16 @@ Format: date · who · branch · what changed (files) · what is unfinished · a
   - Not done / next: Phase 6 design (biggest visible gain), Phase 5 smoke script, Phase 7 ship. Small gaps: CSR dashboard stats
     still count NGO-project allocations, not FundingCommitments; credential QR code not added (no QR library installed);
     NGO attestation of milestones not built.
+- 2026-11-26 · Claude Code · phase-6-design → merged to main · Phase 6 design core.
+  - User chose the world "Survey map sheet" (Survey of India topo sheet). Written: PRODUCT.md, DESIGN.md (the system as built),
+    `.impeccable/briefs/landing.md` (direction contract). Impeccable used as guidance only (no scripts run).
+  - Tokens in `src/app/globals.css` (paper/ink/survey/forest/ochre/rust; Tailwind scales remapped so old classes inherit);
+    fonts Anek Latin + Mukta (Ek Type) in `src/app/layout.tsx` (Razorpay script removed).
+  - Landing `src/app/page.tsx` rebuilt as a server component reading real numbers (no fake stats): title block, India sheet map
+    (`src/components/landing/SurveyMap.tsx` + `MapSlot.tsx`), route with live per-stage counts, latest ledger entries, roles legend.
+  - App shell: Sidebar (lucide icons, no side-stripe), StatCard (plain sheet figure), dashboard layout, login/register restyled;
+    emoji removed from all `src/app` pages; citizen submit, track, verify, explore and project ledger pages converted to light.
+  - Dashboard map (`src/components/Map.tsx`) uses the same basemap and palette.
+  - Next: re-compose the big legacy dashboards (government page tabs, heatmap, ngo, analytics) in the sheet language;
+    Phase 5 smoke script; Phase 7 ship (consider Bhuvan/MapmyIndia tiles for official boundaries).
 

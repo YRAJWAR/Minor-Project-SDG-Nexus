@@ -14,7 +14,7 @@ export default function LeaderboardPage() {
     const [sdgFilter, setSDGFilter] = useState<number | null>(null);
     const [regionFilter, setRegionFilter] = useState('');
 
-    const medals = ['🥇', '🥈', '🥉'];
+    const medals = ['', '', ''];
 
     const badges = useMemo(() => {
         const sorted = [...organizations].sort((a, b) => b.impact_score - a.impact_score);
@@ -42,16 +42,16 @@ export default function LeaderboardPage() {
 
     function getBadges(id: string) {
         const b: string[] = [];
-        if (badges.topPerformer === id) b.push('🏅 Top Performer');
-        if (badges.mostTransparent === id) b.push('🔍 Most Transparent');
-        if (badges.highestEfficiency === id) b.push('⚡ Highest Efficiency');
+        if (badges.topPerformer === id) b.push('Top Performer');
+        if (badges.mostTransparent === id) b.push('Most Transparent');
+        if (badges.highestEfficiency === id) b.push('Highest Efficiency');
         return b;
     }
 
     return (
         <div className="space-y-6 max-w-5xl">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-                <h1 className="text-2xl font-bold" style={{ color: '#0f172a' }}>🏆 SDG Impact Leaderboard</h1>
+                <h1 className="text-2xl font-bold" style={{ color: '#0f172a' }}>SDG Impact Leaderboard</h1>
                 <p className="text-sm mt-1" style={{ color: '#64748b' }}>Top SDG contributors ranked by impact score with badges and filters</p>
             </motion.div>
 
@@ -62,10 +62,10 @@ export default function LeaderboardPage() {
                         <label className="text-xs font-medium mb-1 block" style={{ color: '#64748b' }}>Sort By</label>
                         <div className="flex gap-2">
                             {([
-                                { key: 'impact' as SortBy, label: '🎯 Innovation Outcome Score', color: '#3b82f6' },
-                                { key: 'efficiency' as SortBy, label: '⚡ Efficiency', color: '#10b981' },
-                                { key: 'transparency' as SortBy, label: '🔍 Transparency', color: '#8b5cf6' },
-                                { key: 'beneficiaries' as SortBy, label: '👥 Beneficiaries', color: '#f59e0b' },
+                                { key: 'impact' as SortBy, label: 'Innovation Outcome Score', color: '#3b82f6' },
+                                { key: 'efficiency' as SortBy, label: 'Efficiency', color: '#10b981' },
+                                { key: 'transparency' as SortBy, label: 'Transparency', color: '#8b5cf6' },
+                                { key: 'beneficiaries' as SortBy, label: 'Beneficiaries', color: '#f59e0b' },
                             ] as const).map(opt => (
                                 <button key={opt.key} onClick={() => setSortBy(opt.key)}
                                     className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer"

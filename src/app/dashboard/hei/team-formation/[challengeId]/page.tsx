@@ -526,7 +526,7 @@ export default function TeamFormationPage() {
 
                         {/* Credit notice */}
                         <div className="p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl text-[11px] text-indigo-900 leading-relaxed">
-                            <span className="font-bold block mb-0.5">🎓 Academic Credit Earning:</span>
+                            <span className="font-bold block mb-0.5">Academic Credit Earning:</span>
                             Students on this team can earn credits once every milestone is approved (30 verified hours = 1 credit).
                         </div>
 
@@ -543,7 +543,6 @@ export default function TeamFormationPage() {
                         >
                             {locking ? (
                                 <>
-                                    <span className="animate-spin">⏳</span>
                                     Registering Team & Alerting Government...
                                 </>
                             ) : (

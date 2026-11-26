@@ -15,14 +15,14 @@ const SDGHeatmap = dynamic(() => import('@/components/Map'), { ssr: false });
 // ──────────────────────────────────────────────────────────────
 
 const COLOR_MODES: { key: ColorMode; label: string; icon: string; color: string; description: string }[] = [
-    { key: 'composite', label: 'Composite', icon: '🔥', color: '#f59e0b', description: 'Multi-variable weighted density score' },
-    { key: 'funding', label: 'Funding', icon: '💰', color: '#22c55e', description: 'Funding volume per region' },
-    { key: 'beneficiaries', label: 'Beneficiaries', icon: '👥', color: '#06b6d4', description: 'Beneficiary reach per region' },
-    { key: 'ngo_density', label: 'NGO Density', icon: '🏢', color: '#8b5cf6', description: 'Number of active NGOs' },
-    { key: 'efficiency', label: 'Efficiency', icon: '⚡', color: '#3b82f6', description: 'Funding efficiency (₹ per beneficiary)' },
-    { key: 'risk', label: 'Risk Level', icon: '⚠️', color: '#ef4444', description: 'Underfunding risk analysis' },
-    { key: 'sdg', label: 'SDG Focus', icon: '🎯', color: '#a855f7', description: 'SDG project concentration' },
-    { key: 'challenge_density', label: 'Challenge Density', icon: '📍', color: '#ec4899', description: 'Citizen-submitted innovation challenges per district' },
+    { key: 'composite', label: 'Composite', icon: '', color: '#f59e0b', description: 'Multi-variable weighted density score' },
+    { key: 'funding', label: 'Funding', icon: '', color: '#22c55e', description: 'Funding volume per region' },
+    { key: 'beneficiaries', label: 'Beneficiaries', icon: '', color: '#06b6d4', description: 'Beneficiary reach per region' },
+    { key: 'ngo_density', label: 'NGO Density', icon: '', color: '#8b5cf6', description: 'Number of active NGOs' },
+    { key: 'efficiency', label: 'Efficiency', icon: '', color: '#3b82f6', description: 'Funding efficiency (₹ per beneficiary)' },
+    { key: 'risk', label: 'Risk Level', icon: '', color: '#ef4444', description: 'Underfunding risk analysis' },
+    { key: 'sdg', label: 'SDG Focus', icon: '', color: '#a855f7', description: 'SDG project concentration' },
+    { key: 'challenge_density', label: 'Challenge Density', icon: '', color: '#ec4899', description: 'Citizen-submitted innovation challenges per district' },
 ];
 
 // ──────────────────────────────────────────────────────────────
@@ -88,11 +88,11 @@ export default function HeatmapPage() {
                 className="grid grid-cols-2 md:grid-cols-5 gap-3"
             >
                 {[
-                    { label: 'Total Funding', value: `₹${(analytics.totalFunding / 10000000).toFixed(1)}Cr`, icon: '💰', color: '#22c55e', desc: 'Aggregated funding mapped to geospatial bounds.' },
-                    { label: 'Beneficiaries', value: `${(analytics.totalBens / 1000).toFixed(0)}K`, icon: '👥', color: '#06b6d4', desc: 'Total verifiable lives impacted mapping.' },
-                    { label: 'Active NGOs', value: String(analytics.totalNGOs), icon: '🏢', color: '#8b5cf6', desc: 'Organizations functionally distributing aid regionally.' },
-                    { label: 'Projects', value: String(analytics.totalProjects), icon: '📁', color: '#f59e0b', desc: 'Current active and drafted projects.' },
-                    { label: 'Avg ₹/Beneficiary', value: `₹${Math.round(analytics.avgEfficiency)}`, icon: '⚡', color: '#3b82f6', desc: 'Heatmap density scaling based on efficient distributions.' },
+                    { label: 'Total Funding', value: `₹${(analytics.totalFunding / 10000000).toFixed(1)}Cr`, icon: '', color: '#22c55e', desc: 'Aggregated funding mapped to geospatial bounds.' },
+                    { label: 'Beneficiaries', value: `${(analytics.totalBens / 1000).toFixed(0)}K`, icon: '', color: '#06b6d4', desc: 'Total verifiable lives impacted mapping.' },
+                    { label: 'Active NGOs', value: String(analytics.totalNGOs), icon: '', color: '#8b5cf6', desc: 'Organizations functionally distributing aid regionally.' },
+                    { label: 'Projects', value: String(analytics.totalProjects), icon: '', color: '#f59e0b', desc: 'Current active and drafted projects.' },
+                    { label: 'Avg ₹/Beneficiary', value: `₹${Math.round(analytics.avgEfficiency)}`, icon: '', color: '#3b82f6', desc: 'Heatmap density scaling based on efficient distributions.' },
                 ].map((stat, i) => (
                     <motion.div
                         key={stat.label}
@@ -195,7 +195,7 @@ export default function HeatmapPage() {
                     className="glass-card p-5"
                 >
                     <h2 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2 justify-between">
-                        <span className="flex items-center gap-2">🏆 Highest Impact Regions</span>
+                        <span className="flex items-center gap-2">Highest Impact Regions</span>
                         <span title="Top-scoring regions calculated via a 3-tier composite matrix: Beneficiaries, SDG compliance, and Funding Volume."><Info className="w-4 h-4 text-slate-400 hover:text-blue-500 cursor-help" /></span>
                     </h2>
                     <div className="space-y-3">
@@ -231,7 +231,7 @@ export default function HeatmapPage() {
                     className="glass-card p-5"
                 >
                     <h2 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2 justify-between">
-                        <span className="flex items-center gap-2">⚠️ Attention Needed</span>
+                        <span className="flex items-center gap-2">Attention Needed</span>
                         <span title="Highlights regions facing systematic underfunding against their predicted need matrix. Government and CSR entities should monitor these closely."><Info className="w-4 h-4 text-slate-400 hover:text-blue-500 cursor-help" /></span>
                     </h2>
                     <div className="space-y-3">
@@ -241,7 +241,7 @@ export default function HeatmapPage() {
                             return (
                                 <div key={r.name} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
                                     <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ background: '#fca5a5' }}>
-                                        {i === 0 ? '🔴' : i === 1 ? '🟠' : '🟡'}
+                                        {i === 0 ? '' : i === 1 ? '' : ''}
                                     </div>
                                     <div className="flex-1">
                                         <p className="text-sm font-semibold text-slate-800">{r.name}</p>
@@ -267,7 +267,7 @@ export default function HeatmapPage() {
                 transition={{ delay: 0.4 }}
                 className="glass-card p-5"
             >
-                <h2 className="text-sm font-semibold text-slate-900 mb-3">🎯 SDG Coverage Across Regions</h2>
+                <h2 className="text-sm font-semibold text-slate-900 mb-3">SDG Coverage Across Regions</h2>
                 <div className="flex flex-wrap gap-2">
                     {SDG_INFO.map(sdg => {
                         const count = analytics.sdgCoverage.get(sdg.id) || 0;
@@ -308,7 +308,7 @@ export default function HeatmapPage() {
                 transition={{ delay: 0.45 }}
                 className="glass-card p-6"
             >
-                <h2 className="text-sm font-semibold text-slate-900 mb-4">📊 Complete Region Analytics</h2>
+                <h2 className="text-sm font-semibold text-slate-900 mb-4">Complete Region Analytics</h2>
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>

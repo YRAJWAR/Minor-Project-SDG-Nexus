@@ -1,622 +1,236 @@
-'use client';
-
-import React, { useState } from 'react';
 import Link from 'next/link';
-import {
-  Users,
-  Building2,
-  GraduationCap,
-  Briefcase,
-  HeartHandshake,
-  CheckCircle2,
-  ArrowRight,
-  ArrowDown,
-  Cpu,
-  ShieldCheck,
-  Award,
-  Copy,
-  Check,
-  Sparkles,
-  ChevronRight,
-  FileCheck
-} from 'lucide-react';
+import Image from 'next/image';
+import { ArrowRight, Building2, GraduationCap, HandCoins, Landmark, MapPin, Search, ShieldCheck, Sprout, UserRound, Users } from 'lucide-react';
+import prisma from '@/lib/prisma';
+import MapSlot from '@/components/landing/MapSlot';
 
-// Animated Count-Up Helper Component
+export const dynamic = 'force-dynamic';
 
-export default function LandingPage() {
-  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
+// How a report moves, in plain words, with the status each step corresponds to.
+const ROUTE = [
+    { status: ['SUBMITTED', 'AI_PROCESSED'], name: 'Reported', note: 'A citizen describes the problem; it is tagged with the SDGs it touches.' },
+    { status: ['VALIDATED', 'UNIVERSITY_ASSIGNED'], name: 'Verified', note: 'The district officer checks it and opens it to universities.' },
+    { status: ['TEAM_FORMED'], name: 'Plan chosen', note: 'Universities propose a team, milestones and a budget; the officer picks one.' },
+    { status: ['FUNDED'], name: 'Funded', note: 'CSR partners commit money until the whole budget is covered.' },
+    { status: ['IN_PROGRESS'], name: 'In the field', note: 'Students submit proof; each milestone is verified, then its tranche is paid.' },
+    { status: ['COMPLETED'], name: 'Fixed', note: 'All milestones paid. The citizen confirms the fix, or disputes it.' },
+    { status: ['DEPLOYED'], name: 'Resolved', note: 'The officer records how many people benefit; students earn credentials.' },
+];
 
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedEmail(text);
-    setTimeout(() => setCopiedEmail(null), 2000);
-  };
+const ROLES = [
+    { icon: UserRound, role: 'Citizen', does: 'Reports a problem, supports similar reports, confirms the fix.', email: 'citizen@demo.sdgnexus.in' },
+    { icon: Landmark, role: 'District officer', does: 'Verifies reports, picks the best university plan, verifies every milestone.', email: 'officer.nalgonda@demo.sdgnexus.in' },
+    { icon: GraduationCap, role: 'Faculty', does: 'Proposes a plan with a student team and milestones, issues credentials.', email: 'faculty@demo.sdgnexus.in' },
+    { icon: Users, role: 'Student', does: 'Does the field work, uploads proof, earns verifiable credits.', email: 'student@demo.sdgnexus.in' },
+    { icon: HandCoins, role: 'CSR partner', does: 'Funds selected plans and releases money only for verified milestones.', email: 'csr@demo.sdgnexus.in' },
+    { icon: Sprout, role: 'NGO', does: 'Runs field projects and reports problems it finds on the ground.', email: 'ngo@demo.sdgnexus.in' },
+    { icon: ShieldCheck, role: 'Admin', does: 'Verifies organisations and sees every district.', email: 'admin@demo.sdgnexus.in' },
+];
 
-  // Fictional demo accounts created by prisma/seed.ts
-  const demoAccounts = [
-    {
-      role: 'Citizen (Submitter)',
-      name: 'Lakshmi Reddy',
-      email: 'citizen@demo.sdgnexus.in',
-      badge: 'Public Submitter',
-      badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-      description: 'Reports grassroots societal challenges with geo-tagged proof',
-    },
-    {
-      role: 'District Officer (Government)',
-      name: 'District Officer, Nalgonda',
-      email: 'officer.nalgonda@demo.sdgnexus.in',
-      badge: 'District Authority',
-      badgeColor: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-      description: 'Validates challenges, routes to anchor HEIs & tracks district metrics',
-    },
-    {
-      role: 'University Faculty (HEI Lead)',
-      name: 'University faculty lead',
-      email: 'faculty@demo.sdgnexus.in',
-      badge: 'Academic Lead',
-      badgeColor: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-      description: 'Reviews matched problems, assigns student teams & submits proposals',
-    },
-    {
-      role: 'Industry Partner (CSR Funder)',
-      name: 'CSR funding partner',
-      email: 'csr@demo.sdgnexus.in',
-      badge: 'CSR Partner',
-      badgeColor: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-      description: 'Funds accepted proposals & releases tranches against validated milestones',
-    },
-    {
-      role: 'Deployment Partner (NGO)',
-      name: 'Field NGO partner',
-      email: 'ngo@demo.sdgnexus.in',
-      badge: 'Field Partner',
-      badgeColor: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-      description: 'Deploys solutions on the ground and attests field work',
-    },
-    {
-      role: 'University Student (Innovator)',
-      name: 'University student',
-      email: 'student@demo.sdgnexus.in',
-      badge: 'Student',
-      badgeColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-      description: 'Does field work, submits proof and earns verifiable credits',
-    },
-  ];
+const inr = (n: number) => (n >= 1e7 ? `₹${(n / 1e7).toFixed(2)} crore` : `₹${(n / 1e5).toFixed(1)} lakh`);
 
-  return (
-    <div className="min-h-screen bg-[#0f172a] text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
-      {/* Top Navbar */}
-      <nav className="sticky top-0 z-50 bg-[#0f172a]/90 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-6 py-3.5">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group no-underline">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center p-0.5 shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition">
-              <div className="w-full h-full bg-[#0f172a] rounded-[10px] flex items-center justify-center">
-                <span className="font-black text-transparent bg-clip-text bg-gradient-to-tr from-cyan-400 to-blue-400 text-lg">
-                  SDG
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-lg text-white tracking-tight">SDG Nexus</span>
-              </div>
-              <span className="text-[11px] text-slate-400 hidden sm:block">
-                Local problems, verified solutions
-              </span>
-            </div>
-          </Link>
+async function loadSheet() {
+    try {
+        const [byStatus, byDistrict, coords, released, credentials, ledger] = await Promise.all([
+            prisma.challenge.groupBy({ by: ['status'], _count: { _all: true } }),
+            prisma.challenge.groupBy({ by: ['district', 'state', 'status'], _count: { _all: true } }),
+            prisma.district.findMany({ where: { lat: { not: null } }, select: { name: true, lat: true, lng: true, state: { select: { name: true } } } }),
+            prisma.milestone.aggregate({ where: { status: 'CSR_APPROVED' }, _sum: { fundReleased: true } }),
+            prisma.studentCredential.count(),
+            prisma.auditLog.findMany({ where: { hash: { not: null } }, orderBy: { seq: 'desc' }, take: 5, select: { seq: true, action: true, actor_role: true, created_at: true, hash: true } }),
+        ]);
+        const count = (statuses: string[]) => byStatus.filter((s) => statuses.includes(s.status)).reduce((n, s) => n + s._count._all, 0);
+        const points = new Map<string, { district: string; state: string; lat: number; lng: number; count: number; open: number }>();
+        for (const row of byDistrict) {
+            const c = coords.find((d) => d.name.toLowerCase() === row.district.toLowerCase() && (!row.state || d.state.name === row.state));
+            if (!c) continue;
+            const key = `${c.state.name}|${c.name}`;
+            const p = points.get(key) ?? { district: c.name, state: c.state.name, lat: c.lat!, lng: c.lng!, count: 0, open: 0 };
+            p.count += row._count._all;
+            if (!['DEPLOYED', 'COMPLETED', 'REJECTED', 'MERGED'].includes(row.status)) p.open += row._count._all;
+            points.set(key, p);
+        }
+        const pts = [...points.values()];
+        return {
+            points: pts,
+            stages: ROUTE.map((r) => count(r.status)),
+            reports: byStatus.filter((s) => !['REJECTED', 'MERGED'].includes(s.status)).reduce((n, s) => n + s._count._all, 0),
+            districts: pts.length,
+            states: new Set(pts.map((p) => p.state)).size,
+            released: released._sum.fundReleased ?? 0,
+            credentials,
+            ledger,
+        };
+    } catch (err) {
+        console.error('Landing data unavailable:', err);
+        return null; // the page still renders, without numbers, rather than inventing them
+    }
+}
 
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Link
-              href="/track"
-              className="text-xs sm:text-sm font-medium text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800 transition no-underline"
-            >
-              Live Challenges
-            </Link>
-            <Link
-              href="/citizen/submit"
-              className="text-xs sm:text-sm font-medium text-cyan-400 hover:text-cyan-300 px-3 py-1.5 rounded-lg hover:bg-cyan-500/10 transition no-underline hidden sm:block"
-            >
-              Submit Issue
-            </Link>
-            <Link
-              href="/login"
-              className="text-xs sm:text-sm font-semibold text-white px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition shadow-sm no-underline"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/citizen/submit"
-              className="text-xs sm:text-sm font-semibold text-slate-950 px-4 py-1.5 rounded-lg bg-gradient-to-r from-cyan-400 to-teal-300 hover:from-cyan-300 hover:to-teal-200 transition shadow-md shadow-cyan-500/20 no-underline sm:hidden"
-            >
-              Submit
-            </Link>
-          </div>
-        </div>
-      </nav>
+export default async function LandingPage() {
+    const sheet = await loadSheet();
+    const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 
-      {/* ========================================================================= */}
-      {/* SECTION 1 — HERO                                                          */}
-      {/* ========================================================================= */}
-      <section className="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-28 px-4 sm:px-6 bg-[#0f172a]">
-        {/* Subtle background glow */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-gradient-to-tr from-cyan-600/15 via-blue-600/10 to-indigo-600/15 blur-[120px] pointer-events-none rounded-full" />
-        <div className="absolute top-10 right-10 w-72 h-72 bg-blue-500/5 blur-3xl pointer-events-none rounded-full" />
-
-        <div className="relative max-w-5xl mx-auto text-center">
-          {/* Tagline / Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/80 text-cyan-400 text-xs sm:text-sm font-medium mb-6 shadow-sm">
-            <Sparkles className="w-4 h-4 text-cyan-400" />
-            <span>Communities • Universities • CSR partners • Across India</span>
-          </div>
-
-          {/* Heading */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1] mb-6">
-            India&apos;s Collaborative <br className="hidden sm:inline" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-400">
-              Innovation Stack
-            </span>
-          </h1>
-
-          {/* Subheading */}
-          <p className="text-lg sm:text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto mb-10 leading-relaxed font-normal">
-            Connecting communities, universities, and industry to solve real challenges.
-          </p>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <Link
-              href="/track"
-              id="hero-view-challenges-btn"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-base shadow-lg shadow-cyan-500/25 transition-all transform hover:-translate-y-0.5 no-underline"
-            >
-              <span>View Live Challenges</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-
-            <Link
-              href="/citizen/submit"
-              id="hero-submit-challenge-btn"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-xl bg-slate-800/90 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 text-slate-200 hover:text-white font-semibold text-base transition-all transform hover:-translate-y-0.5 no-underline shadow-sm"
-            >
-              <Users className="w-4 h-4 text-cyan-400" />
-              <span>Submit a Challenge</span>
-            </Link>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* SECTION 2 — THE PROBLEM (White Background)                                */}
-      {/* ========================================================================= */}
-      <section className="py-20 md:py-28 px-4 sm:px-6 bg-white text-slate-900">
-        <div className="max-w-6xl mx-auto">
-          {/* Section Header */}
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs sm:text-sm font-bold tracking-wider text-rose-600 uppercase mb-2 block">
-              The Systemic Disconnect
-            </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              Three groups. Thousands of problems. Zero connection.
-            </h2>
-          </div>
-
-          {/* Three Cards Side-by-Side */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mb-14">
-            {/* Card 1: Communities */}
-            <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-6 sm:p-8 flex flex-col justify-between hover:shadow-xl hover:border-rose-300 transition group">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mb-5 group-hover:scale-110 transition">
-                  <Users className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">
-                  1. Communities
-                </h3>
-                <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                  Every district has documented local problems — water, health, education, livelihoods. People report them and rarely see what happens next.
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-slate-200 text-xs font-semibold text-rose-600">
-                Silent Grudges & Unresolved Grievances
-              </div>
-            </div>
-
-            {/* Card 2: Universities */}
-            <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-6 sm:p-8 flex flex-col justify-between hover:shadow-xl hover:border-blue-300 transition group">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mb-5 group-hover:scale-110 transition">
-                  <GraduationCap className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">
-                  2. Universities
-                </h3>
-                <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                  Students do semester projects on theoretical problems while real challenges go unsolved a few kilometres away.
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-slate-200 text-xs font-semibold text-blue-600">
-                Wasted Engineering & Research Talent
-              </div>
-            </div>
-
-            {/* Card 3: Industry */}
-            <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-6 sm:p-8 flex flex-col justify-between hover:shadow-xl hover:border-amber-300 transition group">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center mb-5 group-hover:scale-110 transition">
-                  <Briefcase className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">
-                  3. Industry
-                </h3>
-                <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                  Companies spend CSR funds every year, often through intermediaries, with little visibility into actual impact.
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-slate-200 text-xs font-semibold text-amber-600">
-                Blind Allocations & Compliance Checkboxes
-              </div>
-            </div>
-          </div>
-
-          {/* Punchline Highlight */}
-          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 sm:p-8 text-center text-white shadow-xl">
-            <p className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-white">
-              The bottleneck isn't resources or expertise. <span className="text-cyan-400 underline decoration-cyan-500 underline-offset-4">It's routing.</span>
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* SECTION 3 — THE SOLUTION — 6-ACTOR EXPLAINER                               */}
-      {/* ========================================================================= */}
-      <section className="py-20 md:py-28 px-4 sm:px-6 bg-[#0a1122] border-t border-slate-800/80">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs sm:text-sm font-bold tracking-wider text-cyan-400 uppercase mb-2 block">
-              How it works
-            </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
-              One platform. Six actors. A closed innovation loop.
-            </h2>
-            <p className="text-slate-400 mt-4 text-base sm:text-lg">
-              Every challenge moves through a transparent pipeline, from a citizen's report to a fix the citizen confirms.
-            </p>
-          </div>
-
-          {/* 6-Actor Flow Grid / Diagram */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 relative">
-            {/* Actor 1: Citizen */}
-            <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5 flex flex-col justify-between hover:border-cyan-500/50 transition">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                    <Users className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-400">Step 1</span>
-                </div>
-                <h4 className="text-base font-bold text-white mb-1">CITIZEN</h4>
-                <div className="text-xs font-semibold text-emerald-400 mb-2.5">
-                  [submits challenge]
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Snaps geotagged photo & notes issue without paperwork.
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-700/50 flex items-center justify-end text-slate-400">
-                <ArrowRight className="w-4 h-4 text-cyan-400 hidden lg:block" />
-                <ArrowDown className="w-4 h-4 text-cyan-400 lg:hidden" />
-              </div>
-            </div>
-
-            {/* Actor 2: Government */}
-            <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5 flex flex-col justify-between hover:border-blue-500/50 transition">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center">
-                    <Building2 className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-400">Step 2</span>
-                </div>
-                <h4 className="text-base font-bold text-white mb-1">GOVERNMENT</h4>
-                <div className="text-xs font-semibold text-blue-400 mb-2.5">
-                  [validates & routes]
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  District officer verifies the report and routes it to a matching university.
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-700/50 flex items-center justify-end text-slate-400">
-                <ArrowRight className="w-4 h-4 text-cyan-400 hidden lg:block" />
-                <ArrowDown className="w-4 h-4 text-cyan-400 lg:hidden" />
-              </div>
-            </div>
-
-            {/* Actor 3: University */}
-            <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5 flex flex-col justify-between hover:border-purple-500/50 transition">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
-                    <GraduationCap className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-400">Step 3</span>
-                </div>
-                <h4 className="text-base font-bold text-white mb-1">UNIVERSITY</h4>
-                <div className="text-xs font-semibold text-purple-400 mb-2.5">
-                  [forms team & builds]
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Faculty & students engineer low-cost, open-source solution prototype.
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-700/50 flex items-center justify-end text-slate-400">
-                <ArrowRight className="w-4 h-4 text-cyan-400 hidden lg:block" />
-                <ArrowDown className="w-4 h-4 text-cyan-400 lg:hidden" />
-              </div>
-            </div>
-
-            {/* Actor 4: NGO */}
-            <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5 flex flex-col justify-between hover:border-rose-500/50 transition">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
-                    <HeartHandshake className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-400">Step 4</span>
-                </div>
-                <h4 className="text-base font-bold text-white mb-1">NGO</h4>
-                <div className="text-xs font-semibold text-rose-400 mb-2.5">
-                  [deploys on ground]
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Local NGO helps deploy the solution on the ground.
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-700/50 flex items-center justify-end text-slate-400">
-                <ArrowRight className="w-4 h-4 text-cyan-400 hidden lg:block" />
-                <ArrowDown className="w-4 h-4 text-cyan-400 lg:hidden" />
-              </div>
-            </div>
-
-            {/* Actor 5: CSR Company */}
-            <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5 flex flex-col justify-between hover:border-amber-500/50 transition">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
-                    <Briefcase className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-400">Step 5</span>
-                </div>
-                <h4 className="text-base font-bold text-white mb-1">CSR COMPANY</h4>
-                <div className="text-xs font-semibold text-amber-400 mb-2.5">
-                  [funds milestones]
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Authorizes milestone-based tranche disbursement against verified proof.
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-700/50 flex items-center justify-end text-slate-400">
-                <ArrowRight className="w-4 h-4 text-cyan-400 hidden lg:block" />
-                <ArrowDown className="w-4 h-4 text-cyan-400 lg:hidden" />
-              </div>
-            </div>
-
-            {/* Actor 6: Citizen Validation */}
-            <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5 flex flex-col justify-between hover:border-emerald-500/50 transition">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                    <CheckCircle2 className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-400">Step 6</span>
-                </div>
-                <h4 className="text-base font-bold text-white mb-1">CITIZEN</h4>
-                <div className="text-xs font-semibold text-emerald-400 mb-2.5">
-                  [validates outcome]
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  The citizen confirms the problem is fixed, closing the loop.
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-700/50 flex items-center justify-end text-slate-400">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Loop Closed</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* SECTION 4 — THREE KEY FEATURES                                            */}
-      {/* ========================================================================= */}
-      <section className="py-20 md:py-28 px-4 sm:px-6 bg-[#0f172a] border-t border-slate-800/80">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs sm:text-sm font-bold tracking-wider text-cyan-400 uppercase mb-2 block">
-              Core Technical Innovations
-            </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
-              What makes this different
-            </h2>
-            <p className="text-slate-400 mt-4 text-base sm:text-lg">
-              Not another directory. A workflow where every step is recorded and can be checked.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            {/* Feature 1 */}
-            <div className="bg-slate-800/50 border border-slate-700/80 rounded-2xl p-6 sm:p-8 hover:border-cyan-500/40 hover:bg-slate-800/80 transition flex flex-col justify-between">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center mb-6">
-                  <Cpu className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">
-                  University matching
-                </h3>
-                <p className="text-slate-400 text-sm leading-relaxed mb-6">
-                  AI matches challenges to the right university automatically based on SDG expertise, geographic distance, and track record.
-                </p>
-              </div>
-
-              <div className="bg-slate-900/90 rounded-xl p-3.5 border border-slate-800 font-mono text-xs text-cyan-300">
-                <span className="text-slate-400 text-[10px] uppercase tracking-wider block mb-1">Mathematical Formula</span>
-                SDG Overlap (40%) + Geographic Proximity (30%) + HEI Performance (30%)
-              </div>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="bg-slate-800/50 border border-slate-700/80 rounded-2xl p-6 sm:p-8 hover:border-cyan-500/40 hover:bg-slate-800/80 transition flex flex-col justify-between">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center mb-6">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">
-                  Hash-checked milestones
-                </h3>
-                <p className="text-slate-400 text-sm leading-relaxed mb-6">
-                  Each milestone's SHA-256 hash is stored when it is submitted. Anyone can recompute it on the public ledger to see if the record was changed.
-                </p>
-              </div>
-
-              <div className="bg-slate-900/90 rounded-xl p-3.5 border border-slate-800 font-mono text-xs text-indigo-300">
-                <span className="text-slate-400 text-[10px] uppercase tracking-wider block mb-1">What is hashed</span>
-                SHA256(proofUrl | timestamp | lat | lng)
-              </div>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="bg-slate-800/50 border border-slate-700/80 rounded-2xl p-6 sm:p-8 hover:border-cyan-500/40 hover:bg-slate-800/80 transition flex flex-col justify-between">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center mb-6">
-                  <Award className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">
-                  Verifiable student credentials
-                </h3>
-                <p className="text-slate-400 text-sm leading-relaxed mb-6">
-                  Students earn certificates for real field work. Each one has a public verification page that recomputes its hash.
-                </p>
-              </div>
-
-              <div className="bg-slate-900/90 rounded-xl p-3.5 border border-slate-800 font-mono text-xs text-amber-300">
-                <span className="text-slate-400 text-[10px] uppercase tracking-wider block mb-1">Credit rule</span>
-                30 verified field hours = 1 credit
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* SECTION 6 — DEMO ACCOUNTS (for jury)                                      */}
-      {/* ========================================================================= */}
-      <section className="py-20 md:py-28 px-4 sm:px-6 bg-[#0f172a] border-t border-slate-800/80">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <span className="text-xs sm:text-sm font-bold tracking-wider text-cyan-400 uppercase mb-2 block">
-              Demo accounts
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
-              Try it yourself — Demo Credentials
-            </h2>
-            <p className="text-slate-400 mt-3 text-sm sm:text-base">
-              See the platform from each role's point of view.
-            </p>
-
-            <div className="inline-block mt-4 px-4 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs sm:text-sm font-semibold">
-              🔑 Note: All demo accounts log in with password: <code className="bg-slate-900 px-2 py-0.5 rounded text-white font-mono">Demo@1234</code>
-            </div>
-          </div>
-
-          {/* Responsive Table of Demo Accounts */}
-          <div className="bg-slate-800/60 border border-slate-700/90 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-900/90 border-b border-slate-700/80 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    <th className="py-4 px-4 sm:px-6">Role & Stakeholder</th>
-                    <th className="py-4 px-4 sm:px-6">Email Address</th>
-                    <th className="py-4 px-4 sm:px-6">Password</th>
-                    <th className="py-4 px-4 sm:px-6 hidden lg:table-cell">Perspective / Workflow</th>
-                    <th className="py-4 px-4 sm:px-6 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-700/60 text-sm">
-                  {demoAccounts.map((acc, i) => (
-                    <tr key={i} className="hover:bg-slate-700/30 transition">
-                      <td className="py-4 px-4 sm:px-6">
-                        <div className="font-bold text-white flex items-center gap-2">
-                          <span>{acc.role}</span>
-                        </div>
-                        <div className="text-xs text-slate-400 mt-0.5">{acc.name}</div>
-                      </td>
-
-                      <td className="py-4 px-4 sm:px-6 font-mono text-xs text-slate-200">
-                        <div className="flex items-center gap-2">
-                          <span>{acc.email}</span>
-                          <button
-                            onClick={() => handleCopy(acc.email)}
-                            title="Copy email"
-                            className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-cyan-400 transition"
-                          >
-                            {copiedEmail === acc.email ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </div>
-                      </td>
-
-                      <td className="py-4 px-4 sm:px-6 font-mono text-xs text-slate-300">
-                        Demo@1234
-                      </td>
-
-                      <td className="py-4 px-4 sm:px-6 text-xs text-slate-400 hidden lg:table-cell max-w-xs">
-                        {acc.description}
-                      </td>
-
-                      <td className="py-4 px-4 sm:px-6 text-right">
-                        <Link
-                          href={`/login?email=${encodeURIComponent(acc.email)}`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-xs font-semibold border border-cyan-500/30 transition no-underline"
-                        >
-                          <span>Log In</span>
-                          <ChevronRight className="w-3 h-3" />
+    return (
+        <div className="min-h-screen bg-[var(--color-paper)] text-[var(--color-ink)]">
+            {/* Sheet header */}
+            <header className="border-b border-[var(--color-rule)] bg-[var(--color-sheet)]">
+                <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3" aria-label="Main">
+                    <Link href="/" className="flex items-center gap-2.5 no-underline">
+                        <Image src="/logo.png" alt="" width={30} height={30} className="rounded" />
+                        <span className="font-[family-name:var(--font-display)] text-xl font-semibold tracking-tight">SDG Nexus</span>
+                    </Link>
+                    <div className="flex items-center gap-1 text-sm">
+                        <Link href="/track" className="hidden sm:inline-flex items-center gap-1.5 rounded px-3 py-2 text-[var(--color-ink-soft)] hover:text-[var(--color-survey)]">
+                            <Search className="h-4 w-4" aria-hidden="true" /> Track a report
                         </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                        <Link href="/login" className="rounded px-3 py-2 font-medium text-[var(--color-ink-soft)] hover:text-[var(--color-survey)]">Sign in</Link>
+                        <Link href="/register" className="btn-neon px-3.5 py-2 text-sm no-underline">Join</Link>
+                    </div>
+                </nav>
+            </header>
+
+            <main>
+                {/* First viewport: title block + the sheet */}
+                <section className="mx-auto grid max-w-7xl gap-8 px-5 pb-12 pt-10 lg:grid-cols-12 lg:gap-10 lg:pt-14">
+                    <div className="flex flex-col justify-between lg:col-span-5">
+                        <div>
+                            <h1 className="font-[family-name:var(--font-display)] text-[2.6rem] font-semibold leading-[1.02] tracking-[-0.02em] sm:text-6xl">
+                                Local problems, verified solutions — district by district.
+                            </h1>
+                            <p className="mt-5 max-w-[34rem] text-lg leading-relaxed text-[var(--color-ink-soft)]">
+                                Citizens report what is broken where they live. District officers verify it, universities plan the fix,
+                                CSR partners fund it milestone by milestone, and every step is written to a public ledger.
+                            </p>
+                            <div className="mt-7 flex flex-wrap gap-3">
+                                <Link href="/citizen/submit" className="btn-neon inline-flex items-center gap-2 px-5 py-3 text-base no-underline">
+                                    Report a problem <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                                </Link>
+                                <Link href="/login" className="btn-outline inline-flex items-center gap-2 px-5 py-3 text-base no-underline">
+                                    Try a demo role
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* Title block, like the box in a sheet's corner */}
+                        <dl className="mt-10 grid grid-cols-2 border border-[var(--color-ink)] text-sm sm:grid-cols-4 lg:grid-cols-2">
+                            {[
+                                ['Reports', sheet?.reports],
+                                ['Districts', sheet ? `${sheet.districts} in ${sheet.states} states` : undefined],
+                                ['Released', sheet ? inr(sheet.released) : undefined],
+                                ['Credentials', sheet?.credentials],
+                            ].map(([k, v], i) => (
+                                <div key={k as string} className={`px-3 py-2.5 ${i % 2 ? 'border-l' : ''} ${i > 1 ? 'border-t sm:border-t-0 lg:border-t' : ''} sm:[&:nth-child(n+2)]:border-l border-[var(--color-ink)]`}>
+                                    <dt className="text-xs text-[var(--color-ink-muted)]">{k}</dt>
+                                    <dd className="font-[family-name:var(--font-display)] text-xl font-semibold tabular">{v ?? '—'}</dd>
+                                </div>
+                            ))}
+                        </dl>
+                        <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
+                            Compiled from the database on {today}. Demo data: every person and organisation is fictional.
+                        </p>
+                    </div>
+
+                    <figure className="lg:col-span-7">
+                        <div className="relative h-[420px] border border-[var(--color-ink)] bg-[var(--color-sheet)] p-2 sm:h-[560px]">
+                            <div className="relative h-full w-full overflow-hidden border border-[var(--color-rule)]">
+                                <MapSlot points={sheet?.points ?? []} />
+                                {/* Legend box */}
+                                <div className="absolute bottom-3 right-3 z-[600] border border-[var(--color-ink)] bg-[var(--color-sheet)] px-3 py-2 text-xs">
+                                    <p className="font-semibold">Legend</p>
+                                    <p className="mt-1 flex items-center gap-2"><span className="inline-block h-3 w-3 rounded-full border border-[var(--color-ink)] bg-[var(--color-ochre)]" />Open reports</p>
+                                    <p className="flex items-center gap-2"><span className="inline-block h-3 w-3 rounded-full border border-[var(--color-ink)] bg-[var(--color-forest)]" />All resolved</p>
+                                    <p className="mt-1 text-[var(--color-ink-muted)]">Size = reports in the district</p>
+                                </div>
+                            </div>
+                        </div>
+                        <figcaption className="mt-2 flex items-center gap-1.5 text-xs text-[var(--color-ink-muted)]">
+                            <MapPin className="h-3.5 w-3.5" aria-hidden="true" /> Sheet: India · Problems reported to date · hover a mark for the district
+                        </figcaption>
+                    </figure>
+                </section>
+
+                {/* The route a report takes */}
+                <section className="border-y border-[var(--color-rule)] bg-[var(--color-sheet)]" aria-labelledby="route">
+                    <div className="mx-auto max-w-7xl px-5 py-14">
+                        <h2 id="route" className="max-w-2xl font-[family-name:var(--font-display)] text-3xl font-semibold sm:text-4xl">The route every report takes</h2>
+                        <p className="mt-3 max-w-2xl text-[var(--color-ink-soft)]">Seven stations, each owned by one role. The number at each is how many reports stand there today.</p>
+                        <ol className="relative mt-10 grid gap-6 md:grid-cols-7 md:gap-3">
+                            <span aria-hidden="true" className="absolute left-[11px] top-3 bottom-3 w-px border-l border-dashed border-[var(--color-survey)] md:left-3 md:right-3 md:top-[11px] md:bottom-auto md:h-px md:w-auto md:border-l-0 md:border-t" />
+                            {ROUTE.map((r, i) => (
+                                <li key={r.name} className="relative flex gap-4 md:block">
+                                    <span className={`relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${i === ROUTE.length - 1 ? 'border-[var(--color-forest)] bg-[var(--color-forest)]' : 'border-[var(--color-survey)] bg-[var(--color-sheet)]'}`} aria-hidden="true" />
+                                    <div className="md:mt-4">
+                                        <p className="font-[family-name:var(--font-display)] text-3xl font-semibold tabular">{sheet ? sheet.stages[i] : '—'}</p>
+                                        <h3 className="mt-0.5 text-base font-semibold">{r.name}</h3>
+                                        <p className="mt-1 text-sm leading-snug text-[var(--color-ink-soft)]">{r.note}</p>
+                                    </div>
+                                </li>
+                            ))}
+                        </ol>
+                    </div>
+                </section>
+
+                {/* Ledger extract + roles legend */}
+                <section className="mx-auto grid max-w-7xl gap-12 px-5 py-14 lg:grid-cols-12">
+                    <div className="lg:col-span-5">
+                        <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold">Nothing can be quietly changed</h2>
+                        <p className="mt-3 text-[var(--color-ink-soft)]">
+                            Each action is chained to the one before it by a SHA-256 hash. Edit any old entry and every later hash stops matching —
+                            anyone can run the check.
+                        </p>
+                        <div className="mt-6 border border-[var(--color-ink)] bg-[var(--color-sheet)]">
+                            <p className="border-b border-[var(--color-rule)] px-3 py-2 text-xs font-semibold">Latest ledger entries</p>
+                            <ol className="divide-y divide-[var(--color-rule-soft)] text-sm">
+                                {(sheet?.ledger ?? []).map((e) => (
+                                    <li key={e.seq} className="grid grid-cols-[3rem_1fr_auto] items-baseline gap-2 px-3 py-2">
+                                        <span className="tabular text-xs text-[var(--color-ink-muted)]">#{e.seq}</span>
+                                        <span>{e.action.replace(/^(CHALLENGE|MILESTONE|PROPOSAL)_/, '').replace(/_/g, ' ').toLowerCase()} <span className="text-[var(--color-ink-muted)]">· {e.actor_role.toLowerCase()}</span></span>
+                                        <code className="text-xs text-[var(--color-survey)]">{e.hash?.slice(0, 10)}…</code>
+                                    </li>
+                                ))}
+                                {!sheet?.ledger.length && <li className="px-3 py-3 text-[var(--color-ink-muted)]">The ledger is not available right now.</li>}
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div className="lg:col-span-7">
+                        <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold">Who does what</h2>
+                        <p className="mt-3 text-[var(--color-ink-soft)]">Every role is a real account in the demo. Sign in as any of them — the password is <code className="rounded bg-[var(--color-paper-deep)] px-1.5 py-0.5 text-[var(--color-ink)]">Demo@1234</code>.</p>
+                        <table className="mt-6 w-full border-collapse text-sm">
+                            <thead>
+                                <tr className="border-b border-[var(--color-ink)] text-left text-xs text-[var(--color-ink-muted)]">
+                                    <th scope="col" className="py-2 pr-3 font-medium">Role</th>
+                                    <th scope="col" className="py-2 pr-3 font-medium">What they do</th>
+                                    <th scope="col" className="py-2 font-medium"><span className="sr-only">Sign in</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {ROLES.map(({ icon: Icon, role, does, email }) => (
+                                    <tr key={role} className="border-b border-[var(--color-rule-soft)] align-top">
+                                        <th scope="row" className="whitespace-nowrap py-3 pr-3 text-left font-semibold">
+                                            <span className="inline-flex items-center gap-2"><Icon className="h-4 w-4 text-[var(--color-survey)]" aria-hidden="true" />{role}</span>
+                                        </th>
+                                        <td className="py-3 pr-3 text-[var(--color-ink-soft)]">{does}</td>
+                                        <td className="py-3 text-right">
+                                            <Link href={`/login?email=${encodeURIComponent(email)}`} className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-[var(--color-survey)]">
+                                                Sign in <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+
+            <footer className="border-t border-[var(--color-ink)] bg-[var(--color-sheet)]">
+                <div className="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-6 text-xs text-[var(--color-ink-muted)] sm:flex-row sm:items-center sm:justify-between">
+                    <p className="flex items-center gap-2"><Building2 className="h-4 w-4" aria-hidden="true" />SDG Nexus · B.Tech minor project, Dev Bhoomi Uttarakhand University, 2026</p>
+                    <p>Region list: 36 states and UTs, 784 districts. Demo data is fictional.</p>
+                </div>
+            </footer>
         </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* SECTION 7 — FOOTER                                                        */}
-      {/* ========================================================================= */}
-      <footer className="bg-[#0a0f1d] border-t border-slate-800 py-10 px-4 sm:px-6 text-xs text-slate-400">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-          {/* Left */}
-          <div className="font-medium text-slate-300">
-            SDG Nexus
-          </div>
-
-          {/* Centre */}
-          <div className="text-slate-500 font-normal">
-            Minor project
-          </div>
-
-          {/* Right */}
-          <div className="font-medium text-slate-300">
-            Local problems → verified solutions
-          </div>
-        </div>
-      </footer>
-    </div>
-  );
+    );
 }

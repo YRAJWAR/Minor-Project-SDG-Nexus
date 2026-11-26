@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Anek_Latin, Mukta } from "next/font/google";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
 import { AuthProvider } from "@/lib/AuthContext";
 import { DataProvider } from "@/lib/DataContext";
 
-const inter = Inter({ subsets: ["latin"] });
+// Indian typefaces by Ek Type: Anek (display, variable width) and Mukta (text).
+const anek = Anek_Latin({ subsets: ["latin"], variable: "--font-anek", display: "swap" });
+const mukta = Mukta({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-text", display: "swap" });
 
 export const metadata: Metadata = {
     title: "SDG Nexus — Local problems, verified solutions",
@@ -15,13 +17,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html lang="en" className="dark">
+        <html lang="en" className={`${anek.variable} ${mukta.variable}`}>
             <head>
                 <link rel="icon" type="image/png" href="/favicon.png" />
                 <link rel="apple-touch-icon" href="/logo.png" />
-                <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
             </head>
-            <body className={inter.className} style={{ background: '#0a0f1e' }}>
+            <body>
                 <AuthProvider>
                     <DataProvider>
                         {children}

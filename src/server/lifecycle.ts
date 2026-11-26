@@ -7,9 +7,9 @@ import prisma from '@/lib/prisma';
 import { appendLedger } from '@/server/ledger';
 import { audienceWhere } from '@/lib/notifications';
 
-export type Action = 'VERIFY' | 'REJECT' | 'MERGE' | 'ASSIGN' | 'ENDORSE';
+export type Action = 'VERIFY' | 'REJECT' | 'MERGE' | 'ASSIGN' | 'ENDORSE' | 'SELECT_PROPOSAL' | 'COMMIT_FUNDS' | 'START' | 'COMPLETE';
 
-export interface Actor { id: string; role: Role; district?: { name: string } | null }
+export interface Actor { id: string; role: Role; district?: { name: string } | null; organizationId?: string | null }
 export interface ChallengeLike { id: string; status: ChallengeStatus; district: string; submitterId: string | null }
 
 const AWAITING_OFFICER: ChallengeStatus[] = ['SUBMITTED', 'AI_PROCESSED'];
@@ -21,8 +21,37 @@ const RULES: Record<Action, { from: ChallengeStatus[]; roles: Role[]; officerOnl
     REJECT: { from: AWAITING_OFFICER, roles: ['OFFICER', 'ADMIN'], officerOnlyInDistrict: true },
     MERGE: { from: AWAITING_OFFICER, roles: ['OFFICER', 'ADMIN'], officerOnlyInDistrict: true },
     ASSIGN: { from: ['VALIDATED'], roles: ['OFFICER', 'ADMIN'], officerOnlyInDistrict: true },
-    ENDORSE: { from: ['SUBMITTED', 'AI_PROCESSED', 'VALIDATED', 'UNIVERSITY_ASSIGNED', 'TEAM_FORMED', 'IN_PROGRESS'], roles: ['CITIZEN', 'NGO', 'STUDENT', 'FACULTY'] },
+    ENDORSE: { from: ['SUBMITTED', 'AI_PROCESSED', 'VALIDATED', 'UNIVERSITY_ASSIGNED', 'TEAM_FORMED', 'FUNDED', 'IN_PROGRESS'], roles: ['CITIZEN', 'NGO', 'STUDENT', 'FACULTY'] },
+    // Phase 3: the officer picks one university proposal; CSR partners fund it; work starts and completes.
+    SELECT_PROPOSAL: { from: ['VALIDATED', 'UNIVERSITY_ASSIGNED'], roles: ['OFFICER', 'ADMIN'], officerOnlyInDistrict: true },
+    COMMIT_FUNDS: { from: ['TEAM_FORMED'], roles: ['CSR'] },
+    START: { from: ['FUNDED'], roles: ['FACULTY', 'STUDENT', 'ADMIN'] }, // taken automatically when the first milestone is submitted
+    COMPLETE: { from: ['IN_PROGRESS'], roles: ['CSR', 'OFFICER', 'ADMIN'] }, // taken automatically when the last tranche is released
 };
+
+// ── Proposal plan (team + milestones), checked on submit and again on selection ──
+export interface PlanMember { studentProfileId: string; role?: string }
+export interface PlanMilestone { title: string; week: number; amount: number }
+export interface TeamPlan { facultyId: string; members: PlanMember[] }
+
+/** Problems with a proposal's plan, or [] if it is complete. Pure, so it is tested directly. */
+export function validatePlan(team: TeamPlan | null | undefined, milestones: PlanMilestone[] | null | undefined, budget: number, weeks: number): string[] {
+    const errors: string[] = [];
+    const ids = (team?.members ?? []).map((m) => m.studentProfileId);
+    if (!team?.facultyId) errors.push('A faculty lead is required.');
+    if (ids.length < 2 || ids.length > 8) errors.push('The team needs 2–8 students.');
+    if (new Set(ids).size !== ids.length) errors.push('A student is listed twice.');
+    const ms = milestones ?? [];
+    if (ms.length < 2 || ms.length > 6) errors.push('Plan 2–6 milestones.');
+    for (const [i, m] of ms.entries()) {
+        if (!m.title?.trim() || m.title.trim().length > 120) errors.push(`Milestone ${i + 1} needs a title (up to 120 characters).`);
+        if (!Number.isInteger(m.week) || m.week < 1 || m.week > weeks) errors.push(`Milestone ${i + 1} must fall within weeks 1–${weeks}.`);
+        if (!(Number.isFinite(m.amount) && m.amount > 0)) errors.push(`Milestone ${i + 1} needs an amount above ₹0.`);
+    }
+    const total = ms.reduce((t, m) => t + (Number.isFinite(m.amount) ? m.amount : 0), 0);
+    if (ms.length && Math.round(total) !== Math.round(budget)) errors.push(`Milestone amounts add up to ₹${Math.round(total).toLocaleString('en-IN')}, but the budget is ₹${Math.round(budget).toLocaleString('en-IN')}.`);
+    return errors;
+}
 
 const sameDistrict = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
@@ -30,7 +59,7 @@ const sameDistrict = (a: string, b: string) => a.trim().toLowerCase() === b.trim
 export function blockedReason(action: Action, ch: ChallengeLike, actor: Actor): string | null {
     const rule = RULES[action];
     if (!rule.roles.includes(actor.role)) return 'Your role cannot do this.';
-    if (!rule.from.includes(ch.status)) return `A ${ch.status.toLowerCase().replace(/_/g, ' ')} report cannot be ${action.toLowerCase()}ed.`;
+    if (!rule.from.includes(ch.status)) return `This action is not possible while the report is ${ch.status.toLowerCase().replace(/_/g, ' ')}.`;
     if (rule.officerOnlyInDistrict && actor.role === 'OFFICER' && !(actor.district && sameDistrict(actor.district.name, ch.district))) {
         return 'This report is outside your district.';
     }
@@ -67,7 +96,7 @@ export class LifecycleError extends Error {
     constructor(message: string, public status: 400 | 403 | 404 | 409) { super(message); }
 }
 
-export interface Payload { reason?: string; targetId?: string; heiId?: string; sdgTags?: number[] }
+export interface Payload { reason?: string; targetId?: string; heiId?: string; sdgTags?: number[]; proposalId?: string; amount?: number }
 
 /** Runs one action. Throws LifecycleError (with an HTTP status) when it is not allowed. */
 export async function transition(challengeId: string, action: Action, actor: Actor, payload: Payload = {}) {
@@ -75,7 +104,7 @@ export async function transition(challengeId: string, action: Action, actor: Act
     const ch = await prisma.challenge.findUnique({ where: { id: challengeId } });
     if (!ch) throw new LifecycleError(`No report found with ID "${challengeId}"`, 404);
     const blocked = blockedReason(action, ch, actor);
-    if (blocked) throw new LifecycleError(blocked, blocked.includes('cannot be') ? 409 : 403);
+    if (blocked) throw new LifecycleError(blocked, blocked.includes('not possible while') ? 409 : 403);
 
     // Preconditions and the change itself, per action.
     let next: ChallengeStatus = ch.status;
@@ -118,6 +147,43 @@ export async function transition(challengeId: string, action: Action, actor: Act
         notify = { roles: [], message: `“${ch.title}” (${ch.district}) was assigned to ${hei.name}.`, extraUserIds: ch.submitterId ? [ch.submitterId] : [] };
     }
 
+    let selected: { id: string; heiId: string; teamPlan: unknown; milestonePlan: unknown; budgetRequested: number } | null = null;
+    let commitAmount = 0;
+    let commitBudget = 0;
+    if (action === 'SELECT_PROPOSAL') {
+        const p = payload.proposalId ? await prisma.challengeProposal.findUnique({ where: { id: payload.proposalId }, include: { hei: { select: { name: true } } } }) : null;
+        if (!p || p.challengeId !== ch.id) throw new LifecycleError('Choose one of this report\'s proposals.', 400);
+        if (p.status !== 'SUBMITTED' && p.status !== 'UNDER_REVIEW') throw new LifecycleError(`A ${p.status.toLowerCase()} proposal cannot be selected.`, 409);
+        const problems = validatePlan(p.teamPlan as unknown as TeamPlan, p.milestonePlan as unknown as PlanMilestone[], p.budgetRequested, p.timelineWeeks);
+        if (problems.length) throw new LifecycleError(`This proposal is incomplete: ${problems.join(' ')}`, 409);
+        selected = p;
+        next = 'TEAM_FORMED';
+        data.updatedAt = new Date();
+        const heiUsers = await prisma.user.findMany({ where: { heiId: p.heiId, role: { in: ['FACULTY', 'STUDENT'] } }, select: { id: true } });
+        notify = { roles: ['CSR'], message: `“${ch.title}” (${ch.district}) has a selected university plan by ${p.hei.name} and needs ₹${Math.round(p.budgetRequested).toLocaleString('en-IN')} in funding.`, extraUserIds: [...heiUsers.map((u) => u.id), ...(ch.submitterId ? [ch.submitterId] : [])] };
+    } else if (action === 'COMMIT_FUNDS') {
+        if (!actor.organizationId) throw new LifecycleError('Your account is not linked to a CSR organisation.', 403);
+        const accepted = await prisma.challengeProposal.findFirst({ where: { challengeId: ch.id, status: 'ACCEPTED' }, select: { budgetRequested: true, heiId: true } });
+        if (!accepted) throw new LifecycleError('This report has no selected proposal to fund.', 409);
+        const committed = (await prisma.fundingCommitment.aggregate({ where: { challengeId: ch.id }, _sum: { amount: true } }))._sum.amount ?? 0;
+        const gap = Math.round(accepted.budgetRequested - committed);
+        const amount = Math.round(Number(payload.amount));
+        if (!(amount > 0)) throw new LifecycleError('Enter an amount above ₹0.', 400);
+        if (amount > gap) throw new LifecycleError(`Only ₹${gap.toLocaleString('en-IN')} is still needed.`, 400);
+        commitAmount = amount;
+        commitBudget = accepted.budgetRequested;
+        if (amount === gap) next = 'FUNDED';
+        const heiUsers = await prisma.user.findMany({ where: { heiId: accepted.heiId, role: 'FACULTY' }, select: { id: true } });
+        notify = { roles: ['OFFICER'], message: amount === gap ? `“${ch.title}” is fully funded. Work can start.` : `₹${amount.toLocaleString('en-IN')} committed to “${ch.title}”; ₹${(gap - amount).toLocaleString('en-IN')} still needed.`, extraUserIds: heiUsers.map((u) => u.id) };
+    } else if (action === 'START') {
+        next = 'IN_PROGRESS';
+    } else if (action === 'COMPLETE') {
+        const open = await prisma.milestone.count({ where: { team: { proposal: { challengeId: ch.id, status: 'ACCEPTED' } }, status: { not: 'CSR_APPROVED' } } });
+        if (open > 0) throw new LifecycleError(`${open} milestone(s) are not paid yet.`, 409);
+        next = 'COMPLETED';
+        notify = { roles: ['OFFICER'], message: `All milestones of “${ch.title}” are verified and paid. The project is complete.`, extraUserIds: ch.submitterId ? [ch.submitterId] : [] };
+    }
+
     const audience = notify ? [
         ...(notify.roles.length ? await prisma.user.findMany({ where: await audienceWhere(notify.roles, ch.id), select: { id: true } }) : []).map((u) => u.id),
         ...notify.extraUserIds,
@@ -131,22 +197,49 @@ export async function transition(challengeId: string, action: Action, actor: Act
         } else {
             // Guard against a concurrent change: only update if the status is still what we checked.
             const { count } = await tx.challenge.updateMany({ where: { id: ch.id, status: ch.status }, data: { status: next, ...data } });
+            // (a partial COMMIT_FUNDS keeps the status; the guarded update still proves nobody changed it meanwhile)
             if (count !== 1) throw new LifecycleError('This report was just changed by someone else. Reload and try again.', 409);
         }
         if (action === 'MERGE' && target && ch.submitterId) {
             await tx.endorsement.upsert({ where: { challengeId_userId: { challengeId: target.id, userId: ch.submitterId } }, create: { challengeId: target.id, userId: ch.submitterId }, update: {} });
         }
         if (action === 'ASSIGN' && hei) {
-            // ponytail: routing still creates a placeholder proposal (fixed budget/timeline) for the university inbox.
-            // Phase 3 replaces it with university-written proposals the officer selects from.
-            await tx.challengeProposal.create({
-                data: { challengeId: ch.id, heiId: hei.id, approach: `Assigned by the district officer to ${hei.name}.`, status: 'SUBMITTED', timelineWeeks: 12, budgetRequested: 350000, ipDeclaration: 'Open source for public benefit.' },
+            // An invitation: an empty DRAFT proposal the university completes (team, milestones, budget) and submits.
+            const has = await tx.challengeProposal.findFirst({ where: { challengeId: ch.id, heiId: hei.id }, select: { id: true } });
+            if (!has) {
+                await tx.challengeProposal.create({ data: { challengeId: ch.id, heiId: hei.id, approach: '', status: 'DRAFT', timelineWeeks: 0, budgetRequested: 0, ipDeclaration: '' } });
+            }
+        }
+        if (action === 'SELECT_PROPOSAL' && selected) {
+            const p = selected;
+            const team = p.teamPlan as unknown as TeamPlan;
+            const plan = p.milestonePlan as unknown as PlanMilestone[];
+            const faculty = await tx.user.findUnique({ where: { id: team.facultyId }, select: { full_name: true, email: true } });
+            await tx.challengeProposal.update({ where: { id: p.id }, data: { status: 'ACCEPTED' } });
+            await tx.challengeProposal.updateMany({ where: { challengeId: ch.id, id: { not: p.id }, status: { in: ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW'] } }, data: { status: 'REJECTED' } });
+            const start = Date.now();
+            await tx.projectTeam.create({
+                data: {
+                    proposalId: p.id, heiId: p.heiId, facultyName: faculty?.full_name ?? 'Faculty lead', facultyEmail: faculty?.email ?? '',
+                    members: { create: team.members.map((m, i) => ({ studentProfileId: m.studentProfileId, role: m.role?.trim().slice(0, 60) || (i === 0 ? 'Team Lead' : 'Member') })) },
+                    milestones: { create: plan.map((m) => ({ title: m.title.trim(), description: '', dueDate: new Date(start + m.week * 7 * 86_400_000), status: 'PENDING', proofUrls: [], amount: m.amount })) },
+                },
             });
+        }
+        if (action === 'COMMIT_FUNDS' && commitAmount) {
+            await tx.fundingCommitment.upsert({
+                where: { challengeId_csrOrgId: { challengeId: ch.id, csrOrgId: actor.organizationId! } },
+                create: { challengeId: ch.id, csrOrgId: actor.organizationId!, amount: commitAmount },
+                update: { amount: { increment: commitAmount } },
+            });
+            // Re-check inside the transaction so two funders committing at once can't overshoot the budget.
+            const total = (await tx.fundingCommitment.aggregate({ where: { challengeId: ch.id }, _sum: { amount: true } }))._sum.amount ?? 0;
+            if (Math.round(total) > Math.round(commitBudget)) throw new LifecycleError('Someone else just committed funds. Reload and try again.', 409);
         }
         await appendLedger({
             actor_id: actor.id, actor_role: actor.role, action: `CHALLENGE_${action}`, entity_type: 'Challenge', entity_id: ch.id,
             previous_value: { status: ch.status },
-            new_value: { status: next, ...data, ...(hei ? { heiId: hei.id } : {}) },
+            new_value: { status: next, ...data, ...(hei ? { heiId: hei.id } : {}), ...(selected ? { proposalId: selected.id } : {}), ...(commitAmount ? { committed: commitAmount, csrOrgId: actor.organizationId } : {}) },
         }, tx);
         if (notify && audience.length) {
             await tx.notification.createMany({

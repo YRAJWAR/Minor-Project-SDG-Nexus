@@ -9,6 +9,7 @@ import { findMatches } from '@/services/matching';
 import AnimatedCounter from '@/components/ui/AnimatedCounter';
 import StatCard from '@/components/dashboard/StatCard';
 import MilestoneQueue from '@/components/dashboard/MilestoneQueue';
+import FundingQueue from '@/components/dashboard/FundingQueue';
 import { generateExecutiveReport } from '@/lib/pdfGenerator';
 import { FileDown, AlertTriangle } from 'lucide-react';
 
@@ -134,6 +135,8 @@ export default function CorporateDashboard() {
                     />
                 ))}
             </div>
+
+            <FundingQueue />
 
             <MilestoneQueue mode="csr" />
 

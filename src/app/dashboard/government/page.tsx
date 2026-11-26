@@ -10,6 +10,7 @@ import { useData } from '@/lib/DataContext';
 import AnimatedCounter from '@/components/ui/AnimatedCounter';
 import StatCard from '@/components/dashboard/StatCard';
 import MilestoneQueue from '@/components/dashboard/MilestoneQueue';
+import ProposalsPanel from '@/components/dashboard/ProposalsPanel';
 import { useRouter } from 'next/navigation';
 import { FileDown, AlertTriangle, Clock, MapPin, Building2, CheckCircle2, X, ArrowRight, Sparkles, ShieldCheck, LayoutGrid, List, Shield, Search, Filter, Calendar, RefreshCw, TrendingUp, Info, Layers } from 'lucide-react';
 import { generateExecutiveReport } from '@/lib/pdfGenerator';
@@ -109,6 +110,7 @@ export default function GovernmentDashboard() {
     const [mergeFor, setMergeFor] = useState<string | null>(null);
     const [mergeTarget, setMergeTarget] = useState('');
     const [verifyFor, setVerifyFor] = useState<string | null>(null);
+    const [proposalsFor, setProposalsFor] = useState<string | null>(null);
     const [verifyTags, setVerifyTags] = useState<number[]>([]);
     const runAction = async (ch: any, action: 'VERIFY' | 'REJECT' | 'MERGE', extra: Record<string, unknown> = {}) => {
         if (action === 'REJECT') {
@@ -958,6 +960,15 @@ export default function GovernmentDashboard() {
                                                 <button type="button" disabled={actionBusy === ch.id} onClick={() => runAction(ch, 'REJECT')} className="flex-1 py-1.5 text-xs font-semibold rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50 disabled:opacity-50">Reject</button>
                                                 <button type="button" disabled={actionBusy === ch.id} onClick={() => { setMergeFor(mergeFor === ch.id ? null : ch.id); setMergeTarget(''); }} className="flex-1 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-50">Merge…</button>
                                             </div>
+                                        )}
+                                        {ch.allowedActions?.includes('SELECT_PROPOSAL') && ch.proposalsCount > 0 && (
+                                            <button type="button" aria-expanded={proposalsFor === ch.id} onClick={() => setProposalsFor(proposalsFor === ch.id ? null : ch.id)}
+                                                className="w-full py-1.5 text-xs font-semibold rounded-lg border border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                                                Compare proposals ({ch.proposalsCount})
+                                            </button>
+                                        )}
+                                        {proposalsFor === ch.id && (
+                                            <ProposalsPanel challengeId={ch.id} onSelected={() => { setProposalsFor(null); setActionMessage({ ok: true, text: `Plan selected for "${ch.title}". The team is formed and CSR partners were notified.` }); setReloadKey((k) => k + 1); }} />
                                         )}
                                         {verifyFor === ch.id && (
                                             <fieldset className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-2.5">

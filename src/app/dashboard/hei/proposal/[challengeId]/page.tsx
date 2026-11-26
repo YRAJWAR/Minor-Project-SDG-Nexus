@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
+import ProposalPlanEditor, { type PlanStudent, type PlanRow } from '@/components/dashboard/ProposalPlanEditor';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -68,6 +69,17 @@ export default function ProposalBuilderPage() {
     const [csrPartner, setCsrPartner] = useState('Open to any partner');
     const [ipDeclaration, setIpDeclaration] = useState('Open Source — published under MIT/CC license');
     const [termsAccepted, setTermsAccepted] = useState(false);
+    // Team and milestone plan (Phase 3): the officer compares these and the selected one becomes the project.
+    const [team, setTeam] = useState<PlanStudent[]>([]);
+    const [milestones, setMilestones] = useState<PlanRow[]>([
+        { title: 'Baseline survey & site study', week: 3, amount: 0 },
+        { title: 'Prototype and community review', week: 8, amount: 0 },
+        { title: 'Installation and handover', week: 14, amount: 0 },
+    ]);
+    const planPayload = () => ({
+        members: team.map((t, i) => ({ studentProfileId: t.id, role: i === 0 ? 'Team Lead' : 'Member' })),
+        milestones: milestones.map((m) => ({ title: m.title, week: Number(m.week), amount: Number(m.amount) })),
+    });
 
     // Corporate partners list
     const [corporateList, setCorporateList] = useState<CorporatePartner[]>([]);
@@ -121,7 +133,9 @@ export default function ProposalBuilderPage() {
                     if (p.budgetRequested) setBudgetRequested(p.budgetRequested);
                     if (p.fundingSource) setCsrPartner(p.fundingSource);
                     if (p.ipDeclaration) setIpDeclaration(p.ipDeclaration);
-                    setTermsAccepted(true);
+                    if (Array.isArray(p.planStudents) && p.planStudents.length) setTeam(p.planStudents);
+                    if (Array.isArray(p.milestonePlan) && p.milestonePlan.length) setMilestones(p.milestonePlan);
+                    if (p.status !== 'DRAFT') setTermsAccepted(true);
                 }
             } catch (err) {
                 console.warn('No existing proposal found, starting blank form:', err);
@@ -211,6 +225,7 @@ export default function ProposalBuilderPage() {
                     termsAccepted,
                     status: 'DRAFT',
                     aiQualityScore: qualityScores?.overallScore,
+                    ...planPayload(),
                 }),
             });
 
@@ -269,6 +284,7 @@ export default function ProposalBuilderPage() {
                     termsAccepted,
                     status: 'SUBMITTED',
                     aiQualityScore: qualityScores?.overallScore,
+                    ...planPayload(),
                 }),
             });
 
@@ -276,7 +292,7 @@ export default function ProposalBuilderPage() {
             if (res.ok && json.success) {
                 setToastMessage({
                     type: 'success',
-                    text: 'Proposal submitted! P2 notifications sent to Government and CSR partners.',
+                    text: 'Proposal submitted. The district officer will compare it with other universities’ plans.',
                 });
                 setTimeout(() => {
                     router.push('/dashboard/hei/proposals');
@@ -578,6 +594,12 @@ export default function ProposalBuilderPage() {
                             );
                         })}
                     </div>
+                </div>
+
+                {/* Team and milestone plan */}
+                <div className="bg-white p-4 rounded-xl border border-slate-200/80">
+                    <ProposalPlanEditor team={team} setTeam={setTeam} milestones={milestones} setMilestones={setMilestones}
+                        budget={Number(budgetRequested) || 0} weeks={Number(timelineWeeks) || 52} />
                 </div>
 
                 {/* 6. Terms Acceptance Checkbox */}

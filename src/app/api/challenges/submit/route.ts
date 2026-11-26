@@ -30,19 +30,35 @@ export async function POST(req: NextRequest) {
             isDuplicate,
             similarChallengeId,
             urgency,
+            website, // honeypot: hidden from people, bots fill it
         } = body;
 
         // Validation
-        if (!title || typeof title !== 'string' || title.trim().length < 3 || title.trim().length > 150) {
+        if (typeof website === 'string' && website.trim()) {
+            return NextResponse.json({ success: false, error: 'Your report could not be accepted.', timestamp: new Date().toISOString() }, { status: 400 });
+        }
+
+        // At most 5 reports per person per day (admins exempt), counted from the database.
+        if (user.role !== 'ADMIN') {
+            const today = await prisma.challenge.count({ where: { submitterId: user.id, createdAt: { gte: new Date(Date.now() - 86_400_000) } } });
+            if (today >= 5) {
+                return NextResponse.json(
+                    { success: false, error: 'You have reached the limit of 5 reports in 24 hours. Please try again tomorrow, or support an existing report.', timestamp: new Date().toISOString() },
+                    { status: 429 }
+                );
+            }
+        }
+
+        if (!title || typeof title !== 'string' || title.trim().length < 5 || title.trim().length > 120) {
             return NextResponse.json(
-                { success: false, error: 'Title must be 3–150 characters', timestamp: new Date().toISOString() },
+                { success: false, error: 'Title must be 5–120 characters', timestamp: new Date().toISOString() },
                 { status: 400 }
             );
         }
 
-        if (!description || typeof description !== 'string' || description.trim().length < 10 || description.trim().length > 3000) {
+        if (!description || typeof description !== 'string' || description.trim().length < 30 || description.trim().length > 2000) {
             return NextResponse.json(
-                { success: false, error: 'Description must be 10–3000 characters', timestamp: new Date().toISOString() },
+                { success: false, error: 'Description must be 30–2000 characters', timestamp: new Date().toISOString() },
                 { status: 400 }
             );
         }

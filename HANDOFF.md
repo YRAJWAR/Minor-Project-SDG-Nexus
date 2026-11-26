@@ -50,7 +50,7 @@ npm run dev                 # http://localhost:3000
 | 0 Clean-up | done |
 | 1 Foundation (schema, auth, guards, regions) | done |
 | 5 Demo seed | pulled forward, done (smoke script still to do) |
-| 2 Lifecycle core | mostly done — remaining items listed in the log |
+| 2 Lifecycle core | done |
 | 3 Proposals, funding, milestones | not started |
 | 4 Closure, credentials, scores | not started |
 | 6 Design (use `.claude/skills/impeccable` guidance) | not started |
@@ -82,4 +82,12 @@ Format: date · who · branch · what changed (files) · what is unfinished · a
     (3) let the officer edit SDG tags before Verify (API already accepts `sdgTags`); (4) funnel chips for REJECTED, MERGED,
     OVERDUE (counts already returned by the API); (5) `hei/teams/create` still sets TEAM_FORMED directly — move into
     `transition()` when Phase 3 reworks teams into proposals.
+- 2026-11-26 · Claude Code · phase-2-finish → merged to main · Phase 2 open items 1–4 done (Antigravity prompts 2–5 are
+  therefore no longer needed; next is Prompt 8 = Phase 3).
+  - Citizen form: on a duplicate warning, "support that report" calls ENDORSE on the existing report and blocks filing a new
+    one (the old "merge and file anyway" path and its isDuplicate flag were removed from the form).
+  - Submit API: title 5–120, description 30–2000, max 5 reports per user per 24 h (429, admins exempt), honeypot field `website`.
+  - Officer cards: "Verify…" opens an SDG checklist (1–5) and sends `sdgTags` with VERIFY; filter chips Overdue / Rejected /
+    Merged next to the funnel.
+  - Still open (moves to Phase 3): `hei/teams/create` sets TEAM_FORMED directly — fold into `transition()` with the proposal rework.
 

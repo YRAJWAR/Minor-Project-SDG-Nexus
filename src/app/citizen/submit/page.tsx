@@ -145,7 +145,19 @@ export default function CitizenSubmitPage() {
         similarityScore?: number;
     } | null>(null);
     const [duplicateDecision, setDuplicateDecision] = useState<'none' | 'merged' | 'dismissed'>('none');
-    const [isDuplicateFlag, setIsDuplicateFlag] = useState<boolean>(false);
+    // "merged" now means: the citizen supported the existing report instead of filing a new one.
+    const [endorseError, setEndorseError] = useState<string | null>(null);
+    const [honeypot, setHoneypot] = useState('');
+    const supportExisting = async () => {
+        if (!duplicateResult?.similarChallengeId) return;
+        setEndorseError(null);
+        const res = await fetch(`/api/challenges/${duplicateResult.similarChallengeId}/actions`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'ENDORSE' }),
+        }).then((r) => r.json()).catch(() => ({ success: false, error: 'Could not reach the server.' }));
+        // Already supported counts as done: the citizen's voice is on that report either way.
+        if (res.success || /already endorsed/i.test(res.error ?? '')) setDuplicateDecision('merged');
+        else setEndorseError(res.error ?? 'Could not record your support.');
+    };
 
     const runDuplicateCheck = async () => {
         setStep(4);
@@ -256,8 +268,7 @@ export default function CitizenSubmitPage() {
                 isGpNode,
                 vleOperatorCode: isGpNode ? vleOperatorCode.trim() : undefined,
                 submittedVia: isGpNode ? 'GRAM_PANCHAYAT_NODE' : 'PORTAL',
-                isDuplicate: isDuplicateFlag,
-                similarChallengeId: isDuplicateFlag ? duplicateResult?.similarChallengeId : undefined,
+                website: honeypot,
             };
 
             const res = await fetch('/api/challenges/submit', {
@@ -693,6 +704,7 @@ export default function CitizenSubmitPage() {
                                             type="text"
                                             placeholder="e.g. Contaminated ground water causing fluoride poisoning in 4 hamlets"
                                             value={title}
+                                            maxLength={120}
                                             onChange={(e) => setTitle(e.target.value)}
                                             className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                                         />
@@ -704,17 +716,22 @@ export default function CitizenSubmitPage() {
                                                 Detailed Problem Description *
                                             </label>
                                             <span className="text-xs text-slate-500">
-                                                {description.length} chars (minimum 10)
+                                                {description.trim().length} / 2000 characters (minimum 30)
                                             </span>
                                         </div>
                                         <textarea
                                             rows={4}
                                             placeholder="Describe who is impacted, how long this issue has persisted, previous attempts to fix it, and what technological intervention or university research could solve it..."
                                             value={description}
+                                            maxLength={2000}
                                             onChange={(e) => setDescription(e.target.value)}
                                             className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                                         />
                                     </div>
+
+                                    {/* Honeypot: invisible to people and screen readers; bots that fill it are refused. */}
+                                    <input type="text" name="website" value={honeypot} onChange={(e) => setHoneypot(e.target.value)}
+                                        tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-px w-px opacity-0" />
 
                                     {/* Media Upload with Client-Side Canvas Compression */}
                                     <div>
@@ -794,7 +811,7 @@ export default function CitizenSubmitPage() {
                                         </button>
                                         <button
                                             type="button"
-                                            disabled={title.trim().length < 3 || description.trim().length < 10 || isCheckingDuplicate}
+                                            disabled={title.trim().length < 5 || description.trim().length < 30 || isCheckingDuplicate}
                                             onClick={runDuplicateCheck}
                                             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                                         >
@@ -854,43 +871,29 @@ export default function CitizenSubmitPage() {
                                             <div className="flex flex-wrap gap-2.5 pt-1 pl-8">
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        setDuplicateDecision('merged');
-                                                        setIsDuplicateFlag(true);
-                                                    }}
+                                                    onClick={supportExisting}
                                                     className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-sm cursor-pointer"
                                                 >
-                                                    Yes, merge with existing
+                                                    Yes, it&apos;s the same problem — support that report
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => {
                                                         setDuplicateDecision('dismissed');
-                                                        setIsDuplicateFlag(false);
                                                     }}
                                                     className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition cursor-pointer"
                                                 >
                                                     No, this is different
                                                 </button>
                                             </div>
+                                            {endorseError && <p role="alert" className="pl-8 text-xs text-rose-300">{endorseError}</p>}
                                         </motion.div>
                                     )}
 
                                     {duplicateDecision === 'merged' && (
-                                        <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs flex items-center justify-between">
-                                            <span>
-                                                🔗 Merged with Challenge <strong>#{duplicateResult?.similarChallengeId}</strong>: "{duplicateResult?.similarChallengeTitle}". Your report and evidence will be appended.
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setDuplicateDecision('none');
-                                                    setIsDuplicateFlag(false);
-                                                }}
-                                                className="text-xs text-blue-400 hover:underline cursor-pointer ml-2"
-                                            >
-                                                Change
-                                            </button>
+                                        <div role="status" className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-200 text-sm">
+                                            Your support was added to &ldquo;{duplicateResult?.similarChallengeTitle}&rdquo;. No new report is needed; you can follow it here:{' '}
+                                            <Link href={`/track/${duplicateResult?.similarChallengeId}`} className="underline font-semibold">track that report</Link>.
                                         </div>
                                     )}
 
@@ -1044,7 +1047,7 @@ export default function CitizenSubmitPage() {
                                         </button>
                                         <button
                                             type="button"
-                                            disabled={submitting}
+                                            disabled={submitting || duplicateDecision === 'merged'}
                                             onClick={handleSubmit}
                                             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold shadow-lg shadow-emerald-600/30 transition disabled:opacity-50"
                                         >

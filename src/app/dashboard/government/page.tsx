@@ -108,6 +108,8 @@ export default function GovernmentDashboard() {
     const [actionMessage, setActionMessage] = useState<{ ok: boolean; text: string } | null>(null);
     const [mergeFor, setMergeFor] = useState<string | null>(null);
     const [mergeTarget, setMergeTarget] = useState('');
+    const [verifyFor, setVerifyFor] = useState<string | null>(null);
+    const [verifyTags, setVerifyTags] = useState<number[]>([]);
     const runAction = async (ch: any, action: 'VERIFY' | 'REJECT' | 'MERGE', extra: Record<string, unknown> = {}) => {
         if (action === 'REJECT') {
             const reason = window.prompt(`Why is "${ch.title}" not being taken up? The citizen will see this (10-500 characters).`);
@@ -345,6 +347,7 @@ export default function GovernmentDashboard() {
 
         if (statusFilter === 'ALL') return true;
         if (statusFilter === 'ESCALATION_DUE') return ch.isEscalationDue;
+        if (statusFilter === 'OVERDUE') return ch.isOverdue;
         if (statusFilter === 'RESOLVED') return ch.status === 'COMPLETED' || ch.status === 'DEPLOYED';
         return ch.status === statusFilter;
     });
@@ -730,6 +733,18 @@ export default function GovernmentDashboard() {
                                     <span>⚠️ Needs Action ({escalationDueCount})</span>
                                 </button>
                             )}
+                            {/* Outcome filters; counts come from the same list the cards use. */}
+                            {([
+                                ['OVERDUE', 'Overdue', challengesList.filter((c) => c.isOverdue).length, 'bg-rose-600', 'bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100'],
+                                ['REJECTED', 'Rejected', challengesList.filter((c) => c.status === 'REJECTED').length, 'bg-slate-700', 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'],
+                                ['MERGED', 'Merged', challengesList.filter((c) => c.status === 'MERGED').length, 'bg-slate-700', 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'],
+                            ] as const).map(([key, label, n, on, off]) => (
+                                <button key={key} type="button" aria-pressed={statusFilter === key}
+                                    onClick={() => setStatusFilter(statusFilter === key ? 'ALL' : key)}
+                                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${statusFilter === key ? `${on} text-white border-transparent` : off}`}>
+                                    {label} ({n})
+                                </button>
+                            ))}
                         </div>
                     </div>
 
@@ -938,11 +953,33 @@ export default function GovernmentDashboard() {
                                         {(ch.allowedActions?.includes('REJECT') || ch.allowedActions?.includes('MERGE')) && (
                                             <div className="flex items-center gap-2">
                                                 {ch.allowedActions.includes('VERIFY') && (
-                                                    <button type="button" disabled={actionBusy === ch.id} onClick={() => runAction(ch, 'VERIFY')} className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50">Verify</button>
+                                                    <button type="button" disabled={actionBusy === ch.id} aria-expanded={verifyFor === ch.id} onClick={() => { setVerifyFor(verifyFor === ch.id ? null : ch.id); setVerifyTags(ch.sdgTags ?? []); setMergeFor(null); }} className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50">Verify…</button>
                                                 )}
                                                 <button type="button" disabled={actionBusy === ch.id} onClick={() => runAction(ch, 'REJECT')} className="flex-1 py-1.5 text-xs font-semibold rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50 disabled:opacity-50">Reject</button>
                                                 <button type="button" disabled={actionBusy === ch.id} onClick={() => { setMergeFor(mergeFor === ch.id ? null : ch.id); setMergeTarget(''); }} className="flex-1 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-50">Merge…</button>
                                             </div>
+                                        )}
+                                        {verifyFor === ch.id && (
+                                            <fieldset className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-2.5">
+                                                <legend className="px-1 text-[11px] font-semibold text-slate-700">Confirm the SDGs (1–5), then verify</legend>
+                                                <div className="grid grid-cols-2 gap-x-2 gap-y-1 max-h-40 overflow-y-auto">
+                                                    {SDG_INFO.map((g) => {
+                                                        const on = verifyTags.includes(g.id);
+                                                        return (
+                                                            <label key={g.id} className="flex items-center gap-1.5 text-[11px] text-slate-700">
+                                                                <input type="checkbox" checked={on} disabled={!on && verifyTags.length >= 5}
+                                                                    onChange={() => setVerifyTags((t) => (on ? t.filter((x) => x !== g.id) : [...t, g.id]))} />
+                                                                <span>{g.id}. {g.name}</span>
+                                                            </label>
+                                                        );
+                                                    })}
+                                                </div>
+                                                <button type="button" disabled={!verifyTags.length || actionBusy === ch.id}
+                                                    onClick={() => { setVerifyFor(null); runAction(ch, 'VERIFY', { sdgTags: verifyTags }); }}
+                                                    className="mt-2 w-full py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50">
+                                                    Confirm verify ({verifyTags.length} SDG{verifyTags.length === 1 ? '' : 's'})
+                                                </button>
+                                            </fieldset>
                                         )}
                                         {mergeFor === ch.id && (
                                             <div className="flex items-center gap-2">

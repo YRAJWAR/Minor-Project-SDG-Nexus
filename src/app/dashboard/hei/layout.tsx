@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import {
     Inbox,
-    Users,
     FileText,
     Target,
     Award,
@@ -17,7 +16,6 @@ import {
 
 const HEI_TABS = [
     { label: 'Challenge Inbox', href: '/dashboard/hei', icon: Inbox },
-    { label: 'Team Formation', href: '/dashboard/hei/team-formation', icon: Users },
     { label: 'Proposal Builder', href: '/dashboard/hei/proposals', icon: FileText, badge: undefined },
     { label: 'Milestone Tracker', href: '/dashboard/hei/milestones', icon: Target, badge: undefined },
     { label: 'Student Credentials', href: '/dashboard/hei/credentials', icon: Award, badge: undefined },

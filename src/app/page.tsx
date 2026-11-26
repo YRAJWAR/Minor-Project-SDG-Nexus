@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   Users,
   Building2,
@@ -15,53 +14,14 @@ import {
   Cpu,
   ShieldCheck,
   Award,
-  ExternalLink,
   Copy,
   Check,
-  MapPin,
-  Clock,
   Sparkles,
   ChevronRight,
-  ShieldAlert,
-  Compass,
   FileCheck
 } from 'lucide-react';
 
 // Animated Count-Up Helper Component
-function CountUp({ end, duration = 1500, prefix = '', suffix = '', decimals = 0 }: {
-  end: number;
-  duration?: number;
-  prefix?: string;
-  suffix?: string;
-  decimals?: number;
-}) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    let startTimestamp: number | null = null;
-    let animationFrameId: number;
-
-    const step = (timestamp: number) => {
-      if (!startTimestamp) startTimestamp = timestamp;
-      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      // easeOutExpo
-      const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      setCount(easeProgress * end);
-
-      if (progress < 1) {
-        animationFrameId = requestAnimationFrame(step);
-      } else {
-        setCount(end);
-      }
-    };
-
-    animationFrameId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [end, duration]);
-
-  const formatted = decimals > 0 ? count.toFixed(decimals) : Math.round(count).toString();
-  return <span>{prefix}{formatted}{suffix}</span>;
-}
 
 export default function LandingPage() {
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
@@ -72,7 +32,7 @@ export default function LandingPage() {
     setTimeout(() => setCopiedEmail(null), 2000);
   };
 
-  // Demo accounts for SIH 2026 Jury
+  // Demo accounts (local/demo use only; replaced by seeded fictional accounts in Phase 1)
   const demoAccounts = [
     {
       role: 'Citizen (Submitter)',
@@ -83,16 +43,16 @@ export default function LandingPage() {
       description: 'Reports grassroots societal challenges with geo-tagged proof',
     },
     {
-      role: 'District Collector (Government)',
+      role: 'District Officer (Government)',
       name: 'Dr. Ramesh Kumar',
       email: 'collector@jharkhand.gov.in',
-      badge: 'State Authority',
+      badge: 'District Authority',
       badgeColor: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
       description: 'Validates challenges, routes to anchor HEIs & tracks district metrics',
     },
     {
       role: 'University Faculty (HEI Lead)',
-      name: 'Prof. Anjali Sharma (NIT Jsr)',
+      name: 'University faculty lead',
       email: 'faculty@nitjsr.ac.in',
       badge: 'Academic Lead',
       badgeColor: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
@@ -100,7 +60,7 @@ export default function LandingPage() {
     },
     {
       role: 'Industry Partner (CSR Funder)',
-      name: 'Tata Steel CSR Wing',
+      name: 'CSR funding partner',
       email: 'csr@tatasteel.com',
       badge: 'CSR Partner',
       badgeColor: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
@@ -108,64 +68,19 @@ export default function LandingPage() {
     },
     {
       role: 'Deployment Partner (NGO)',
-      name: 'PRADAN Jharkhand',
+      name: 'Field NGO partner',
       email: 'admin@pradan.net',
       badge: 'Field Partner',
       badgeColor: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-      description: 'Deploys hardware prototypes & coordinates ground verification with Panchayats',
+      description: 'Deploys solutions on the ground and attests field work',
     },
     {
       role: 'University Student (Innovator)',
-      name: 'Arjun Mahato (NIT Jsr)',
+      name: 'University student',
       email: 'student@nitjsr.ac.in',
-      badge: 'NEP Scholar',
+      badge: 'Student',
       badgeColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-      description: 'Conducts field testing, submits proof & earns NAAC-compliant NEP credits',
-    },
-  ];
-
-  // 3 Live non-DEPLOYED challenges from seed data
-  const liveChallenges = [
-    {
-      title: 'High school dropout rate in Dumka tribal belt',
-      district: 'Dumka',
-      category: 'Education',
-      sdgs: [
-        { id: 4, name: 'Quality Education', color: 'bg-red-500/10 text-red-400 border-red-500/30' },
-        { id: 10, name: 'Reduced Inequalities', color: 'bg-pink-500/10 text-pink-400 border-pink-500/30' },
-      ],
-      status: 'IN_PROGRESS',
-      statusLabel: 'In Progress',
-      statusClass: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-      daysActive: 42,
-      assignedHei: 'Ranchi University & Tribal Welfare Cell',
-    },
-    {
-      title: 'Crop pest management for kharif season in Garhwa',
-      district: 'Garhwa',
-      category: 'Agriculture',
-      sdgs: [
-        { id: 2, name: 'Zero Hunger', color: 'bg-amber-500/10 text-amber-400 border-amber-500/30' },
-        { id: 15, name: 'Life on Land', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
-      ],
-      status: 'TEAM_FORMED',
-      statusLabel: 'Team Formed',
-      statusClass: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
-      daysActive: 28,
-      assignedHei: 'IIT (ISM) Dhanbad Ag-Tech Lab',
-    },
-    {
-      title: 'Road connectivity to 8 villages in Latehar',
-      district: 'Latehar',
-      category: 'Infrastructure',
-      sdgs: [
-        { id: 11, name: 'Sustainable Cities', color: 'bg-orange-500/10 text-orange-400 border-orange-500/30' },
-      ],
-      status: 'VALIDATED',
-      statusLabel: 'Validated by GoJ',
-      statusClass: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
-      daysActive: 19,
-      assignedHei: 'BIT Sindri Civil Engineering Cell',
+      description: 'Does field work, submits proof and earns verifiable credits',
     },
   ];
 
@@ -185,12 +100,9 @@ export default function LandingPage() {
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-lg text-white tracking-tight">SDG Nexus</span>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hidden sm:inline-block">
-                  SIH 2026
-                </span>
               </div>
               <span className="text-[11px] text-slate-400 hidden sm:block">
-                Govt. of Jharkhand • SIH26043
+                Local problems, verified solutions
               </span>
             </div>
           </Link>
@@ -236,12 +148,12 @@ export default function LandingPage() {
           {/* Tagline / Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/80 text-cyan-400 text-xs sm:text-sm font-medium mb-6 shadow-sm">
             <Sparkles className="w-4 h-4 text-cyan-400" />
-            <span>SIH 2026 | Problem Statement SIH26043 | Government of Jharkhand</span>
+            <span>Communities • Universities • CSR partners • Across India</span>
           </div>
 
           {/* Heading */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1] mb-6">
-            Jharkhand's Collaborative <br className="hidden sm:inline" />
+            India&apos;s Collaborative <br className="hidden sm:inline" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-400">
               Innovation Stack
             </span>
@@ -273,44 +185,6 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          {/* Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 max-w-4xl mx-auto text-left">
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-4 sm:p-5 hover:border-cyan-500/30 transition">
-              <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-1">
-                <CountUp end={12} duration={1200} />
-              </div>
-              <div className="text-xs sm:text-sm font-medium text-slate-400">
-                Active Challenges
-              </div>
-            </div>
-
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-4 sm:p-5 hover:border-cyan-500/30 transition">
-              <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-1">
-                <CountUp end={24} duration={1500} />
-              </div>
-              <div className="text-xs sm:text-sm font-medium text-slate-400">
-                Jharkhand Districts
-              </div>
-            </div>
-
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-4 sm:p-5 hover:border-cyan-500/30 transition">
-              <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-1">
-                <CountUp end={6} duration={1200} />
-              </div>
-              <div className="text-xs sm:text-sm font-medium text-slate-400">
-                Partner Institutions
-              </div>
-            </div>
-
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-4 sm:p-5 hover:border-cyan-500/30 transition">
-              <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-1">
-                <CountUp end={1.5} duration={1800} prefix="₹" suffix="Cr" decimals={1} />
-              </div>
-              <div className="text-xs sm:text-sm font-medium text-slate-400">
-                CSR Committed
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -341,7 +215,7 @@ export default function LandingPage() {
                   1. Communities
                 </h3>
                 <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                  Jharkhand's 24 districts generate thousands of documented local challenges every year — water, health, education, livelihoods. They submit complaints with no visibility into resolution.
+                  Every district has documented local problems — water, health, education, livelihoods. People report them and rarely see what happens next.
                 </p>
               </div>
               <div className="mt-6 pt-4 border-t border-slate-200 text-xs font-semibold text-rose-600">
@@ -359,7 +233,7 @@ export default function LandingPage() {
                   2. Universities
                 </h3>
                 <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                  16+ HEIs in Jharkhand graduate 60,000+ students annually. Students do semester projects on theoretical problems when real challenges go unsolved 50km away.
+                  Students do semester projects on theoretical problems while real challenges go unsolved a few kilometres away.
                 </p>
               </div>
               <div className="mt-6 pt-4 border-t border-slate-200 text-xs font-semibold text-blue-600">
@@ -377,7 +251,7 @@ export default function LandingPage() {
                   3. Industry
                 </h3>
                 <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                  ₹800+ crore in annual CSR spending in Jharkhand. Companies disburse funds through personal networks and trusted intermediaries — with no visibility into actual impact.
+                  Companies spend CSR funds every year, often through intermediaries, with little visibility into actual impact.
                 </p>
               </div>
               <div className="mt-6 pt-4 border-t border-slate-200 text-xs font-semibold text-amber-600">
@@ -402,13 +276,13 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <span className="text-xs sm:text-sm font-bold tracking-wider text-cyan-400 uppercase mb-2 block">
-              The Triple Helix Architecture
+              How it works
             </span>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
               One platform. Six actors. A closed innovation loop.
             </h2>
             <p className="text-slate-400 mt-4 text-base sm:text-lg">
-              Every challenge moves through an immutable, transparent pipeline from grassroots report to verified citizen outcome.
+              Every challenge moves through a transparent pipeline, from a citizen's report to a fix the citizen confirms.
             </p>
           </div>
 
@@ -451,7 +325,7 @@ export default function LandingPage() {
                   [validates & routes]
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  District Collector validates veracity & routes via AI match engine.
+                  District officer verifies the report and routes it to a matching university.
                 </p>
               </div>
               <div className="mt-4 pt-3 border-t border-slate-700/50 flex items-center justify-end text-slate-400">
@@ -497,7 +371,7 @@ export default function LandingPage() {
                   [deploys on ground]
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Local grassroot NGO works with Gram Panchayat to deploy hardware.
+                  Local NGO helps deploy the solution on the ground.
                 </p>
               </div>
               <div className="mt-4 pt-3 border-t border-slate-700/50 flex items-center justify-end text-slate-400">
@@ -543,7 +417,7 @@ export default function LandingPage() {
                   [validates outcome]
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Panchayat verifies clean water / deployed solution, closing the loop.
+                  The citizen confirms the problem is fixed, closing the loop.
                 </p>
               </div>
               <div className="mt-4 pt-3 border-t border-slate-700/50 flex items-center justify-end text-slate-400">
@@ -567,7 +441,7 @@ export default function LandingPage() {
               What makes this different
             </h2>
             <p className="text-slate-400 mt-4 text-base sm:text-lg">
-              Not another directory or compliance portal. An automated, cryptographic execution engine.
+              Not another directory. A workflow where every step is recorded and can be checked.
             </p>
           </div>
 
@@ -579,7 +453,7 @@ export default function LandingPage() {
                   <Cpu className="w-6 h-6" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-3">
-                  Triple Helix Routing Engine
+                  University matching
                 </h3>
                 <p className="text-slate-400 text-sm leading-relaxed mb-6">
                   AI matches challenges to the right university automatically based on SDG expertise, geographic distance, and track record.
@@ -599,16 +473,16 @@ export default function LandingPage() {
                   <ShieldCheck className="w-6 h-6" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-3">
-                  SHA-256 Tamper-Evident Ledger
+                  Hash-checked milestones
                 </h3>
                 <p className="text-slate-400 text-sm leading-relaxed mb-6">
-                  Every milestone is cryptographically sealed at submission. Any database modification breaks the hash chain and triggers an instant alert.
+                  Each milestone's SHA-256 hash is stored when it is submitted. Anyone can recompute it on the public ledger to see if the record was changed.
                 </p>
               </div>
 
               <div className="bg-slate-900/90 rounded-xl p-3.5 border border-slate-800 font-mono text-xs text-indigo-300">
-                <span className="text-slate-400 text-[10px] uppercase tracking-wider block mb-1">Immutability Guarantee</span>
-                SHA256(milestoneId | proofUrl | gpsCoords | timestamp | parentHash)
+                <span className="text-slate-400 text-[10px] uppercase tracking-wider block mb-1">What is hashed</span>
+                SHA256(proofUrl | timestamp | lat | lng)
               </div>
             </div>
 
@@ -619,98 +493,18 @@ export default function LandingPage() {
                   <Award className="w-6 h-6" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-3">
-                  NEP 2020 Academic Credentials
+                  Verifiable student credentials
                 </h3>
                 <p className="text-slate-400 text-sm leading-relaxed mb-6">
-                  Students earn verifiable digital certificates for real field work — documented, hashed, government-branded. Directly bankable in NAAC assessment.
+                  Students earn certificates for real field work. Each one has a public verification page that recomputes its hash.
                 </p>
               </div>
 
               <div className="bg-slate-900/90 rounded-xl p-3.5 border border-slate-800 font-mono text-xs text-amber-300">
-                <span className="text-slate-400 text-[10px] uppercase tracking-wider block mb-1">UGC Credit Framework</span>
-                30 Field Hours = 1 Academic Credit • Faculty + NGO + GP Composite
+                <span className="text-slate-400 text-[10px] uppercase tracking-wider block mb-1">Credit rule</span>
+                30 verified field hours = 1 credit
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* SECTION 5 — LIVE CHALLENGES TEASER                                        */}
-      {/* ========================================================================= */}
-      <section className="py-20 md:py-28 px-4 sm:px-6 bg-[#0a1122] border-t border-slate-800/80">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-            <div>
-              <span className="text-xs sm:text-sm font-bold tracking-wider text-cyan-400 uppercase mb-2 block">
-                Real-Time Grassroots Feed
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-                12 active challenges across Jharkhand
-              </h2>
-              <p className="text-slate-400 mt-2 text-sm sm:text-base">
-                Community-submitted societal issues undergoing automated Triple Helix routing.
-              </p>
-            </div>
-
-            <Link
-              href="/track"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-400 text-sm font-semibold transition no-underline self-start md:self-auto"
-            >
-              <span>View all challenges</span>
-              <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-
-          {/* 3 Challenge Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {liveChallenges.map((challenge, idx) => (
-              <div
-                key={idx}
-                className="bg-slate-800/50 border border-slate-700/80 rounded-2xl p-6 hover:border-slate-600 transition flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-4">
-                    <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
-                      <MapPin className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>{challenge.district}, Jharkhand</span>
-                    </span>
-                    <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${challenge.statusClass}`}>
-                      {challenge.statusLabel}
-                    </span>
-                  </div>
-
-                  <h3 className="text-base sm:text-lg font-bold text-white mb-3 line-clamp-2">
-                    {challenge.title}
-                  </h3>
-
-                  <div className="flex flex-wrap gap-1.5 mb-5">
-                    {challenge.sdgs.map((sdg) => (
-                      <span
-                        key={sdg.id}
-                        className={`text-[11px] font-medium px-2.5 py-1 rounded-md border ${sdg.color}`}
-                      >
-                        SDG {sdg.id}: {sdg.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-slate-700/60 flex items-center justify-between text-xs text-slate-400">
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-slate-500" />
-                    <span>{challenge.daysActive} days active</span>
-                  </div>
-                  <Link
-                    href="/track"
-                    className="text-cyan-400 hover:text-cyan-300 font-semibold inline-flex items-center gap-1 no-underline"
-                  >
-                    <span>Track</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -722,13 +516,13 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <span className="text-xs sm:text-sm font-bold tracking-wider text-cyan-400 uppercase mb-2 block">
-              Smart India Hackathon 2026 Jury Evaluation
+              Demo accounts
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
               Try it yourself — Demo Credentials
             </h2>
             <p className="text-slate-400 mt-3 text-sm sm:text-base">
-              Experience the platform from each of the six role perspectives. All accounts are pre-seeded with active workflows.
+              See the platform from each role's point of view.
             </p>
 
             <div className="inline-block mt-4 px-4 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs sm:text-sm font-semibold">
@@ -809,17 +603,17 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           {/* Left */}
           <div className="font-medium text-slate-300">
-            SDG Nexus | SIH 2026 | PS SIH26043
+            SDG Nexus
           </div>
 
           {/* Centre */}
           <div className="text-slate-500 font-normal">
-            Built in 72 hours by a student team
+            Minor project
           </div>
 
           {/* Right */}
           <div className="font-medium text-slate-300">
-            Government of Jharkhand | NEP 2020 Compliant | DPDP Act 2023 Compliant
+            Local problems → verified solutions
           </div>
         </div>
       </footer>

@@ -25,7 +25,7 @@ export default function TrackSearchPage() {
             <div className="max-w-xl mx-auto w-full text-center">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-4">
                     <Sparkles className="w-3.5 h-3.5" />
-                    Triple-Helix Public Ledger
+                    Public challenge tracker
                 </div>
 
                 <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-3">
@@ -81,7 +81,7 @@ export default function TrackSearchPage() {
 
                 <div className="mt-12 pt-6 border-t border-slate-800/60 text-[11px] text-slate-500 flex items-center justify-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    <span>Jharkhand State Innovation & SDG Monitoring Authority • SIH26043</span>
+                    <span>SDG Nexus • Public challenge tracker</span>
                 </div>
             </div>
         </div>

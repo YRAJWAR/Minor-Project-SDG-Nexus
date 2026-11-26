@@ -293,13 +293,13 @@ export default function CitizenSubmitPage() {
                     <div>
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-2">
                             <Sparkles className="w-3.5 h-3.5" />
-                            Smart India Hackathon • SIH26043
+                            SDG Nexus • Report a local problem
                         </div>
                         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
                             Citizen Challenge Submission Portal
                         </h1>
                         <p className="mt-1 text-sm sm:text-base text-slate-400">
-                            Direct civic problem logging into the Jharkhand Triple-Helix innovation pipeline.
+                            Report a problem in your area. A district officer will review it and route it to a university that can solve it.
                         </p>
                     </div>
 
@@ -326,7 +326,7 @@ export default function CitizenSubmitPage() {
                             Challenge Submitted Successfully!
                         </h2>
                         <p className="text-slate-300 max-w-xl mx-auto text-sm sm:text-base mb-6">
-                            Your issue has been logged into the Jharkhand Triple-Helix registry, automatically classified with UN SDG indicators, and routed to the District Command Center.
+                            Your report has been saved, tagged with the UN SDGs it relates to, and sent to the district officer for review.
                         </p>
 
                         {/* Tracking Code Box */}
@@ -560,7 +560,7 @@ export default function CitizenSubmitPage() {
                                     <div>
                                         <h2 className="text-xl font-bold text-white mb-1">Geographic Location</h2>
                                         <p className="text-sm text-slate-400">
-                                            Pinpoint the administrative boundary and location within Jharkhand.
+                                            Tell us where the problem is.
                                         </p>
                                     </div>
 
@@ -597,7 +597,7 @@ export default function CitizenSubmitPage() {
 
                                         <div className="sm:col-span-2">
                                             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                                                Village / Gram Panchayat / Ward
+                                                Village / Ward / Locality
                                             </label>
                                             <input
                                                 type="text"
@@ -961,7 +961,7 @@ export default function CitizenSubmitPage() {
                                                 </div>
                                                 <div>
                                                     <span className="text-sm font-semibold text-white block">
-                                                        CSC / Gram Panchayat Node Submission
+                                                        Submitting for someone else (CSC / local body)
                                                     </span>
                                                     <span className="text-xs text-slate-400 block">
                                                         Is this being submitted on behalf of a community member at a CSC/GP Node?
@@ -1051,7 +1051,7 @@ export default function CitizenSubmitPage() {
                                                 </>
                                             ) : (
                                                 <>
-                                                    Submit to Triple-Helix Pipeline
+                                                    Submit report
                                                     <Sparkles className="w-4 h-4" />
                                                 </>
                                             )}

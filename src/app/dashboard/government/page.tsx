@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, Cell, ReferenceLine } from 'recharts';
@@ -12,7 +13,6 @@ import { useRouter } from 'next/navigation';
 import { FileDown, AlertTriangle, Clock, MapPin, Building2, CheckCircle2, X, ArrowRight, Sparkles, ShieldCheck, LayoutGrid, List, Shield, Search, Filter, Calendar, RefreshCw, TrendingUp, Info, Layers } from 'lucide-react';
 import { generateExecutiveReport } from '@/lib/pdfGenerator';
 import type { ColorMode } from '@/components/Map';
-import NotificationBell from '@/components/ui/NotificationBell';
 import RoutingExplainabilityPanel, { HEIMatch } from '@/components/RoutingExplainabilityPanel';
 
 const SDGHeatmap = dynamic(() => import('@/components/Map'), { ssr: false });
@@ -24,6 +24,7 @@ const fadeIn = (d: number) => ({
 });
 
 export default function GovernmentDashboard() {
+    const { user } = useAuth();
     const { organizations, projects, regions } = useData();
     const totalFunding = regions.reduce((s, r) => s + r.funding, 0);
     const totalNGOs = regions.reduce((s, r) => s + r.ngo_count, 0);
@@ -36,7 +37,7 @@ export default function GovernmentDashboard() {
     const [typeFilter, setTypeFilter] = useState<'all' | 'ngo' | 'corporate'>('all');
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
-    // Heatmap & District Equity State (SIH 26043)
+    // Heatmap & District Equity State
     const [mapMode, setMapMode] = useState<ColorMode>('challenge_density');
     const [equityData, setEquityData] = useState<any[]>([]);
     const [avgResolutionRate, setAvgResolutionRate] = useState<number>(35);
@@ -68,7 +69,7 @@ export default function GovernmentDashboard() {
     const [loadingRouting, setLoadingRouting] = useState(false);
     const [assigningHeiId, setAssigningHeiId] = useState<string | null>(null);
 
-    // Primary Tab State (SIH 26043 Command Center)
+    // Primary Tab State
     const [activeTab, setActiveTab] = useState<'overview' | 'insights' | 'audit'>('overview');
 
     // District Drill-Down State (Part A)
@@ -148,7 +149,7 @@ export default function GovernmentDashboard() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     challengeId,
-                    note: 'Escalated by District Collector for accelerated university allocation.',
+                    note: 'Escalated by the district officer for faster university allocation.',
                 }),
             });
             const json = await res.json();
@@ -160,6 +161,8 @@ export default function GovernmentDashboard() {
                             : c
                     )
                 );
+            } else {
+                window.alert(json.error || 'The challenge could not be escalated.');
             }
         } catch (err) {
             console.error('Failed to escalate challenge:', err);
@@ -231,9 +234,12 @@ export default function GovernmentDashboard() {
                     ESCALATION_DUE: routingChallenge.isEscalationDue ? Math.max(0, prev.ESCALATION_DUE - 1) : prev.ESCALATION_DUE,
                 }));
                 setRoutingChallenge(null);
+            } else {
+                window.alert(json.error || 'The university could not be assigned. Nothing was changed.');
             }
         } catch (err) {
             console.error('Failed to assign HEI:', err);
+            window.alert('Could not reach the server. Nothing was changed.');
         } finally {
             setAssigningHeiId(null);
         }
@@ -358,8 +364,8 @@ export default function GovernmentDashboard() {
             ]);
 
             generateExecutiveReport({
-                title: "Jharkhand Impact Intelligence Report",
-                organizationName: "Government of Jharkhand - SDG Council",
+                title: "District Impact Report",
+                organizationName: user?.organization_name || "District Administration",
                 date: new Date().toLocaleDateString(),
                 summaryMetrics: [
                     { label: "Total Tracked Funding", value: `₹${(totalFunding / 10000000).toFixed(2)} Cr` },
@@ -381,7 +387,7 @@ export default function GovernmentDashboard() {
         <div className="space-y-6">
             <motion.div {...fadeIn(0)} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Jharkhand District Command Center</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold text-slate-900">District Command Center</h1>
                     <p className="text-xs sm:text-sm text-slate-500 mt-1">SDG Funding Analysis, Alerts & NGO Performance</p>
                 </div>
 
@@ -403,7 +409,6 @@ export default function GovernmentDashboard() {
                             </>
                         )}
                     </button>
-                    <NotificationBell />
                 </div>
             </motion.div>
 
@@ -450,9 +455,6 @@ export default function GovernmentDashboard() {
                 >
                     <span>📜</span>
                     <span>Audit Trail</span>
-                    <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded-full ${activeTab === 'audit' ? 'bg-emerald-600 text-white' : 'bg-emerald-100 text-emerald-800'}`}>
-                        Immutable
-                    </span>
                 </button>
             </div>
 
@@ -480,14 +482,14 @@ export default function GovernmentDashboard() {
                 ))}
             </div>
 
-            {/* ===== JHARKHAND DISTRICT HEATMAP (SIH 26043) ===== */}
+            {/* ===== DISTRICT HEATMAP ===== */}
             <motion.div {...fadeIn(0.11)} className="glass-card p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
                     <div>
                         <div className="flex items-center gap-2">
                             <span className="text-xl">🗺️</span>
                             <h2 className="text-lg font-semibold text-slate-900">
-                                Jharkhand District-Level SDG & Challenge Map
+                                District-Level SDG & Challenge Map
                             </h2>
                             <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wider">
                                 24 Districts Live
@@ -928,7 +930,7 @@ export default function GovernmentDashboard() {
                                             </button>
 
                                             <a
-                                                href={`/project/${ch.projectId || ch.projectTeamId || ch.id || 'hero-team-pakur'}/ledger`}
+                                                href={`/project/${ch.projectId || ch.projectTeamId || ch.id}/ledger`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="py-2 px-2.5 text-xs font-semibold text-emerald-800 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors flex items-center gap-1"
@@ -1070,7 +1072,7 @@ export default function GovernmentDashboard() {
                                                         Validate &amp; Route
                                                     </button>
                                                     <a
-                                                        href={`/project/${ch.projectId || ch.projectTeamId || ch.id || 'hero-team-pakur'}/ledger`}
+                                                        href={`/project/${ch.projectId || ch.projectTeamId || ch.id}/ledger`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="px-2 py-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors inline-flex items-center gap-1"
@@ -1142,7 +1144,7 @@ export default function GovernmentDashboard() {
                                             </span>
                                         </div>
                                         <p className="text-xs text-blue-100/80">
-                                            Triple Helix recommendation based on SDG alignment, GIS proximity, and faculty expertise
+                                            Ranked by SDG expertise, distance and track record
                                         </p>
                                     </div>
                                     <button
@@ -1194,12 +1196,12 @@ export default function GovernmentDashboard() {
                                                 id: hei.id || hei.heiId,
                                                 name: hei.name,
                                                 district: hei.district,
-                                                sdgOverlap: hei.sdgOverlap !== undefined ? (hei.sdgOverlap <= 1 ? hei.sdgOverlap : hei.sdgOverlap / 100) : 0.85,
-                                                sdgMatched: hei.sdgMatched || (routingChallenge.sdgTags || [6, 11]),
-                                                distKm: hei.distKm !== undefined ? hei.distKm : (hei.geoProximity === 100 ? 14 : 45),
-                                                perfScore: hei.perfScore !== undefined ? (hei.perfScore <= 1 ? hei.perfScore : hei.perfScore / 100) : ((hei.pastPerformance || 85) / 100),
-                                                totalScore: hei.totalScore !== undefined ? (hei.totalScore <= 1 ? hei.totalScore : hei.totalScore / 100) : ((hei.score || 88) / 100),
-                                                departments: hei.departments || ['Civil Engineering', 'Environmental Science', 'Water Resources'],
+                                                sdgOverlap: hei.sdgOverlap !== undefined ? (hei.sdgOverlap <= 1 ? hei.sdgOverlap : hei.sdgOverlap / 100) : 0,
+                                                sdgMatched: hei.sdgMatched || [],
+                                                distKm: hei.distKm ?? null,
+                                                perfScore: hei.perfScore !== undefined ? (hei.perfScore <= 1 ? hei.perfScore : hei.perfScore / 100) : ((hei.pastPerformance ?? 0) / 100),
+                                                totalScore: hei.totalScore !== undefined ? (hei.totalScore <= 1 ? hei.totalScore : hei.totalScore / 100) : ((hei.score ?? 0) / 100),
+                                                departments: hei.departments || [],
                                                 naacGrade: hei.naacGrade,
                                                 reasons: hei.reasons,
                                             };
@@ -1236,7 +1238,7 @@ export default function GovernmentDashboard() {
 
                                 {/* Drawer Footer */}
                                 <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
-                                    <span>Routing notifies both HEI innovation cell &amp; District Collector</span>
+                                    <span>Routing notifies the university and the district officer</span>
                                     <button
                                         onClick={() => setRoutingChallenge(null)}
                                         disabled={!!assigningHeiId}
@@ -1460,7 +1462,7 @@ export default function GovernmentDashboard() {
                             <div className="flex items-center gap-2">
                                 <span className="text-2xl">💡</span>
                                 <h2 className="text-xl font-bold text-slate-900">
-                                    Jharkhand Autonomous Policy Intelligence
+                                    Policy Insights
                                 </h2>
                                 <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-100 text-indigo-700 uppercase tracking-wider">
                                     Real-Time Telemetry
@@ -1484,7 +1486,7 @@ export default function GovernmentDashboard() {
                         <div className="glass-card p-16 text-center text-slate-400">
                             <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                             <div className="text-sm font-semibold text-slate-600">Generating policy insights from live queries...</div>
-                            <div className="text-xs text-slate-400 mt-1">Analyzing 24 districts, CSR commitments, and university allocations.</div>
+                            <div className="text-xs text-slate-400 mt-1">Analysing challenges, proposals and released funds.</div>
                         </div>
                     ) : policyInsights ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -1625,7 +1627,7 @@ export default function GovernmentDashboard() {
                                 <div>
                                     <div className="flex items-center justify-between mb-3">
                                         <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-purple-50 text-purple-700 border border-purple-200 uppercase">
-                                            🏛️ Triple Helix Academic Engine
+                                            🏛️ University Engagement
                                         </span>
                                         <span className="text-xs text-slate-400 font-mono">INSIGHT #5</span>
                                     </div>
@@ -1648,7 +1650,11 @@ export default function GovernmentDashboard() {
                                 </div>
                             </motion.div>
                         </div>
-                    ) : null}
+                    ) : (
+                        <div className="glass-card p-10 text-center text-sm text-slate-500">
+                            Policy insights could not be loaded. Please try again later.
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -1660,14 +1666,11 @@ export default function GovernmentDashboard() {
                             <div className="flex items-center gap-2">
                                 <span className="text-2xl">📜</span>
                                 <h2 className="text-xl font-bold text-slate-900">
-                                    Government &amp; System Immutable Audit Trail
+                                    Government &amp; System Audit Trail
                                 </h2>
-                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wider">
-                                    Immutable Ledger
-                                </span>
                             </div>
                             <p className="text-xs text-slate-500 mt-1">
-                                Permanent audit record of all validation actions, HEI routings, escalations, and milestone verifications.
+                                Record of validation, routing, escalation and milestone actions.
                             </p>
                         </div>
                         <button
@@ -1758,13 +1761,13 @@ export default function GovernmentDashboard() {
                                         <th className="px-4 py-3">Entity</th>
                                         <th className="px-4 py-3">District</th>
                                         <th className="px-4 py-3">Audit Details</th>
-                                        <th className="px-4 py-3 text-right">Integrity</th>
+
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {loadingAuditLogs ? (
                                         <tr>
-                                            <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
+                                            <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
                                                 <div className="w-6 h-6 border-2 border-slate-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                                                 Loading audit trail records...
                                             </td>
@@ -1783,7 +1786,7 @@ export default function GovernmentDashboard() {
                                         if (filtered.length === 0) {
                                             return (
                                                 <tr>
-                                                    <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
+                                                    <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
                                                         No audit trail records found matching criteria.
                                                     </td>
                                                 </tr>
@@ -1842,12 +1845,6 @@ export default function GovernmentDashboard() {
                                                             <span className="text-slate-400 text-[11px] italic">Logged State Event</span>
                                                         )}
                                                     </td>
-                                                    <td className="px-4 py-3 text-right">
-                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                                                            <ShieldCheck size={12} className="text-emerald-600" />
-                                                            SHA-256
-                                                        </span>
-                                                    </td>
                                                 </tr>
                                             );
                                         });
@@ -1857,7 +1854,6 @@ export default function GovernmentDashboard() {
                         </div>
                         <div className="px-4 py-3 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between">
                             <span>Showing {auditLogs.length} audit entries</span>
-                            <span className="text-slate-400">Section 65B Indian Evidence Act compliant log archive</span>
                         </div>
                     </div>
                 </div>
@@ -1895,7 +1891,7 @@ export default function GovernmentDashboard() {
                                             </span>
                                         </div>
                                         <p className="text-xs text-slate-300">
-                                            {districtDrillData?.district?.division || 'Jharkhand State'} • Regional Command &amp; Equity Profiling
+                                            {districtDrillData?.district?.division || 'District'} • District profile
                                         </p>
                                     </div>
                                     <button
@@ -2054,7 +2050,7 @@ export default function GovernmentDashboard() {
                                                                     </span>
                                                                     <div className="flex items-center gap-1.5">
                                                                         <a
-                                                                            href={`/project/${ch.projectId || ch.projectTeamId || ch.id || 'hero-team-pakur'}/ledger`}
+                                                                            href={`/project/${ch.projectId || ch.projectTeamId || ch.id}/ledger`}
                                                                             target="_blank"
                                                                             rel="noopener noreferrer"
                                                                             className="px-2 py-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 rounded-md transition-colors inline-flex items-center gap-1"
@@ -2100,31 +2096,6 @@ export default function GovernmentDashboard() {
                                                 </div>
                                             </div>
 
-                                            {/* Recommended HEI for District (Stretch Goal) */}
-                                            <div>
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                                        <Sparkles size={14} className="text-indigo-500" />
-                                                        Recommended Academic Partner (HEI)
-                                                    </h3>
-                                                    <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                                                        District Lead
-                                                    </span>
-                                                </div>
-                                                <RoutingExplainabilityPanel
-                                                    hei={{
-                                                        name: districtDrillData.district.nearestHEI || 'National Institute of Technology Jamshedpur',
-                                                        district: selectedDistrict || 'Jharkhand',
-                                                        sdgOverlap: 0.88,
-                                                        sdgMatched: districtDrillData.pressureSDGs?.map((s: any) => s.sdgNumber) || [6, 3, 11],
-                                                        distKm: 18,
-                                                        perfScore: 0.94,
-                                                        totalScore: 0.91,
-                                                        departments: ['Civil & Environmental Engineering', 'Water Resource Management', 'Applied Science'],
-                                                        naacGrade: 'A+',
-                                                    }}
-                                                />
-                                            </div>
                                         </>
                                     ) : null}
                                 </div>

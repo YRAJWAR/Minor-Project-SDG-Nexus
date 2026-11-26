@@ -4,130 +4,69 @@ import { computeCredentialHash } from '@/lib/credentials';
 
 export const dynamic = 'force-dynamic';
 
+// Public endpoint: never return contact details. Mask the surname ("Arjun Sharma" -> "Arjun Sh****").
+function maskName(fullName: string): string {
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 3) + '****';
+    return `${parts[0]} ${parts[parts.length - 1].slice(0, 2)}****`;
+}
+
 export async function GET(
-    request: NextRequest,
+    _request: NextRequest,
     context: { params: Promise<{ credentialId: string }> }
 ) {
+    const { credentialId } = await context.params;
+    const now = new Date().toISOString();
+
+    let cred;
+    let challenge;
     try {
-        const { credentialId } = await context.params;
-
-        if (!credentialId) {
-            return NextResponse.json(
-                { success: false, error: 'Credential ID is required', timestamp: new Date().toISOString() },
-                { status: 400 }
-            );
-        }
-
-        let credentialData: any = null;
-
-        try {
-            const cred = await prisma.studentCredential.findUnique({
-                where: { id: credentialId },
-                include: {
-                    student: {
-                        include: {
-                            user: true,
-                        },
-                    },
-                },
-            });
-
-            if (cred) {
-                // Find linked challenge to resolve challengeId
-                const challenge = await prisma.challenge.findFirst({
-                    where: { title: cred.challengeTitle },
-                });
-
-                credentialData = {
-                    id: cred.id,
-                    studentProfileId: cred.studentProfileId,
-                    studentName: cred.student.user.full_name,
-                    studentEmail: cred.student.user.email,
-                    branch: cred.student.branch,
-                    year: cred.student.year,
-                    universityName: 'National Institute of Technology Jamshedpur',
-                    challengeId: challenge?.id || 'hero-challenge-pakur',
-                    challengeTitle: cred.challengeTitle,
-                    challengeDistrict: cred.challengeDistrict,
-                    sdgTags: cred.sdgTags,
-                    hoursContributed: cred.hoursContributed,
-                    creditPoints: cred.creditPoints,
-                    nepCompliant: cred.nepCompliant,
-                    hashValue: cred.hashValue,
-                    issuedAt: cred.issuedAt.toISOString(),
-                    facultyName: 'Prof. Anjali Sharma',
-                    submitterName: 'Amrapara Gram Panchayat Node',
-                    durationWeeks: 16,
-                    beneficiariesCount: 15400,
-                    challengeStatus: 'DEPLOYED & COMPLETED',
-                };
-            }
-        } catch (dbErr) {
-            console.warn(`DB error fetching credential ${credentialId}:`, dbErr);
-        }
-
-        // Demo / Hero fallback if not in DB
-        if (!credentialData) {
-            const issuedAt = new Date('2026-09-01T12:00:00.000Z');
-            const studentId = 'arjun-profile-hero';
-            const challengeId = 'hero-challenge-pakur';
-            const creditPoints = 4;
-            const hashValue = computeCredentialHash(studentId, challengeId, creditPoints, issuedAt);
-
-            credentialData = {
-                id: credentialId,
-                studentProfileId: studentId,
-                studentName: 'Arjun Sharma',
-                studentEmail: 'arjun@nitjsr.ac.in',
-                branch: 'Environmental Engineering',
-                year: 3,
-                universityName: 'National Institute of Technology Jamshedpur',
-                challengeId,
-                challengeTitle: 'Arsenic Contamination in Drinking Water, Pakur',
-                challengeDistrict: 'Pakur',
-                sdgTags: [6, 3],
-                hoursContributed: 120,
-                creditPoints,
-                nepCompliant: true,
-                hashValue,
-                issuedAt: issuedAt.toISOString(),
-                facultyName: 'Prof. Anjali Sharma',
-                submitterName: 'Amrapara Gram Panchayat Node',
-                durationWeeks: 16,
-                beneficiariesCount: 15400,
-                challengeStatus: 'DEPLOYED & COMPLETED',
-            };
-        }
-
-        // Recompute verification hash
-        const computedHash = computeCredentialHash(
-            credentialData.studentProfileId,
-            credentialData.challengeId,
-            credentialData.creditPoints,
-            credentialData.issuedAt
-        );
-
-        // Verification is valid if stored matches computed (or seed format)
-        const isValid = credentialData.hashValue.trim().toLowerCase() === computedHash.trim().toLowerCase();
-
-        return NextResponse.json({
-            success: true,
-            data: {
-                ...credentialData,
-                verification: {
-                    valid: isValid,
-                    storedHash: credentialData.hashValue,
-                    computedHash,
-                    verifiedAt: new Date().toISOString(),
-                },
-            },
-            timestamp: new Date().toISOString(),
+        cred = await prisma.studentCredential.findUnique({
+            where: { id: credentialId },
+            include: { student: { include: { user: { include: { hei: true } } } } },
         });
-    } catch (error: any) {
-        console.error('Error fetching credential:', error);
+        // ponytail: credentials don't store challengeId yet, so the hash input is resolved by title.
+        // Phase 1 schema adds Credential.challengeId and removes this lookup.
+        if (cred) challenge = await prisma.challenge.findFirst({ where: { title: cred.challengeTitle } });
+    } catch (dbErr) {
+        console.error(`DB error fetching credential ${credentialId}:`, dbErr);
         return NextResponse.json(
-            { success: false, error: error.message || 'Internal Server Error', timestamp: new Date().toISOString() },
-            { status: 500 }
+            { success: false, error: 'Verification is temporarily unavailable. Please try again shortly.', timestamp: now },
+            { status: 503 }
         );
     }
+
+    if (!cred) {
+        return NextResponse.json(
+            { success: false, error: `No credential exists with ID "${credentialId}".`, timestamp: now },
+            { status: 404 }
+        );
+    }
+
+    // Without the linked challenge the hash cannot be recomputed, so it cannot be called valid.
+    const computedHash = challenge
+        ? computeCredentialHash(cred.studentProfileId, challenge.id, cred.creditPoints, cred.issuedAt)
+        : null;
+    const valid = computedHash !== null && cred.hashValue.trim().toLowerCase() === computedHash;
+
+    return NextResponse.json({
+        success: true,
+        data: {
+            id: cred.id,
+            studentName: maskName(cred.student.user.full_name),
+            branch: cred.student.branch,
+            year: cred.student.year,
+            universityName: cred.student.user.hei?.name ?? null,
+            challengeId: challenge?.id ?? null,
+            challengeTitle: cred.challengeTitle,
+            challengeDistrict: cred.challengeDistrict,
+            sdgTags: cred.sdgTags,
+            hoursContributed: cred.hoursContributed,
+            creditPoints: cred.creditPoints,
+            hashValue: cred.hashValue,
+            issuedAt: cred.issuedAt.toISOString(),
+            verification: { valid, storedHash: cred.hashValue, computedHash, verifiedAt: now },
+        },
+        timestamp: now,
+    });
 }

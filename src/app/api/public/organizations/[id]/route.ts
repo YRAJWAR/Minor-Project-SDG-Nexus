@@ -8,24 +8,6 @@ import { NextResponse } from 'next/server';
 //          level, geo impact data, project summaries (no financials).
 // ──────────────────────────────────────────────────────────────
 
-const FALLBACK_ORG = {
-    id: 'u1', name: 'GreenFuture Foundation', type: 'NGO', state: 'Maharashtra', district: 'Mumbai',
-    verification_status: 'VERIFIED',
-    impact: { scale_score: 88, outcome_score: 85, efficiency_score: 79, geographic_need_score: 82, transparency_score: 92, final_score: 847, calculation_version: '2.0' },
-    sdg_focus: [6, 3, 7, 4],
-    transparency: { total_activities: 7, verified_activities: 5, verification_rate: 71, has_geo_tags: true, has_proof_uploads: true, level: 'High' },
-    projects: [
-        { id: 'p1', title: 'Clean Water for Rural Maharashtra', status: 'ACTIVE', beneficiaries: 25000, sdg_tags: [6, 3, 1], location: 'Maharashtra' },
-        { id: 'p2', title: 'Solar Schools Initiative', status: 'ACTIVE', beneficiaries: 50000, sdg_tags: [7, 4, 13], location: 'Rajasthan' },
-        { id: 'p3', title: 'Women Skill Development Program', status: 'ACTIVE', beneficiaries: 5000, sdg_tags: [5, 8, 4], location: 'Bihar' },
-    ],
-    geo_impact: [
-        { district: 'Mumbai', state: 'Maharashtra', sdg_id: 6, total_beneficiaries: 25000 },
-        { district: 'Jaipur', state: 'Rajasthan', sdg_id: 7, total_beneficiaries: 50000 },
-        { district: 'Patna', state: 'Bihar', sdg_id: 5, total_beneficiaries: 5000 },
-    ],
-};
-
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params;
@@ -141,11 +123,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                 geo_impact: geoImpact,
                 source: 'database',
             });
-        } catch {
-            // DB unavailable
+        } catch (dbErr) {
+            console.error('Public organization query failed:', dbErr);
+            return NextResponse.json({ error: 'Organization data is temporarily unavailable.' }, { status: 503 });
         }
-
-        return NextResponse.json({ ...FALLBACK_ORG, source: 'fallback' });
     } catch {
         return NextResponse.json({ error: 'Failed to fetch organization' }, { status: 500 });
     }

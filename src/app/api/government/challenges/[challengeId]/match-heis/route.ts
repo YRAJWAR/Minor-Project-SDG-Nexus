@@ -11,6 +11,8 @@ export async function POST(
         const { challengeId } = await context.params;
 
         // Role verification: GOV role only
+        // ponytail: SECURITY — x-user-role / ?role= / any token containing "gov" are accepted here.
+        // Phase 1 replaces this with withAuth(['OFFICER']). Do not deploy as-is.
         let userRole = '';
         const authHeader = req.headers.get('Authorization');
 
@@ -50,40 +52,29 @@ export async function POST(
             );
         }
 
-        // Fetch challenge
-        let challenge: any = null;
+        // Fetch challenge and compute matches; a DB failure is reported, never papered over.
+        let challenge;
+        let matches;
         try {
             challenge = await prisma.challenge.findUnique({
                 where: { id: challengeId },
-                select: {
-                    id: true,
-                    title: true,
-                    district: true,
-                    sdgTags: true,
-                    gpsLat: true,
-                    gpsLng: true,
-                    status: true,
-                },
+                select: { id: true, title: true, district: true, sdgTags: true, gpsLat: true, gpsLng: true, status: true },
             });
+            if (challenge) matches = await matchChallengesToHEIs(challenge, 3);
         } catch (dbErr) {
-            console.warn('Prisma lookup error in match-heis:', dbErr);
+            console.error('Prisma lookup error in match-heis:', dbErr);
+            return NextResponse.json(
+                { success: false, error: 'Matching is temporarily unavailable.', timestamp: new Date().toISOString() },
+                { status: 503 }
+            );
         }
 
         if (!challenge) {
-            // Fallback challenge mock for testing / seed demos
-            challenge = {
-                id: challengeId,
-                title: 'Community Water Contamination & Filtration Challenge',
-                district: 'Pakur',
-                sdgTags: [6, 3, 11],
-                gpsLat: 24.6352,
-                gpsLng: 87.8448,
-                status: 'SUBMITTED',
-            };
+            return NextResponse.json(
+                { success: false, error: `No challenge found with ID "${challengeId}"`, timestamp: new Date().toISOString() },
+                { status: 404 }
+            );
         }
-
-        // Run HEI Matching Engine (Section 10 Master Spec Formula)
-        const matches = await matchChallengesToHEIs(challengeId, 3);
 
         return NextResponse.json({
             success: true,

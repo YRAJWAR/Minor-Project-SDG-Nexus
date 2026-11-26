@@ -10,7 +10,7 @@ export interface HEIMatch {
     district: string;
     sdgOverlap: number;
     sdgMatched: number[];
-    distKm: number;
+    distKm: number | null;
     perfScore: number;
     totalScore: number;
     departments: string[];
@@ -35,7 +35,7 @@ export default function RoutingExplainabilityPanel({
     const scoreVal = hei.totalScore <= 1 ? Math.round(hei.totalScore * 100) : Math.round(hei.totalScore);
     const sdgOverlapPct = hei.sdgOverlap <= 1 ? Math.round(hei.sdgOverlap * 100) : Math.round(hei.sdgOverlap);
     const perfScorePct = hei.perfScore <= 1 ? Math.round(hei.perfScore * 100) : Math.round(hei.perfScore);
-    const distKm = Math.round(hei.distKm);
+    const distKm = hei.distKm === null ? null : Math.round(hei.distKm);
 
     // Subtle left border colored by score:
     // Score > 80: green border
@@ -133,7 +133,7 @@ export default function RoutingExplainabilityPanel({
                         Geographic Match:
                     </span>
                     <span className="font-semibold text-slate-200">
-                        {distKm}km from challenge location
+                        {distKm === null ? 'Distance unknown' : `${distKm} km from challenge location`}
                     </span>
                 </div>
 

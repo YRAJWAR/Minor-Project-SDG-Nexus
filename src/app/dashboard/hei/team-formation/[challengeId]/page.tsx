@@ -52,6 +52,7 @@ export default function TeamFormationPage() {
     // Challenge info
     const [challenge, setChallenge] = useState<any | null>(null);
     const [loadingChallenge, setLoadingChallenge] = useState(true);
+    const [challengeError, setChallengeError] = useState<string | null>(null);
 
     // Form states
     const [facultyName, setFacultyName] = useState(user?.name || 'Prof. Anjali Sharma');
@@ -86,28 +87,10 @@ export default function TeamFormationPage() {
                     const words = json.data.title.split(' ').slice(0, 3).join(' ');
                     setTeamName(`Team ${words} Innovation`);
                 } else {
-                    // Demo fallback
-                    setChallenge({
-                        id: challengeId,
-                        title: 'Open defecation & hygiene sanitation in Simdega tribal hamlets',
-                        description:
-                            'Rural cluster of 4 villages lacking decentralized eco-friendly bio-toilets. Requires localized engineering prototype and water recycling unit.',
-                        district: 'Simdega',
-                        sdgTags: [6, 3],
-                        status: 'UNIVERSITY_ASSIGNED',
-                    });
-                    setTeamName('Team Simdega EcoSanitation');
+                    setChallengeError(json.error || 'This challenge could not be loaded.');
                 }
             } catch {
-                setChallenge({
-                    id: challengeId,
-                    title: 'Community Societal R&D Challenge',
-                    description: 'Interdisciplinary engineering intervention required for community empowerment.',
-                    district: 'Jharkhand',
-                    sdgTags: [6, 11],
-                    status: 'UNIVERSITY_ASSIGNED',
-                });
-                setTeamName('Team Jharkhand Nexus R&D');
+                setChallengeError('Could not reach the server.');
             } finally {
                 setLoadingChallenge(false);
             }
@@ -125,7 +108,7 @@ export default function TeamFormationPage() {
                 const headers: Record<string, string> = {};
                 if (token) headers['Authorization'] = `Bearer ${token}`;
 
-                const res = await fetch(`/api/students/search?q=${encodeURIComponent(searchQuery)}`, { headers });
+                const res = await fetch(`/api/students/search?q=${encodeURIComponent(searchQuery)}&email=${encodeURIComponent(user?.email ?? "")}`, { headers });
                 const json = await res.json();
                 if (res.ok && json.success) {
                     setStudents(json.data || []);
@@ -228,6 +211,18 @@ export default function TeamFormationPage() {
         }
     };
 
+
+    if (!loadingChallenge && challengeError) {
+        return (
+            <div className="glass-card p-10 text-center max-w-lg mx-auto mt-10">
+                <AlertCircle className="w-8 h-8 text-rose-500 mx-auto mb-3" />
+                <h2 className="text-base font-bold text-slate-900">Challenge not available</h2>
+                <p className="text-sm text-slate-500 mt-1 mb-5">{challengeError}</p>
+                <Link href="/dashboard/hei" className="text-sm font-semibold text-indigo-600 hover:underline">Back to Challenge Inbox</Link>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6 max-w-6xl mx-auto pb-12">
             {/* Top Back Link */}
@@ -255,7 +250,7 @@ export default function TeamFormationPage() {
                         </span>
                         <span className="flex items-center gap-1 text-xs text-slate-300">
                             <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-                            {challenge.district}, Jharkhand
+                            {challenge.district}
                         </span>
                     </div>
 
@@ -533,10 +528,10 @@ export default function TeamFormationPage() {
                             </div>
                         )}
 
-                        {/* NEP 2020 Compliance Notice */}
+                        {/* Credit notice */}
                         <div className="p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl text-[11px] text-indigo-900 leading-relaxed">
                             <span className="font-bold block mb-0.5">🎓 Academic Credit Earning:</span>
-                            Locking this team registers students into Jharkhand R&D credit framework (NEP 2020 compliant).
+                            Students on this team can earn credits once every milestone is approved (30 verified hours = 1 credit).
                         </div>
 
                         {/* Lock Team CTA */}

@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import CryptoJS from 'crypto-js';
 import {
     Target,
     ArrowLeft,
@@ -185,9 +184,7 @@ export default function MilestoneTrackerPage() {
     // GPS Auto-Capture
     const handleCaptureGps = () => {
         if (!navigator.geolocation) {
-            setGpsStatus('Geolocation not supported by browser. Using district center coordinates.');
-            setGpsLat(24.6352);
-            setGpsLng(87.8448);
+            setGpsStatus('This browser cannot share location. The milestone will be saved without GPS.');
             return;
         }
 
@@ -203,10 +200,9 @@ export default function MilestoneTrackerPage() {
             },
             (err) => {
                 setGpsDetecting(false);
-                // Fallback to demo GPS for Pakur / district
-                setGpsLat(24.6352);
-                setGpsLng(87.8448);
-                setGpsStatus(`Satellite lock simulation: Pakur District (${err.message ? 'Fallback lock' : 'Active'})`);
+                setGpsLat(null);
+                setGpsLng(null);
+                setGpsStatus(`Location not captured (${err.message || 'permission denied'}). The milestone will be saved without GPS.`);
             },
             { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
         );
@@ -272,24 +268,8 @@ export default function MilestoneTrackerPage() {
         setSubmittingMilestone(true);
 
         try {
-            // 1. After photo upload returns URL, compute SHA-256 of:
-            // proofUrl + timestamp + gpsLat + gpsLng
-            // Using crypto-js
-            const primaryProofUrl = photos.length > 0
-                ? photos[0].dataUrl
-                : 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80';
-
-            const effectiveLat = gpsLat ?? 24.6352;
-            const effectiveLng = gpsLng ?? 87.8448;
-            const timestamp = new Date().toISOString();
-
-            const hashInput = `${primaryProofUrl}|${timestamp}|${effectiveLat}|${effectiveLng}`;
-            const computedHash = CryptoJS.SHA256(hashInput).toString();
-
-            // Set state to display cryptographically sealed status to user
-            setSealedHash(computedHash);
-
-            // 2. Call POST /api/hei/milestones/submit with hashValue
+            // The server computes and stores the hash from exactly what it saves; the client never supplies it.
+            // ponytail: proof is still sent as data URLs and video is not uploaded yet (real uploads in Phase 3).
             const res = await fetch('/api/hei/milestones/submit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -300,10 +280,8 @@ export default function MilestoneTrackerPage() {
                     description: newDescription.trim(),
                     dueDate: newDueDate,
                     proofUrls: photos.map((p) => p.dataUrl),
-                    proofVideoUrl: videoUrl,
-                    hashValue: computedHash,
-                    gpsLat: effectiveLat,
-                    gpsLng: effectiveLng,
+                    gpsLat,
+                    gpsLng,
                 }),
             });
 
@@ -312,22 +290,9 @@ export default function MilestoneTrackerPage() {
                 throw new Error(json.error || 'Failed to submit sealed milestone');
             }
 
-            // 3. Update local Kanban board state immediately
-            const submittedMilestone: MilestoneItem = {
-                id: json.data?.milestone?.id || `ms-${Date.now()}`,
-                teamId: selectedProject?.teamId || 'team-1',
-                title: newTitle.trim(),
-                description: newDescription.trim(),
-                dueDate: newDueDate,
-                status: 'SUBMITTED',
-                proofUrls: photos.map((p) => p.dataUrl),
-                proofVideoUrl: videoUrl,
-                hashValue: computedHash,
-                gpsLat: effectiveLat,
-                gpsLng: effectiveLng,
-                createdAt: timestamp,
-            };
-
+            // Show exactly what the server saved.
+            const submittedMilestone: MilestoneItem = json.data.milestone;
+            setSealedHash(json.data.hashValue);
             setMilestones((prev) => [submittedMilestone, ...prev]);
             setSealedSuccess(true);
         } catch (err: any) {
@@ -375,7 +340,7 @@ export default function MilestoneTrackerPage() {
                     </Link>
                     <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
                         <Target className="w-5 h-5 text-indigo-600" />
-                        Screen 4 • Milestone Tracker & Cryptographic Proof Verification
+                        Milestone Tracker &amp; Proof Verification
                     </h1>
                 </div>
 
@@ -469,7 +434,7 @@ export default function MilestoneTrackerPage() {
                                     >
                                         <span className="flex items-center gap-1">
                                             <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-                                            {proj.district}, Jharkhand
+                                            {proj.district}
                                         </span>
                                         <span className="flex items-center gap-1 font-semibold">
                                             <Building2 className="w-3.5 h-3.5 text-indigo-400" />

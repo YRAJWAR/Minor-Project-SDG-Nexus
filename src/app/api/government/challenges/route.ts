@@ -2,196 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticateRequest } from '@/server/middleware/auth';
 
-const FALLBACK_CHALLENGES = [
-    {
-        id: 'ch-pakur-01',
-        title: 'Fluoride & arsenic in ground drinking water — Littipara block',
-        description: 'Community-reported high fluoride and arsenic contamination in borehole water across 6 village habitations.',
-        district: 'Pakur',
-        block: 'Littipara',
-        category: 'Water & Sanitation',
-        status: 'UNIVERSITY_ASSIGNED',
-        sdgTags: [6, 3],
-        aiConfidence: 0.92,
-        submittedBy: 'Birsa Soren (Mukhiya)',
-        isAnonymous: false,
-        gpVerified: true,
-        daysAgo: 10,
-        submittedVia: 'GRAM_PANCHAYAT_NODE',
-        assignedInstitutions: ['NIT Jamshedpur'],
-    },
-    {
-        id: 'ch-simdega-01',
-        title: 'Open defecation & sanitation gaps in Simdega tribal hamlets',
-        description: 'Lack of functional community sanitation units and greywater treatment in Bano block.',
-        district: 'Simdega',
-        block: 'Bano',
-        category: 'Sanitation',
-        status: 'VALIDATED',
-        sdgTags: [6, 3],
-        aiConfidence: 0.88,
-        submittedBy: 'Sunita Kerketta',
-        isAnonymous: false,
-        gpVerified: true,
-        daysAgo: 9,
-        submittedVia: 'GRAM_PANCHAYAT_NODE',
-        assignedInstitutions: [],
-    },
-    {
-        id: 'ch-latehar-01',
-        title: 'Road connectivity to 8 forest villages in Latehar',
-        description: 'Unpaved seasonal roads cutting off medical emergency transport during monsoons.',
-        district: 'Latehar',
-        block: 'Mahuadanr',
-        category: 'Infrastructure',
-        status: 'VALIDATED',
-        sdgTags: [11, 9],
-        aiConfidence: 0.85,
-        submittedBy: 'Pramod Oraon',
-        isAnonymous: false,
-        gpVerified: true,
-        daysAgo: 12,
-        submittedVia: 'PORTAL',
-        assignedInstitutions: [],
-    },
-    {
-        id: 'ch-dhanbad-01',
-        title: 'Underground mine fire surface subsidence in Jharia settlements',
-        description: 'Sensor network needed to monitor thermal hotspots and structural ground fissures threatening 200 tribal families.',
-        district: 'Dhanbad',
-        block: 'Jharia',
-        category: 'Environment',
-        status: 'AI_PROCESSED',
-        sdgTags: [11, 13],
-        aiConfidence: 0.93,
-        submittedBy: 'Kailash Mahto',
-        isAnonymous: false,
-        gpVerified: true,
-        daysAgo: 2,
-        submittedVia: 'PORTAL',
-        assignedInstitutions: [],
-    },
-    {
-        id: 'ch-gumla-01',
-        title: 'Primary health centre solar refrigeration cold chain failure',
-        description: 'Frequent power outages damaging vaccine storage in Bishunpur PHC.',
-        district: 'Gumla',
-        block: 'Bishunpur',
-        category: 'Health',
-        status: 'IN_PROGRESS',
-        sdgTags: [3, 7],
-        aiConfidence: 0.94,
-        submittedBy: 'Dr. R. K. Prasad',
-        isAnonymous: false,
-        gpVerified: true,
-        daysAgo: 3,
-        submittedVia: 'PORTAL',
-        assignedInstitutions: ['BIT Mesra'],
-    },
-    {
-        id: 'ch-garhwa-01',
-        title: 'Crop pest infestation during kharif season',
-        description: 'Stem borer outbreak in paddy crops across 150 acres without biological pest control.',
-        district: 'Garhwa',
-        block: 'Ranka',
-        category: 'Agriculture',
-        status: 'TEAM_FORMED',
-        sdgTags: [2, 15],
-        aiConfidence: 0.86,
-        submittedBy: 'Ramvilas Yadav',
-        isAnonymous: false,
-        gpVerified: false,
-        daysAgo: 4,
-        submittedVia: 'PORTAL',
-        assignedInstitutions: ['Birsa Agricultural University'],
-    },
-    {
-        id: 'ch-palamu-01',
-        title: 'Vocational skill training gap for tribal youth',
-        description: 'Absence of renewable energy maintenance training programs in Daltonganj area.',
-        district: 'Palamu',
-        block: 'Daltonganj',
-        category: 'Livelihoods',
-        status: 'COMPLETED',
-        sdgTags: [8, 1],
-        aiConfidence: 0.89,
-        submittedBy: 'Anil Gupta',
-        isAnonymous: false,
-        gpVerified: true,
-        daysAgo: 2,
-        submittedVia: 'GRAM_PANCHAYAT_NODE',
-        assignedInstitutions: ['Government Polytechnic Palamu'],
-    },
-    {
-        id: 'ch-bokaro-01',
-        title: 'Child malnutrition tracking in Chas anganwadis',
-        description: 'Manual growth monitoring chart errors leading to delayed SAM identification.',
-        district: 'Bokaro',
-        block: 'Chas',
-        category: 'Health',
-        status: 'DEPLOYED',
-        sdgTags: [3, 2],
-        aiConfidence: 0.91,
-        submittedBy: 'Meena Devi',
-        isAnonymous: false,
-        gpVerified: true,
-        daysAgo: 1,
-        submittedVia: 'GRAM_PANCHAYAT_NODE',
-        assignedInstitutions: ['IIT (ISM) Dhanbad'],
-    },
-    {
-        id: 'ch-ranchi-01',
-        title: 'Digital literacy & e-governance for Panchayat representatives',
-        description: 'Lack of hands-on digital tools for village development plan recording.',
-        district: 'Ranchi',
-        block: 'Namkum',
-        category: 'Education',
-        status: 'SUBMITTED',
-        sdgTags: [4, 16],
-        aiConfidence: 0.79,
-        submittedBy: 'Citizen Reporter',
-        isAnonymous: true,
-        gpVerified: false,
-        daysAgo: 1,
-        submittedVia: 'GRAM_PANCHAYAT_NODE',
-        assignedInstitutions: [],
-    },
-    {
-        id: 'ch-khunti-01',
-        title: 'Lac cultivation value addition & market linkage',
-        description: 'Tribal farmers selling raw sticklac at low prices due to lack of local processing.',
-        district: 'Khunti',
-        block: 'Murhu',
-        category: 'Livelihoods',
-        status: 'COMPLETED',
-        sdgTags: [8, 12],
-        aiConfidence: 0.95,
-        submittedBy: 'Mangal Munda',
-        isAnonymous: false,
-        gpVerified: true,
-        daysAgo: 5,
-        submittedVia: 'PORTAL',
-        assignedInstitutions: ['IINRG Ranchi'],
-    },
-    {
-        id: 'ch-lohardaga-01',
-        title: 'Soil erosion mitigation on bauxite mining fringes',
-        description: 'Runoff from mining zones degrading adjacent agricultural terraces.',
-        district: 'Lohardaga',
-        block: 'Kisko',
-        category: 'Environment',
-        status: 'VALIDATED',
-        sdgTags: [15, 6],
-        aiConfidence: 0.87,
-        submittedBy: 'Sudhir Bhagat',
-        isAnonymous: false,
-        gpVerified: true,
-        daysAgo: 8,
-        submittedVia: 'GRAM_PANCHAYAT_NODE',
-        assignedInstitutions: [],
-    },
-];
-
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
@@ -217,33 +27,28 @@ export async function GET(req: NextRequest) {
             // Graceful fallback for mock tokens or demo environment
         }
 
-        let dbChallenges: any[] = [];
+        let dbChallenges;
         try {
             dbChallenges = await prisma.challenge.findMany({
                 orderBy: { createdAt: 'desc' },
                 include: {
                     proposals: {
-                        select: {
-                            id: true,
-                            status: true,
-                            hei: {
-                                select: { name: true, district: true },
-                            },
-                        },
+                        select: { id: true, status: true, hei: { select: { name: true, district: true } } },
                     },
                 },
             });
         } catch (dbErr) {
-            console.warn('Database query failed in challenges API, serving fallback data:', dbErr);
+            console.error('Database query failed in challenges API:', dbErr);
+            return NextResponse.json(
+                { success: false, error: 'Challenges are temporarily unavailable.', timestamp: new Date().toISOString() },
+                { status: 503 }
+            );
         }
 
         const now = Date.now();
         const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
-        let allChallenges: any[] = [];
-
-        if (dbChallenges && dbChallenges.length > 0) {
-            allChallenges = dbChallenges.map((ch: any) => {
+        const allChallenges = dbChallenges.map((ch) => {
                 const timeSinceUpdate = now - new Date(ch.updatedAt).getTime();
                 const daysSinceUpdate = Math.floor(timeSinceUpdate / (1000 * 60 * 60 * 24));
                 const isEscalationDue =
@@ -260,7 +65,8 @@ export async function GET(req: NextRequest) {
                     status: ch.status,
                     sdgTags: ch.sdgTags,
                     aiConfidence: ch.aiConfidence,
-                    submittedBy: ch.submittedBy,
+                    // Never expose phone numbers; anonymous reports stay anonymous (this list is not behind auth yet).
+                    submittedBy: ch.isAnonymous ? 'Anonymous' : ch.submittedBy.replace(/\(.*?\)/g, '').trim(),
                     isAnonymous: ch.isAnonymous,
                     gpVerified: ch.gpVerified,
                     submittedVia: ch.submittedVia || 'PORTAL',
@@ -269,25 +75,9 @@ export async function GET(req: NextRequest) {
                     daysSinceUpdate,
                     isEscalationDue,
                     proposalsCount: ch.proposals?.length || 0,
-                    assignedInstitutions: ch.proposals?.map((p: any) => p.hei?.name).filter(Boolean) || [],
+                    assignedInstitutions: ch.proposals.map((p) => p.hei.name),
                 };
             });
-        } else {
-            allChallenges = FALLBACK_CHALLENGES.map((ch) => {
-                const updateDate = new Date(now - ch.daysAgo * 24 * 60 * 60 * 1000);
-                const isEscalationDue =
-                    (ch.status === 'VALIDATED' || ch.status === 'UNIVERSITY_ASSIGNED') && ch.daysAgo >= 7;
-
-                return {
-                    ...ch,
-                    createdAt: new Date(now - (ch.daysAgo + 5) * 24 * 60 * 60 * 1000).toISOString(),
-                    updatedAt: updateDate.toISOString(),
-                    daysSinceUpdate: ch.daysAgo,
-                    isEscalationDue,
-                    proposalsCount: ch.assignedInstitutions.length,
-                };
-            });
-        }
 
         // Compute counts for all 8 stages + ALL + ESCALATION_DUE
         const counts: Record<string, number> = {
@@ -348,7 +138,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { challengeId, note, escalate } = body;
+        const { challengeId, note } = body;
 
         if (!challengeId) {
             return NextResponse.json(
@@ -357,23 +147,33 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        let updatedChallenge: any = null;
+        // Record the escalation in the audit log. Do NOT touch updatedAt: that would reset the overdue clock
+        // and hide the challenge that was just escalated.
+        // ponytail: there is no escalation flag yet; the ledger in Phase 2 makes escalations visible in the queue.
         try {
-            updatedChallenge = await prisma.challenge.update({
-                where: { id: challengeId },
+            const challenge = await prisma.challenge.findUnique({ where: { id: challengeId }, select: { id: true, status: true } });
+            if (!challenge) {
+                return NextResponse.json({ success: false, error: `No challenge found with ID "${challengeId}"` }, { status: 404 });
+            }
+            await prisma.auditLog.create({
                 data: {
-                    updatedAt: new Date(),
+                    actor_id: 'district-officer',
+                    actor_role: 'GOVERNMENT',
+                    action: 'CHALLENGE_ESCALATED',
+                    entity_type: 'Challenge',
+                    entity_id: challengeId,
+                    new_value: JSON.stringify({ note: typeof note === 'string' ? note.slice(0, 500) : null, status: challenge.status }),
                 },
             });
         } catch (dbErr) {
-            console.warn('DB update failed, using in-memory response:', dbErr);
-            updatedChallenge = { id: challengeId, status: 'ESCALATED' };
+            console.error('Escalation could not be recorded:', dbErr);
+            return NextResponse.json({ success: false, error: 'The escalation could not be saved. Please try again.' }, { status: 503 });
         }
 
         return NextResponse.json({
             success: true,
-            data: updatedChallenge,
-            message: 'Challenge escalation recorded and priority notifications dispatched.',
+            data: { id: challengeId },
+            message: 'Escalation recorded in the audit log.',
             timestamp: new Date().toISOString(),
         });
     } catch (error: any) {

@@ -8,8 +8,8 @@ import { DataProvider } from "@/lib/DataContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: "SDG Nexus — The Operating System for SDG Partnerships & Impact Intelligence",
-    description: "Multi-stakeholder collaboration platform integrating AI-powered SDG alignment, standardized impact tracking, smart partnership matching, and transparent activity verification.",
+    title: "SDG Nexus — Local problems, verified solutions",
+    description: "Citizens report local problems, district officers verify them, universities build solutions, CSR partners fund them milestone by milestone, and every step is recorded.",
     keywords: "SDG, sustainability, impact, CSR, NGO, partnerships, climate, development",
 };
 

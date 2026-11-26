@@ -37,15 +37,6 @@ const roles = [
         glow: 'rgba(245,158,11,0.15)',
         border: 'rgba(245,158,11,0.4)',
     },
-    {
-        value: 'donor' as UserRole,
-        label: 'Donor',
-        icon: '💝',
-        desc: 'Fund projects & track giving',
-        color: '#ec4899',
-        glow: 'rgba(236,72,153,0.15)',
-        border: 'rgba(236,72,153,0.4)',
-    },
 ];
 
 // ── SDG list for multi-select ──────────────────────────────────
@@ -89,12 +80,6 @@ interface FormState {
     corpCSRBudget: string;
     corpContactName: string;
     corpHeadquarters: string;
-    // Donor
-    donorFullName: string;
-    donorType: string;
-    donorFocusSDGs: number[];
-    donorCountry: string;
-    donorPhone: string;
 }
 
 const initialForm: FormState = {
@@ -102,7 +87,6 @@ const initialForm: FormState = {
     ngoName: '', ngoRegNumber: '', ngoFocusSDGs: [], ngoState: '', ngoWebsite: '', ngoContactName: '',
     govDepartment: '', govDesignation: '', govLevel: 'Central', govState: '', govOfficialEmail: '', govContactName: '',
     corpCompanyName: '', corpIndustry: '', corpCINNumber: '', corpCSRBudget: '', corpContactName: '', corpHeadquarters: '',
-    donorFullName: '', donorType: 'Individual', donorFocusSDGs: [], donorCountry: 'India', donorPhone: '',
 };
 
 // ── Reusable field components ──────────────────────────────────
@@ -270,40 +254,6 @@ function CorporateFields({ form, update }: { form: FormState; update: (k: keyof 
     );
 }
 
-function DonorFields({ form, update }: { form: FormState; update: (k: keyof FormState, v: unknown) => void }) {
-    const color = '#ec4899';
-    return (
-        <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-                <InputField label="Full Name *" value={form.donorFullName} onChange={v => update('donorFullName', v)} placeholder="Your full name" />
-                <SelectField
-                    label="Donor Type *"
-                    value={form.donorType}
-                    onChange={v => update('donorType', v)}
-                    options={[
-                        { value: 'Individual', label: 'Individual' },
-                        { value: 'HNI', label: 'High Net Worth Individual (HNI)' },
-                        { value: 'Foundation', label: 'Private Foundation' },
-                        { value: 'Family Office', label: 'Family Office' },
-                        { value: 'Impact Fund', label: 'Impact Fund' },
-                        { value: 'Corporate Foundation', label: 'Corporate Foundation' },
-                    ]}
-                />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-                <InputField label="Country *" value={form.donorCountry} onChange={v => update('donorCountry', v)} placeholder="e.g. India" />
-                <InputField label="Phone Number" type="tel" value={form.donorPhone} onChange={v => update('donorPhone', v)} placeholder="+91 98765 43210" required={false} />
-            </div>
-            <SDGMultiSelect
-                label="SDG Areas You Want to Fund *"
-                selected={form.donorFocusSDGs}
-                onChange={v => update('donorFocusSDGs', v)}
-                accentColor={color}
-            />
-        </div>
-    );
-}
-
 // ── Main page ──────────────────────────────────────────────────
 export default function RegisterPage() {
     const [form, setForm] = useState<FormState>(initialForm);
@@ -321,15 +271,13 @@ export default function RegisterPage() {
     const getOrgName = () => {
         if (form.role === 'ngo') return form.ngoName;
         if (form.role === 'government') return form.govDepartment;
-        if (form.role === 'corporate') return form.corpCompanyName;
-        return form.donorType;
+        return form.corpCompanyName;
     };
 
     const getDisplayName = () => {
         if (form.role === 'ngo') return form.ngoContactName;
         if (form.role === 'government') return form.govContactName;
-        if (form.role === 'corporate') return form.corpContactName;
-        return form.donorFullName;
+        return form.corpContactName;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -445,7 +393,6 @@ export default function RegisterPage() {
                             {form.role === 'ngo' && <NGOFields form={form} update={update} />}
                             {form.role === 'government' && <GovernmentFields form={form} update={update} />}
                             {form.role === 'corporate' && <CorporateFields form={form} update={update} />}
-                            {form.role === 'donor' && <DonorFields form={form} update={update} />}
                         </motion.div>
                     </AnimatePresence>
 

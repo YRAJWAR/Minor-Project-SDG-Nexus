@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import NotificationBell from '@/components/ui/NotificationBell';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -33,19 +34,18 @@ const NAV_ITEMS: Record<string, { label: string; href: string; icon: string }[]>
         { label: 'Analytics', href: '/dashboard/analytics', icon: '📈' },
         { label: 'Profile', href: '/dashboard/profile', icon: '👤' },
     ],
-    donor: [
-        { label: 'Dashboard', href: '/dashboard/donor', icon: '💝' },
-        { label: 'Analytics', href: '/dashboard/donor/analytics', icon: '📊' },
-        { label: 'Impact Map', href: '/dashboard/donor/heatmap', icon: '🗺️' },
-        { label: 'Impact Feed', href: '/dashboard/donor/ledger', icon: '📋' },
-        { label: 'Hall of Fame', href: '/dashboard/donor/leaderboard', icon: '🏆' },
-        { label: 'Profile', href: '/dashboard/profile', icon: '👤' },
-    ],
     citizen: [
         { label: 'Submit Challenge', href: '/citizen/submit', icon: '📢' },
         { label: 'Track Challenge', href: '/track', icon: '🔍' },
         { label: 'Impact Heatmap', href: '/dashboard/heatmap', icon: '🗺️' },
         { label: 'Activity Ledger', href: '/dashboard/ledger', icon: '📋' },
+    ],
+    // Students see their work and credentials, not faculty actions (accepting challenges, forming teams).
+    student: [
+        { label: 'Milestone Tracker', href: '/dashboard/hei/milestones', icon: '🎯' },
+        { label: 'My Credentials', href: '/dashboard/hei/credentials', icon: '🎓' },
+        { label: 'Impact Heatmap', href: '/dashboard/heatmap', icon: '🗺️' },
+        { label: 'Profile', href: '/dashboard/profile', icon: '👤' },
     ],
     hei: [
         { label: 'Challenge Inbox', href: '/dashboard/hei', icon: '📥' },
@@ -125,7 +125,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
                     return (
                         <Link key={item.href} href={item.href}
                             onClick={onClose}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all no-underline ${role === 'donor' ? 'hidden' : ''}`}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all no-underline`}
                             style={{
                                 background: isActive ? '#f0fdf4' : 'transparent',
                                 color: isActive ? '#15803d' : '#64748b',
@@ -146,20 +146,10 @@ export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
             {/* User Info & Logout */}
             <div className="p-4" style={{ borderTop: '1px solid #e2e8f0' }}>
                 <div className="flex items-center gap-3 mb-4 relative">
-                    <button className="relative p-1.5 text-slate-500 hover:bg-slate-100 rounded-full transition-colors flex items-center justify-center shrink-0">
-                        <span className="text-lg">🔔</span>
-                        <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 text-white text-[9px] font-bold flex items-center justify-center rounded-full">3</span>
-                    </button>
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-200 overflow-hidden shrink-0 shadow-inner">
-                        {user ? (
-                            <img
-                                src={`https://api.dicebear.com/7.x/notionists/svg?seed=${user.email || user.name}&backgroundColor=b6e3f4,c0aede,d1d4f9`}
-                                alt="Profile DP"
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <span className="text-sm font-bold text-slate-500">?</span>
-                        )}
+                    <NotificationBell />
+                    {/* Initials only: never send the user's email to a third-party avatar service. */}
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-200 shrink-0 text-sm font-bold text-slate-600" aria-hidden="true">
+                        {user?.name?.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?'}
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate text-slate-900">{user?.name}</p>

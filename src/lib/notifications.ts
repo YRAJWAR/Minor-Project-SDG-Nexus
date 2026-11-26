@@ -201,7 +201,7 @@ export const NotificationTriggers = {
         heiUserIds: string[] = [],
         studentUserIds: string[] = []
     ) {
-        const msg = `Your milestone '${milestone.title}' is verified on-site by the Gram Panchayat`;
+        const msg = `Your milestone '${milestone.title}' has been verified by the district officer`;
         if (heiUserIds.length > 0) {
             await notifyUsers(heiUserIds, msg, 'MILESTONE', milestone.id, 'P2', milestone.challengeId);
         } else {

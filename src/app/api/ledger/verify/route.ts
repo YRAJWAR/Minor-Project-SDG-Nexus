@@ -1,85 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { computeMilestoneHash } from '@/lib/merkle';
-import { HERO_PAKUR_MILESTONES } from '../[projectId]/route';
 
+// Recomputes a milestone's hash from the stored record and compares it with the hash stored at submission.
+// The client only says WHICH milestone to check; any hash it sends is ignored.
 export async function POST(req: NextRequest) {
+    const now = new Date().toISOString();
+    const body = await req.json().catch(() => null);
+    const milestoneId = typeof body?.milestoneId === 'string' ? body.milestoneId : '';
+
+    if (!milestoneId) {
+        return NextResponse.json({ success: false, error: 'milestoneId is required', timestamp: now }, { status: 400 });
+    }
+
+    let milestone;
     try {
-        const body = await req.json();
-        const { milestoneId, hashValue } = body;
-
-        if (!milestoneId) {
-            return NextResponse.json(
-                { success: false, error: 'milestoneId is required', timestamp: new Date().toISOString() },
-                { status: 400 }
-            );
-        }
-
-        let milestone: any = null;
-
-        try {
-            milestone = await prisma.milestone.findUnique({
-                where: { id: milestoneId },
-            });
-        } catch (dbErr) {
-            console.warn('DB lookup failed in ledger verify:', dbErr);
-        }
-
-        // Fallback to hero demo milestones if DB record is not found
-        if (!milestone) {
-            milestone = HERO_PAKUR_MILESTONES.find((m) => m.id === milestoneId);
-        }
-
-        if (!milestone) {
-            return NextResponse.json(
-                { success: false, error: `Milestone with ID ${milestoneId} not found`, timestamp: new Date().toISOString() },
-                { status: 404 }
-            );
-        }
-
-        const primaryProofUrl = (Array.isArray(milestone.proofUrls) && milestone.proofUrls.length > 0)
-            ? milestone.proofUrls[0]
-            : '';
-        const isoTimestamp = milestone.createdAt instanceof Date
-            ? milestone.createdAt.toISOString()
-            : new Date(milestone.createdAt).toISOString();
-        const lat = milestone.gpsLat !== null && milestone.gpsLat !== undefined ? String(milestone.gpsLat) : '';
-        const lng = milestone.gpsLng !== null && milestone.gpsLng !== undefined ? String(milestone.gpsLng) : '';
-
-        // 2. Recompute hash: SHA256(`${proofUrls[0]}|${createdAt.toISOString()}|${gpsLat}|${gpsLng}`)
-        const computedHash = computeMilestoneHash(primaryProofUrl, isoTimestamp, lat, lng);
-
-        // 3. Compare recomputed hash to stored hashValue
-        const storedHash = milestone.hashValue || hashValue || '';
-
-        // Verification check:
-        // Valid if stored hash equals computed hash, OR if client-provided hash specifically matches computed
-        const isValid = storedHash === computedHash || (hashValue && hashValue === computedHash && storedHash.includes('pakur'));
-
-        const coords = lat && lng ? `${lat}°N, ${lng}°E` : '24.6352°N, 87.8448°E';
-
-        // 4. Return standard response
-        return NextResponse.json({
-            success: true,
-            data: {
-                valid: Boolean(isValid),
-                storedHash,
-                computedHash,
-                timestamp: isoTimestamp,
-                coords,
-                milestoneTitle: milestone.title,
-            },
-            timestamp: new Date().toISOString(),
-        });
-    } catch (error: any) {
-        console.error('Error verifying milestone ledger hash:', error);
+        milestone = await prisma.milestone.findUnique({ where: { id: milestoneId } });
+    } catch (dbErr) {
+        console.error('DB lookup failed in ledger verify:', dbErr);
         return NextResponse.json(
-            {
-                success: false,
-                error: error.message || 'Failed to verify ledger integrity',
-                timestamp: new Date().toISOString(),
-            },
-            { status: 500 }
+            { success: false, error: 'Verification is temporarily unavailable. Please try again shortly.', timestamp: now },
+            { status: 503 }
         );
     }
+
+    if (!milestone) {
+        return NextResponse.json(
+            { success: false, error: `Milestone with ID ${milestoneId} not found`, timestamp: now },
+            { status: 404 }
+        );
+    }
+
+    const isoTimestamp = milestone.createdAt.toISOString();
+    const lat = milestone.gpsLat ?? '';
+    const lng = milestone.gpsLng ?? '';
+    // ponytail: hashes the proof URL, not the file bytes. Phase 3 hashes the uploaded file on the server.
+    const computedHash = computeMilestoneHash(milestone.proofUrls[0] ?? '', isoTimestamp, lat, lng);
+    const storedHash = milestone.hashValue;
+
+    return NextResponse.json({
+        success: true,
+        data: {
+            // A milestone that was never sealed cannot be valid.
+            valid: storedHash !== null && storedHash === computedHash,
+            sealed: storedHash !== null,
+            storedHash,
+            computedHash,
+            timestamp: isoTimestamp,
+            coords: lat !== '' && lng !== '' ? `${lat}°N, ${lng}°E` : null,
+            milestoneTitle: milestone.title,
+        },
+        timestamp: now,
+    });
 }

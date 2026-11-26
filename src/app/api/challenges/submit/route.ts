@@ -28,16 +28,16 @@ export async function POST(req: NextRequest) {
         } = body;
 
         // Validation
-        if (!title || typeof title !== 'string' || title.trim().length < 3) {
+        if (!title || typeof title !== 'string' || title.trim().length < 3 || title.trim().length > 150) {
             return NextResponse.json(
-                { success: false, error: 'Title is required (minimum 3 characters)', timestamp: new Date().toISOString() },
+                { success: false, error: 'Title must be 3–150 characters', timestamp: new Date().toISOString() },
                 { status: 400 }
             );
         }
 
-        if (!description || typeof description !== 'string' || description.trim().length < 10) {
+        if (!description || typeof description !== 'string' || description.trim().length < 10 || description.trim().length > 3000) {
             return NextResponse.json(
-                { success: false, error: 'Description is required (minimum 10 characters)', timestamp: new Date().toISOString() },
+                { success: false, error: 'Description must be 10–3000 characters', timestamp: new Date().toISOString() },
                 { status: 400 }
             );
         }
@@ -52,6 +52,13 @@ export async function POST(req: NextRequest) {
         if (!category || typeof category !== 'string') {
             return NextResponse.json(
                 { success: false, error: 'Category is required', timestamp: new Date().toISOString() },
+                { status: 400 }
+            );
+        }
+
+        if (Array.isArray(photoUrls) && photoUrls.length > 5) {
+            return NextResponse.json(
+                { success: false, error: 'A maximum of 5 photos can be attached', timestamp: new Date().toISOString() },
                 { status: 400 }
             );
         }
@@ -101,12 +108,13 @@ export async function POST(req: NextRequest) {
             finalDescription = `[MERGED WITH TICKET #${similarChallengeId}] ${finalDescription}`;
         }
 
-        // Safe Coordinates
+        // ponytail: missing GPS falls back to a fixed point because gpsLat/gpsLng are required columns.
+        // Phase 1 makes GPS required in the form (map pin) and validates it against the chosen district.
         const latitude = typeof gpsLat === 'number' && !isNaN(gpsLat) ? gpsLat : 23.6102;
         const longitude = typeof gpsLng === 'number' && !isNaN(gpsLng) ? gpsLng : 85.2799;
 
         // Persist Challenge
-        let challenge: any = null;
+        let challenge;
         try {
             challenge = await prisma.challenge.create({
                 data: {
@@ -131,30 +139,11 @@ export async function POST(req: NextRequest) {
                 },
             });
         } catch (dbErr) {
-            console.warn('Database write failed in challenge submission, using fallback:', dbErr);
-            challenge = {
-                id: `ch-demo-${Date.now().toString(36)}`,
-                title: title.trim(),
-                description: finalDescription,
-                district: district.trim(),
-                block: block ? block.trim() : null,
-                gpsLat: latitude,
-                gpsLng: longitude,
-                category: category.trim(),
-                photoUrls: Array.isArray(photoUrls) ? photoUrls : [],
-                videoUrls: Array.isArray(videoUrls) ? videoUrls : [],
-                status: 'AI_PROCESSED',
-                sdgTags,
-                aiConfidence,
-                submittedBy: submittedByStr,
-                submitterType: 'CITIZEN',
-                isAnonymous: anonymousFlag,
-                isDuplicate: Boolean(isDuplicate),
-                duplicateOf: similarChallengeId ? String(similarChallengeId) : null,
-                submittedVia: (isGpNode || submittedVia === 'GRAM_PANCHAYAT_NODE') ? 'GRAM_PANCHAYAT_NODE' : 'PORTAL',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            };
+            console.error('Database write failed in challenge submission:', dbErr);
+            return NextResponse.json(
+                { success: false, error: 'Your report could not be saved right now. Please try again in a few minutes.', timestamp: new Date().toISOString() },
+                { status: 503 }
+            );
         }
 
         // Trigger 1: P2 Notification for all GOV users

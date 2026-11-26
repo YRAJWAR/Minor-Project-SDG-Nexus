@@ -37,13 +37,12 @@ interface CompletedProject {
     district: string;
     category: string;
     sdgTags: number[];
-    csrFunder: string;
+    csrFunder: string | null;
     timelineWeeks: number;
     facultyName: string;
     facultyEmail: string;
     universityName: string;
     allMilestonesApproved: boolean;
-    beneficiariesCount: number;
     teamMembers: TeamMemberItem[];
     existingCredentials?: any[];
 }
@@ -78,6 +77,7 @@ export default function StudentCredentialsPage() {
     // Modal / Drawer state
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [studentForms, setStudentForms] = useState<Record<string, StudentFormState>>({});
+    const [loadError, setLoadError] = useState<string | null>(null);
     const [isIssuing, setIsIssuing] = useState(false);
     const [issueSuccessData, setIssueSuccessData] = useState<any | null>(null);
 
@@ -91,9 +91,13 @@ export default function StudentCredentialsPage() {
             const json = await res.json();
             if (json.success && Array.isArray(json.data)) {
                 setProjects(json.data);
+                setLoadError(null);
+            } else {
+                setLoadError(json.error || 'Projects could not be loaded.');
             }
         } catch (err) {
             console.error('Error loading completed projects:', err);
+            setLoadError('Could not reach the server.');
         } finally {
             setLoading(false);
         }
@@ -127,13 +131,8 @@ export default function StudentCredentialsPage() {
         setIsFormOpen(true);
     };
 
-    // Calculate Composite Rating: Faculty 40% + NGO 40% (default 3.5) + Community 20% (default 3.0)
-    const computeOverallRating = (facultyRating: number) => {
-        const ngoRating = 3.5;
-        const communityRating = 3.0;
-        const composite = (facultyRating * 0.40) + (ngoRating * 0.40) + (communityRating * 0.20);
-        return Number(composite.toFixed(2));
-    };
+    // ponytail: NGO and community ratings are not collected yet (Phase 4), so the rating is the faculty rating alone.
+    const computeOverallRating = (facultyRating: number) => facultyRating;
 
     // Handle Hours input change
     const handleHoursChange = (studentProfileId: string, hours: number) => {
@@ -212,10 +211,7 @@ export default function StudentCredentialsPage() {
                 <div>
                     <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">
-                            Screen 5 • National Education Policy (NEP 2020)
-                        </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
-                            Experiential Learning Framework
+                            Experiential learning credits
                         </span>
                     </div>
                     <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
@@ -223,21 +219,10 @@ export default function StudentCredentialsPage() {
                         Student Credential & Academic Credit Generator
                     </h1>
                     <p className="text-xs text-slate-500 mt-1">
-                        Attest field hours and issue cryptographically sealed NEP 2020 academic credits for accepted projects where all milestones have been verified.
+                        Attest field hours and issue verifiable credits for projects where every milestone has been approved.
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2 self-start md:self-auto">
-                    <Link
-                        href="/project/hero-team-pakur/ledger"
-                        target="_blank"
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-amber-300 hover:text-amber-200 text-xs font-bold border border-slate-700 shadow-sm transition"
-                    >
-                        <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                        <span>Public Impact Ledger</span>
-                        <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-                    </Link>
-                </div>
             </div>
 
             {/* Institutional Framework Banner */}
@@ -246,11 +231,11 @@ export default function StudentCredentialsPage() {
                     <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                         <span className="font-bold text-indigo-200 uppercase tracking-wider text-[11px]">
-                            UGC & NEP 2020 Credit Banking Guidelines
+                            How credits are calculated
                         </span>
                     </div>
                     <p className="text-slate-300 text-xs leading-relaxed">
-                        Under NEP 2020, <strong>30 field research and deployment hours = 1 Academic Credit Point</strong>. Credits are co-attested through a Triple Helix composite rating: <strong>Faculty (40%)</strong>, <strong>Ground NGO (40%)</strong>, and <strong>Community Feedback (20%)</strong>.
+                        <strong>30 verified field hours = 1 credit</strong> (whole credits only). The rating shown on a credential is currently the faculty rating; NGO and community ratings will be added when they are collected.
                     </p>
                 </div>
 
@@ -259,10 +244,10 @@ export default function StudentCredentialsPage() {
                     <div>
                         <span className="text-[10px] text-indigo-200 uppercase block font-semibold">Attesting Mentor</span>
                         <span className="text-xs font-bold text-white block">
-                            {user?.name || 'Prof. Anjali Sharma'}
+                            {user?.name}
                         </span>
                         <span className="text-[10px] text-slate-300 block">
-                            NIT Jamshedpur • Faculty of Engineering
+                            {user?.organization_name}
                         </span>
                     </div>
                 </div>
@@ -286,6 +271,8 @@ export default function StudentCredentialsPage() {
                         <div className="h-44 bg-white rounded-2xl border border-slate-200 animate-pulse" />
                         <div className="h-44 bg-white rounded-2xl border border-slate-200 animate-pulse" />
                     </div>
+                ) : loadError ? (
+                    <div className="glass-card p-8 text-center text-sm text-rose-600">{loadError}</div>
                 ) : projects.length === 0 ? (
                     <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-12 text-center text-slate-400">
                         <Award className="w-10 h-10 mx-auto mb-2 text-slate-300" />
@@ -323,12 +310,12 @@ export default function StudentCredentialsPage() {
                                         <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
                                             <span className="flex items-center gap-1">
                                                 <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-                                                {proj.district}, Jharkhand
+                                                {proj.district}
                                             </span>
                                             <span>•</span>
                                             <span className="flex items-center gap-1">
                                                 <Building2 className="w-3.5 h-3.5 text-indigo-400" />
-                                                {proj.csrFunder}
+                                                {proj.csrFunder ?? 'Funder not recorded'}
                                             </span>
                                             <span>•</span>
                                             <span className="flex items-center gap-1">
@@ -413,7 +400,7 @@ export default function StudentCredentialsPage() {
                                     </div>
                                     <div>
                                         <h2 className="text-base font-extrabold text-slate-900 leading-snug">
-                                            NEP 2020 Student Credential Attestation
+                                            Student Credential Attestation
                                         </h2>
                                         <p className="text-xs text-slate-500">
                                             {selectedProject.challengeTitle} • {selectedProject.district}
@@ -440,7 +427,7 @@ export default function StudentCredentialsPage() {
                                             <div>
                                                 <span className="font-bold block">Evaluation Weights:</span>
                                                 <span>
-                                                    Faculty Rating contributes <strong>40%</strong> of the overall score. Field NGO evaluation is fixed at <strong>3.5/5.0 (40%)</strong> and Community Panchayat validation is <strong>3.0/5.0 (20%)</strong> for this completed milestone deployment.
+                                                    The rating saved on each credential is your faculty rating. Hours must be between 30 and 40 per week of the project timeline.
                                                 </span>
                                             </div>
                                         </div>
@@ -515,7 +502,7 @@ export default function StudentCredentialsPage() {
                                                             {/* Faculty Rating Slider */}
                                                             <div>
                                                                 <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700 mb-1">
-                                                                    <span>Faculty Rating (40% Weight)</span>
+                                                                    <span>Faculty Rating</span>
                                                                     <span className="text-indigo-600 font-bold">
                                                                         {formState.facultyRating.toFixed(1)} / 5.0
                                                                     </span>
@@ -558,7 +545,7 @@ export default function StudentCredentialsPage() {
                                                 Credentials Sealed &amp; Issued Successfully!
                                             </h3>
                                             <p className="text-xs text-slate-500 max-w-md mx-auto">
-                                                SHA-256 integrity hashes have been computed and recorded into the immutable state ledger. Verifiable credentials and NEP 2020 certificates are ready.
+                                                SHA-256 hashes have been computed and saved with each credential. Verifiable credentials and certificates are ready.
                                             </p>
                                         </div>
 
@@ -571,7 +558,7 @@ export default function StudentCredentialsPage() {
                                                 >
                                                     <div>
                                                         <span className="font-bold text-slate-900 text-xs block">
-                                                            {cred.studentName || 'Student'} • {cred.creditPoints} Credits
+                                                            {studentForms[cred.studentProfileId]?.studentName ?? 'Student'} • {cred.creditPoints} Credits
                                                         </span>
                                                         <div className="flex items-center gap-1 text-[11px] font-mono text-indigo-600 mt-0.5">
                                                             <span>Hash:</span>

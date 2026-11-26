@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -18,6 +19,7 @@ import {
 import { SDG_INFO } from '@/data/mockData';
 
 export default function ProposalsIndexPage() {
+    const { user } = useAuth();
     const router = useRouter();
     const [proposals, setProposals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -51,7 +53,7 @@ export default function ProposalsIndexPage() {
     useEffect(() => {
         const fetchProposals = async () => {
             try {
-                const res = await fetch('/api/hei/proposals');
+                const res = await fetch(`/api/hei/proposals?email=${encodeURIComponent(user?.email ?? '')}`);
                 const json = await res.json();
                 if (res.ok && json.success && Array.isArray(json.data)) {
                     setProposals(json.data);
@@ -73,14 +75,14 @@ export default function ProposalsIndexPage() {
                 <div>
                     <div className="flex items-center gap-2 mb-1">
                         <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 uppercase">
-                            Screen 3 • R&D Proposal Formulation Hub
+                            Proposals
                         </span>
                     </div>
                     <h1 className="text-xl font-extrabold text-white tracking-tight">
                         University Proposal Builder & CSR Submissions
                     </h1>
                     <p className="text-xs text-slate-300 max-w-2xl mt-1">
-                        Formulate technical methodologies, run AI quality pre-scorers, request CSR funding allocations, and submit proposals for Smart India Hackathon challenges.
+                        Formulate technical methodologies, run AI quality pre-scorers, request CSR funding allocations, and submit proposals for challenges routed to your university.
                     </p>
                 </div>
 
@@ -118,7 +120,7 @@ export default function ProposalsIndexPage() {
                                         </span>
                                         <span className="flex items-center gap-1 text-[11px] text-slate-500">
                                             <MapPin className="w-3.5 h-3.5 text-indigo-500" />
-                                            {ch.district}, Jharkhand
+                                            {ch.district}
                                         </span>
                                     </div>
 

@@ -304,7 +304,7 @@ export type HEIMatch = {
     sdgOverlap: number;
     sdgMatched: number[];
     geoScore: number;
-    distKm: number;
+    distKm: number | null;
     perfScore: number;
     // UI compatibility accessors
     id: string;
@@ -331,45 +331,6 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const DEFAULT_FALLBACK_HEIS = [
-    {
-        id: 'hei-nit-jsr',
-        name: 'National Institute of Technology Jamshedpur',
-        district: 'East Singhbhum',
-        departments: ['Civil Engineering', 'Environmental Engineering', 'Water Resources', 'Computer Science'],
-        sdgExpertise: [6, 9, 11, 13],
-        pastPerformanceScore: 0.87,
-        naacGrade: 'A',
-    },
-    {
-        id: 'hei-bit-sindri',
-        name: 'BIT Sindri',
-        district: 'Dhanbad',
-        departments: ['Chemical Engineering', 'Mechanical Engineering', 'Civil Engineering'],
-        sdgExpertise: [6, 7, 9, 11],
-        pastPerformanceScore: 0.79,
-        naacGrade: 'A',
-    },
-    {
-        id: 'hei-iit-dhanbad',
-        name: 'IIT (ISM) Dhanbad',
-        district: 'Dhanbad',
-        departments: ['Mining Engineering', 'Petroleum Engineering', 'Environmental Science', 'Management'],
-        sdgExpertise: [7, 8, 13, 15],
-        pastPerformanceScore: 0.91,
-        naacGrade: 'A+',
-    },
-    {
-        id: 'hei-ranchi-uni',
-        name: 'Ranchi University',
-        district: 'Ranchi',
-        departments: ['Social Work', 'Agriculture', 'Public Health', 'Education'],
-        sdgExpertise: [1, 2, 3, 4],
-        pastPerformanceScore: 0.72,
-        naacGrade: 'B+',
-    },
-];
-
 /**
  * 3. Match challenges to Higher Education Institutions (HEIs)
  * Formula:
@@ -386,55 +347,22 @@ export async function matchChallengesToHEIs(
 
     if (typeof challengeIdOrObj === 'string') {
         const challengeId = challengeIdOrObj;
-        try {
-            challenge = await prisma.challenge.findUnique({ where: { id: challengeId } });
-        } catch (err) {
-            console.warn('Prisma error finding challenge in matchChallengesToHEIs:', err);
-        }
-
-        if (!challenge) {
-            try {
-                challenge = await prisma.challenge.findFirst({ orderBy: { createdAt: 'asc' } });
-            } catch {
-                challenge = null;
-            }
-        }
-
-        if (!challenge) {
-            // Fallback for hero demo challenge
-            challenge = {
-                id: challengeId,
-                title: 'Arsenic Contamination in Drinking Water, Pakur',
-                district: 'Pakur',
-                sdgTags: [6],
-                gpsLat: 24.6352,
-                gpsLng: 87.8448,
-                status: 'SUBMITTED',
-            };
-        }
+        // Let DB errors propagate: the caller must not present matches for a challenge it could not load.
+        challenge = await prisma.challenge.findUnique({ where: { id: challengeId } });
     } else {
         challenge = challengeIdOrObj;
     }
 
     if (!challenge) throw new Error('Challenge not found');
 
-    let heis: any[] = [];
-    try {
-        heis = await prisma.hEI.findMany();
-    } catch (err) {
-        console.warn('Prisma error finding HEIs in matchChallengesToHEIs:', err);
-    }
-
-    if (!heis || heis.length === 0) {
-        heis = DEFAULT_FALLBACK_HEIS;
-    }
+    const heis = await prisma.hEI.findMany();
 
     const heiCoords = jharkhandCoordinates;
     const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
 
-    const challengeLat = challenge.gpsLat ?? 24.6352;
-    const challengeLng = challenge.gpsLng ?? 87.8448;
-    const challengeSdgs: number[] = Array.isArray(challenge.sdgTags) ? challenge.sdgTags : [6];
+    const challengeLat: number | null = challenge.gpsLat ?? null;
+    const challengeLng: number | null = challenge.gpsLng ?? null;
+    const challengeSdgs: number[] = Array.isArray(challenge.sdgTags) ? challenge.sdgTags : [];
 
     const scored = heis.map((hei: any) => {
         // SDG Expertise Overlap (40%)
@@ -443,27 +371,21 @@ export async function matchChallengesToHEIs(
             Math.max(challengeSdgs.length, 1);
 
         // Geographic Proximity (30%)
-        const coords = heiCoords[hei.district] ?? { lat: 23.6102, lng: 85.2799 };
-        const rawDistKm = haversineDistance(challengeLat, challengeLng, coords.lat, coords.lng);
+        // ponytail: university location comes from a district-name lookup (Jharkhand only today).
+        // Phase 1 stores lat/lng on each university for all of India. Unknown location -> no proximity credit.
+        const coords = heiCoords[hei.district];
+        const distKm = coords && challengeLat !== null && challengeLng !== null
+            ? haversineDistance(challengeLat, challengeLng, coords.lat, coords.lng)
+            : null;
 
-        // ponytail: Kolhan-to-Santhal Pargana transit corridor calibration between Pakur and East Singhbhum (NIT Jamshedpur)
-        // calibrates effective operational distance to ~135km (geoScore ≈ 0.73) per Jharkhand Academic Routing Spec Section 10
-        let distKm = rawDistKm;
-        if (
-            (challenge.district?.toLowerCase() === 'pakur' || challengeLat === 24.6352) &&
-            hei.district?.toLowerCase() === 'east singhbhum'
-        ) {
-            distKm = 135;
-        }
-
-        const geoScore = Math.max(0, 1 - distKm / 500);
+        const geoScore = distKm === null ? 0 : Math.max(0, 1 - distKm / 500);
 
         // HEI Performance Score (30%)
         const perfScore = hei.pastPerformanceScore ?? 0.5;
 
         // Equity adjustments
         const newHEIBoost = hei.isNewlyOnboarded ? 0.10 : 0;
-        const geoOverride = distKm < 50 && sdgOverlap > 0.5 ? 0.15 : 0;
+        const geoOverride = distKm !== null && distKm < 50 && sdgOverlap > 0.5 ? 0.15 : 0;
 
         const totalScore =
             sdgOverlap * 0.40 +
@@ -473,14 +395,13 @@ export async function matchChallengesToHEIs(
             geoOverride;
 
         const matchedTags = challengeSdgs.filter((t) => hei.sdgExpertise?.includes(t));
-        const depts = Array.isArray(hei.departments)
-            ? hei.departments
-            : ['Civil Engineering', 'Environmental Science'];
+        const depts: string[] = Array.isArray(hei.departments) ? hei.departments : [];
 
         const reasons: string[] = [];
         if (matchedTags.length > 0) reasons.push(`Aligned on SDG ${matchedTags.join(', ')}`);
-        if (distKm < 50) reasons.push(`Hyper-local proximity (${Math.round(distKm)}km)`);
-        else reasons.push(`Regional academic corridor (${Math.round(distKm)}km)`);
+        if (distKm === null) reasons.push('Distance unknown');
+        else if (distKm < 50) reasons.push(`Nearby (${Math.round(distKm)} km)`);
+        else reasons.push(`${Math.round(distKm)} km away`);
         reasons.push(`${Math.round(perfScore * 100)}% verified track record`);
 
         return {
@@ -498,13 +419,13 @@ export async function matchChallengesToHEIs(
             name: hei.name,
             district: hei.district,
             departments: depts,
-            naacGrade: hei.naacGrade || 'A',
+            naacGrade: hei.naacGrade,
             reasons,
             totalScore: Math.min(1, Number(totalScore.toFixed(2))),
             sdgOverlap: Number(sdgOverlap.toFixed(2)),
             sdgMatched: matchedTags,
             geoScore: Number(geoScore.toFixed(2)),
-            distKm: Math.round(distKm),
+            distKm: distKm === null ? null : Math.round(distKm),
             perfScore: Number(perfScore.toFixed(2)),
         };
     });

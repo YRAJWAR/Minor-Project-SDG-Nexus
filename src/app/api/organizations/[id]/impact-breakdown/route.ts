@@ -56,23 +56,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
             }));
         } catch (error) {
             if (error instanceof AppError) throw error;
-            // DB unavailable — fallback
+            console.error('Impact score lookup failed:', error);
+            throw new AppError('Impact scores are temporarily unavailable.', 503, 'SERVICE_UNAVAILABLE');
         }
-
-        // Fallback
-        return NextResponse.json(successResponse({
-            organization_id: id,
-            scale_score: 88,
-            outcome_score: 85,
-            efficiency_score: 79,
-            geographic_need_score: 82,
-            transparency_score: 92,
-            weight_distribution: WEIGHT_DISTRIBUTION,
-            final_score: 847,
-            calculation_version: '2.0',
-            raw_values: null,
-            source: 'fallback',
-        }));
     } catch (error) {
         return handleApiError(error);
     }

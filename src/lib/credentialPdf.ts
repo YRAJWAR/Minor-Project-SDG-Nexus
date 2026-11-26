@@ -6,25 +6,20 @@ export interface CredentialPDFData {
     studentName: string;
     branch: string;
     year: number | string;
-    universityName: string;
+    universityName: string | null;
     challengeTitle: string;
     district: string;
     sdgTags: number[];
-    durationWeeks: number;
     hoursContributed: number;
     creditPoints: number;
-    facultyName: string;
-    submitterName?: string;
-    beneficiariesCount?: number;
-    challengeStatus?: string;
     hashValue: string;
     issuedAt: string | Date;
     appUrl?: string;
 }
 
 /**
- * Builds a professional NEP 2020 Student Achievement Certificate PDF
- * matching Government of Jharkhand & SIH26043 specifications.
+ * Builds the student achievement certificate PDF.
+ * Only prints fields that are actually stored on the credential.
  */
 export function buildStudentCredentialPDF(data: CredentialPDFData): jsPDF {
     const doc = new jsPDF({
@@ -41,7 +36,7 @@ export function buildStudentCredentialPDF(data: CredentialPDFData): jsPDF {
         ? new Date(data.issuedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
         : data.issuedAt.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
 
-    const baseUrl = data.appUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://sdgnexus.jharkhand.gov.in';
+    const baseUrl = data.appUrl || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const verifyUrl = `${baseUrl}/verify/credential/${data.credentialId}`;
 
     // 1. Background styling
@@ -71,7 +66,7 @@ export function buildStudentCredentialPDF(data: CredentialPDFData): jsPDF {
     doc.setFillColor(30, 58, 138); // Deep Royal Blue
     doc.rect(margin + 3, margin + 3, pageWidth - (margin + 3) * 2, 26, 'F');
 
-    // Jharkhand Govt Seal Placeholder (Left emblem)
+    // Platform emblem (left)
     doc.setFillColor(255, 255, 255);
     doc.circle(margin + 16, margin + 16, 9.5, 'F');
     doc.setDrawColor(217, 119, 6);
@@ -81,35 +76,31 @@ export function buildStudentCredentialPDF(data: CredentialPDFData): jsPDF {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     doc.setTextColor(30, 58, 138);
-    doc.text('GOJ', margin + 16, margin + 14.5, { align: 'center' });
-    doc.setFontSize(5);
-    doc.setFont('helvetica', 'normal');
-    doc.text('JHARKHAND', margin + 16, margin + 18, { align: 'center' });
+    doc.text('SDG', margin + 16, margin + 17, { align: 'center' });
 
     // Header Title
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(255, 255, 255);
-    doc.text('SDG NEXUS — GOVERNMENT OF JHARKHAND', margin + 32, margin + 13);
+    doc.text('SDG NEXUS', margin + 32, margin + 15);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(224, 231, 255);
-    doc.text('State Collaborative Innovation Mission • Higher Education Department', margin + 32, margin + 18.5);
-    doc.text('Smart India Hackathon 2026 • Problem Statement SIH26043', margin + 32, margin + 23);
+    doc.text('Community problems, university solutions, verified impact', margin + 32, margin + 20.5);
 
     // 3. Certificate Title
     let y = margin + 37;
     doc.setFont('times', 'bold');
     doc.setFontSize(18);
     doc.setTextColor(30, 58, 138);
-    doc.text('NEP 2020 Student Achievement Certificate', pageWidth / 2, y, { align: 'center' });
+    doc.text('Student Achievement Certificate', pageWidth / 2, y, { align: 'center' });
 
     y += 5;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(100, 116, 139);
-    doc.text('National Education Policy 2020 • Community Engagement & Experiential Learning Framework', pageWidth / 2, y, { align: 'center' });
+    doc.text('Experiential learning credit (30 field hours = 1 credit)', pageWidth / 2, y, { align: 'center' });
 
     // 4. Certifies That
     y += 10;
@@ -137,7 +128,7 @@ export function buildStudentCredentialPDF(data: CredentialPDFData): jsPDF {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(51, 65, 85);
-    doc.text(data.universityName, pageWidth / 2, y, { align: 'center' });
+    doc.text(data.universityName ?? '', pageWidth / 2, y, { align: 'center' });
 
     // 5. Societal Challenge Resolution Description
     y += 8;
@@ -168,7 +159,7 @@ export function buildStudentCredentialPDF(data: CredentialPDFData): jsPDF {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(51, 65, 85);
-    doc.text(`District: ${data.district}, Jharkhand`, boxX + 6, boxY);
+    doc.text(`District: ${data.district}`, boxX + 6, boxY);
 
     // Format SDGs
     const sdgNames = data.sdgTags.map((tag) => {
@@ -183,92 +174,32 @@ export function buildStudentCredentialPDF(data: CredentialPDFData): jsPDF {
     doc.setFillColor(238, 242, 255); // indigo-50
     doc.roundedRect(boxX + 5, boxY, boxW - 10, 16, 1.5, 1.5, 'F');
 
-    const colW = (boxW - 10) / 3;
+    const colW = (boxW - 10) / 2;
     const metricY = boxY + 5;
 
-    // Col 1: Duration
+    // Col 1: Field Hours
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(30, 58, 138);
-    doc.text(`${data.durationWeeks} Weeks`, boxX + 5 + colW * 0.5, metricY, { align: 'center' });
+    doc.text(`${data.hoursContributed} Hours`, boxX + 5 + colW * 0.5, metricY, { align: 'center' });
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 116, 139);
-    doc.text('PROJECT DURATION', boxX + 5 + colW * 0.5, metricY + 4.5, { align: 'center' });
+    doc.text('FIELD CONTRIBUTION', boxX + 5 + colW * 0.5, metricY + 4.5, { align: 'center' });
 
-    // Col 2: Field Hours
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(30, 58, 138);
-    doc.text(`${data.hoursContributed} Hours`, boxX + 5 + colW * 1.5, metricY, { align: 'center' });
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 116, 139);
-    doc.text('FIELD CONTRIBUTION', boxX + 5 + colW * 1.5, metricY + 4.5, { align: 'center' });
-
-    // Col 3: Academic Credits
+    // Col 2: Academic Credits
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(16, 185, 129); // emerald-600
-    doc.text(`${data.creditPoints} Credits`, boxX + 5 + colW * 2.5, metricY, { align: 'center' });
+    doc.text(`${data.creditPoints} Credits`, boxX + 5 + colW * 1.5, metricY, { align: 'center' });
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 116, 139);
-    doc.text('NEP 2020 ACCREDITED', boxX + 5 + colW * 2.5, metricY + 4.5, { align: 'center' });
+    doc.text('ACADEMIC CREDITS', boxX + 5 + colW * 1.5, metricY + 4.5, { align: 'center' });
 
-    // 6. Stakeholder & Impact Summary Section
     y += boxH + 6;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
-    doc.setTextColor(71, 85, 105);
-    doc.text('STAKEHOLDER ATTESTATION & CITIZEN IMPACT', boxX, y);
-
-    y += 3;
-    const attBoxW = (boxW - 6) / 2;
-    const attBoxH = 22;
-
-    // Left sub-box: Stakeholders
-    doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(226, 232, 240);
-    doc.roundedRect(boxX, y, attBoxW, attBoxH, 1.5, 1.5, 'FD');
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(100, 116, 139);
-    doc.text('Faculty Mentor:', boxX + 4, y + 5);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(15, 23, 42);
-    doc.text(data.facultyName, boxX + 4, y + 9);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 116, 139);
-    doc.text('Challenge Submitter:', boxX + 4, y + 14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(15, 23, 42);
-    doc.text(data.submitterName || 'Community Member (Panchayat Node)', boxX + 4, y + 18);
-
-    // Right sub-box: Impact Summary
-    const rightBoxX = boxX + attBoxW + 6;
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(rightBoxX, y, attBoxW, attBoxH, 1.5, 1.5, 'FD');
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(100, 116, 139);
-    doc.text('Direct Beneficiaries Reached:', rightBoxX + 4, y + 5);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(16, 185, 129);
-    doc.text(data.beneficiariesCount ? `${data.beneficiariesCount.toLocaleString('en-IN')} Citizens` : '15,000+ Citizens Documented', rightBoxX + 4, y + 9);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 116, 139);
-    doc.text('Challenge Implementation Status:', rightBoxX + 4, y + 14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(30, 58, 138);
-    doc.text(data.challengeStatus || 'DEPLOYED & VALIDATED', rightBoxX + 4, y + 18);
 
     // 7. Cryptographic Verification & Tamper-Evident Footer Box
-    y += attBoxH + 5;
     const cryptoBoxH = 34;
     doc.setFillColor(241, 245, 249); // slate-100
     doc.setDrawColor(203, 213, 225);
@@ -278,12 +209,12 @@ export function buildStudentCredentialPDF(data: CredentialPDFData): jsPDF {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     doc.setTextColor(15, 23, 42);
-    doc.text('CRYPTOGRAPHIC IMMUTABILITY ATTESTATION', boxX + 5, cY);
+    doc.text('INTEGRITY CHECK', boxX + 5, cY);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(71, 85, 105);
-    doc.text('This credential was sealed at the moment of issuance into the SDG Nexus ledger.', boxX + 5, cY + 3.8);
+    doc.text('Recompute this hash at the address below to confirm the certificate has not been altered.', boxX + 5, cY + 3.8);
 
     cY += 8.5;
     doc.setFont('courier', 'bold');
@@ -298,61 +229,19 @@ export function buildStudentCredentialPDF(data: CredentialPDFData): jsPDF {
     doc.text(`Verify Online: ${verifyUrl}`, boxX + 5, cY);
 
     cY += 4.5;
-    doc.text(`Issued On: ${issuedDateStr} • Platform: SDG Nexus | SIH26043 | Government of Jharkhand`, boxX + 5, cY);
+    doc.text(`Issued On: ${issuedDateStr} • SDG Nexus`, boxX + 5, cY);
 
-    // QR Code Placeholder Box on Right of Crypto Box
-    const qrSize = 22;
-    const qrX = boxX + boxW - qrSize - 5;
-    const qrY = y + 5;
-
-    doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(203, 213, 225);
-    doc.roundedRect(qrX, qrY, qrSize, qrSize, 1.5, 1.5, 'FD');
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6.5);
-    doc.setTextColor(30, 58, 138);
-    doc.text('SCAN QR', qrX + qrSize / 2, qrY + 6, { align: 'center' });
-
-    doc.setDrawColor(30, 58, 138);
-    doc.setLineWidth(0.3);
-    doc.rect(qrX + 3.5, qrY + 8, qrSize - 7, qrSize - 11.5);
-
-    doc.setFontSize(5);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 116, 139);
-    doc.text('VERIFY', qrX + qrSize / 2, qrY + 14.5, { align: 'center' });
-    doc.text('INTEGRITY', qrX + qrSize / 2, qrY + 17.5, { align: 'center' });
-
-    // 8. Signatures Section
-    y += cryptoBoxH + 11;
-    const sigLineW = 55;
-    const sigLeftX = boxX + 10;
-    const sigRightX = boxX + boxW - sigLineW - 10;
-
-    // Faculty Mentor Signature
+    // 8. Signature line for the issuing institution
+    y += cryptoBoxH + 14;
+    const sigLineW = 70;
+    const sigX = pageWidth / 2 - sigLineW / 2;
     doc.setDrawColor(148, 163, 184);
     doc.setLineWidth(0.4);
-    doc.line(sigLeftX, y, sigLeftX + sigLineW, y);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.5);
-    doc.setTextColor(15, 23, 42);
-    doc.text(data.facultyName, sigLeftX + sigLineW / 2, y + 4, { align: 'center' });
+    doc.line(sigX, y, sigX + sigLineW, y);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
+    doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
-    doc.text('Faculty Mentor • Project Supervisor', sigLeftX + sigLineW / 2, y + 7.5, { align: 'center' });
-
-    // State Mission / Academic Dean Signature
-    doc.line(sigRightX, y, sigRightX + sigLineW, y);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.5);
-    doc.setTextColor(15, 23, 42);
-    doc.text('State Innovation Director', sigRightX + sigLineW / 2, y + 4, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
-    doc.setTextColor(100, 116, 139);
-    doc.text('Government of Jharkhand • SIH 2026', sigRightX + sigLineW / 2, y + 7.5, { align: 'center' });
+    doc.text(`Authorised signatory${data.universityName ? `, ${data.universityName}` : ''}`, pageWidth / 2, y + 4.5, { align: 'center' });
 
     return doc;
 }

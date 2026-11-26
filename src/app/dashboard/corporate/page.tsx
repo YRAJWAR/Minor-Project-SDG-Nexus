@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useAuth } from '@/lib/AuthContext';
 import { motion } from 'framer-motion';
 import { SDG_INFO } from '@/data/mockData';
 import { useData } from '@/lib/DataContext';
@@ -17,6 +18,7 @@ const fadeIn = (d: number) => ({
 });
 
 export default function CorporateDashboard() {
+    const { user } = useAuth();
     const { organizations, projects, donations } = useData();
     const [sdgFilter, setSdgFilter] = useState<number | null>(null);
     const [stateFilter, setStateFilter] = useState('');
@@ -88,7 +90,7 @@ export default function CorporateDashboard() {
             <motion.div {...fadeIn(0)} className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Industry & Funding Partner Dashboard</h1>
-                    <p className="text-sm text-slate-500 mt-1">TechServe Jharkhand CSR • Corporate Dashboard</p>
+                    <p className="text-sm text-slate-500 mt-1">{user?.organization_name} • CSR Dashboard</p>
                 </div>
 
                 <button
@@ -163,7 +165,7 @@ export default function CorporateDashboard() {
                                     >
                                         <div>
                                             <div className="flex items-center gap-1.5 font-bold">
-                                                <span>🚩 {flag.challenge_title || flag.organization?.name || 'Gram Vikas Trust Jharkhand'}</span>
+                                                <span>🚩 {flag.challenge_title || flag.organization?.name || 'Unknown organisation'}</span>
                                                 <span className="text-rose-600 font-medium">({flag.district || 'Pakur District'})</span>
                                             </div>
                                             <div className="text-[11px] text-slate-600 mt-0.5 leading-normal">{flag.description}</div>
@@ -183,7 +185,7 @@ export default function CorporateDashboard() {
             <motion.div {...fadeIn(0.3)} className="glass-card p-6">
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h2 className="text-lg font-semibold text-slate-900">🤝 Triple Helix Routing Engine</h2>
+                        <h2 className="text-lg font-semibold text-slate-900">🤝 Recommended partners</h2>
                         <p className="text-xs text-slate-500 mt-1">AI-powered NGO recommendations based on your CSR focus areas</p>
                     </div>
                 </div>

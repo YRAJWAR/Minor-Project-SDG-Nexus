@@ -89,7 +89,8 @@ export default function CreateProjectPage() {
                 body: JSON.stringify({
                     title: form.title,
                     description: form.description,
-                    organization_id: user?.id || 'u1',
+                    // ponytail: users aren't linked to organisations yet; Phase 1 adds User→Organization membership.
+                    organization_id: user?.id,
                     budget_allocated: budget,
                     budget_utilized: spent,
                     beneficiaries_count: beneficiaries,
@@ -102,7 +103,15 @@ export default function CreateProjectPage() {
                 }),
             });
             const json = await res.json();
-            const data = json.data || json;
+            if (!res.ok || !json.success) {
+                // Keep everything the user typed; show exactly why it was not saved.
+                const err = json.error;
+                const details = Array.isArray(err?.details) ? `\n\n${err.details.join('\n')}` : '';
+                setSaveStatus('idle');
+                alert(`Project not saved: ${err?.message || err || 'unknown error'}${details}`);
+                return;
+            }
+            const data = json.data;
 
             // Also update in-memory DataContext so dashboards update immediately
             const impactScore = calculateProjectScore(
@@ -147,7 +156,7 @@ export default function CreateProjectPage() {
             }, 2000);
         } catch {
             setSaveStatus('idle');
-            alert('Project saved to local state (DB unavailable)');
+            alert('Could not reach the server. The project was NOT saved; your details are still in the form.');
         }
     };
 

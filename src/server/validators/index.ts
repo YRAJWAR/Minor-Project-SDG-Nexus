@@ -49,6 +49,20 @@ export function validateProjectCreate(data: unknown): ValidationResult<ProjectCr
         errors.push('latitude: Must be between -90 and 90');
     if (d.longitude != null && (typeof d.longitude !== 'number' || d.longitude < -180 || d.longitude > 180))
         errors.push('longitude: Must be between -180 and 180');
+    if (typeof d.title === 'string' && d.title.trim().length > 150)
+        errors.push('title: Maximum 150 characters');
+    if (typeof d.description === 'string' && d.description.trim().length > 5000)
+        errors.push('description: Maximum 5000 characters');
+    if (typeof d.budget_allocated === 'number' && typeof d.budget_utilized === 'number' && d.budget_utilized > d.budget_allocated)
+        errors.push('budget_utilized: Cannot exceed budget_allocated');
+    if (typeof d.beneficiaries_count === 'number' && (!Number.isInteger(d.beneficiaries_count) || d.beneficiaries_count > 10_000_000))
+        errors.push('beneficiaries_count: Must be a whole number up to 1 crore');
+    if (d.start_date != null && d.end_date != null) {
+        const start = Date.parse(String(d.start_date));
+        const end = Date.parse(String(d.end_date));
+        if (Number.isNaN(start) || Number.isNaN(end)) errors.push('start_date/end_date: Must be valid dates');
+        else if (end < start) errors.push('end_date: Must be on or after start_date');
+    }
 
     if (errors.length > 0) return { success: false, errors };
     return { success: true, data: d as unknown as ProjectCreateInput };

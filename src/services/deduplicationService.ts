@@ -1,4 +1,3 @@
-import natural from 'natural';
 import prisma from '@/lib/prisma';
 
 export interface CheckDuplicateInput {
@@ -15,7 +14,7 @@ export interface CheckDuplicateResult {
     similarChallengeDaysAgo?: number;
 }
 
-// Minimal English and Hindi stopwords as specified in SIH 26043 Engine 6 spec
+// Minimal English and Hindi stopwords
 const STOPWORDS = new Set([
     'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
     'have', 'has', 'had', 'do', 'does', 'did', 'will', 'shall', 'may', 'might',
@@ -28,79 +27,31 @@ const STOPWORDS = new Set([
     'यह', 'वह', 'में', 'से', 'के', 'की', 'को', 'है', 'हैं', 'था', 'थे',
 ]);
 
-// Fallback seed challenges for offline / pre-migration testing
-const SEED_FALLBACK_CHALLENGES = [
-    {
-        id: 'ch-khunti-07',
-        title: 'Forest encroachment monitoring in Khunti',
-        description: 'Community-reported illegal logging and forest encroachment monitoring near Murhu block reserved forests.',
-        district: 'Khunti',
-        createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-    },
-    {
-        id: 'ch-pakur-01',
-        title: 'Fluoride & arsenic in ground drinking water — Littipara block',
-        description: 'Community-reported high fluoride and arsenic contamination in borehole water across 6 village habitations.',
-        district: 'Pakur',
-        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-    },
-    {
-        id: 'ch-simdega-01',
-        title: 'Open defecation in Simdega tribal hamlets',
-        description: 'Lack of functional community sanitation units and greywater treatment in Bano block.',
-        district: 'Simdega',
-        createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000),
-    },
-    {
-        id: 'ch-latehar-01',
-        title: 'Road connectivity to 8 villages in Latehar',
-        description: 'Unpaved seasonal roads cutting off medical emergency transport during monsoons.',
-        district: 'Latehar',
-        createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
-    },
-    {
-        id: 'ch-gumla-01',
-        title: 'Primary health centre equipment failure in Gumla',
-        description: 'Frequent power outages damaging vaccine storage and primary healthcare equipment.',
-        district: 'Gumla',
-        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    },
-    {
-        id: 'ch-garhwa-01',
-        title: 'Crop pest management for kharif season in Garhwa',
-        description: 'Stem borer outbreak in paddy crops across 150 acres without biological pest control.',
-        district: 'Garhwa',
-        createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    },
-    {
-        id: 'ch-palamu-01',
-        title: 'Lack of vocational training in Palamu block',
-        description: 'Absence of renewable energy and vocational maintenance training programs in Daltonganj.',
-        district: 'Palamu',
-        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    },
-    {
-        id: 'ch-bokaro-01',
-        title: 'Child malnutrition tracking in Bokaro anganwadis',
-        description: 'Manual growth monitoring chart errors leading to delayed SAM identification.',
-        district: 'Bokaro',
-        createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
-    },
-    {
-        id: 'ch-ranchi-01',
-        title: 'Digital literacy for Panchayat officials in Ranchi',
-        description: 'Lack of hands-on digital tools for village development plan recording.',
-        district: 'Ranchi',
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    },
-    {
-        id: 'ch-lohardaga-01',
-        title: 'Erosion of agricultural land near Koel river, Lohardaga',
-        description: 'Runoff from mining zones degrading adjacent agricultural terraces.',
-        district: 'Lohardaga',
-        createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-    },
-];
+/**
+ * TF-IDF cosine similarity between doc 0 and every other doc. IDF comes from the docs themselves
+ * (the candidate plus the district's existing challenges), so common local words weigh less.
+ * Pure function: exported for the integrity checks.
+ */
+export function tfidfSimilarities(docs: string[][]): number[] {
+    const n = docs.length;
+    const df = new Map<string, number>();
+    for (const doc of docs) for (const t of new Set(doc)) df.set(t, (df.get(t) ?? 0) + 1);
+    const idf = (t: string) => Math.log((n + 1) / ((df.get(t) ?? 0) + 1)) + 1;
+    const vec = (doc: string[]) => {
+        const tf = new Map<string, number>();
+        for (const t of doc) tf.set(t, (tf.get(t) ?? 0) + 1);
+        return new Map([...tf].map(([t, c]) => [t, c * idf(t)]));
+    };
+    const norm = (v: Map<string, number>) => Math.sqrt([...v.values()].reduce((s, x) => s + x * x, 0));
+    const [first, ...rest] = docs.map(vec);
+    const n0 = norm(first);
+    return rest.map((v) => {
+        let dot = 0;
+        for (const [t, w] of first) dot += w * (v.get(t) ?? 0);
+        const d = n0 * norm(v);
+        return d === 0 ? 0 : dot / d;
+    });
+}
 
 export class DeduplicationService {
     /**
@@ -120,55 +71,11 @@ export class DeduplicationService {
     }
 
     /**
-     * Compute cosine similarity between two texts using natural.TfIdf
-     * Includes reference corpus documents so topical terms receive proper IDF discrimination.
-     */
-    public static computeCosineSimilarity(tokens1: string[], tokens2: string[]): number {
-        if (tokens1.length === 0 || tokens2.length === 0) return 0;
-
-        const tfidf = new natural.TfIdf();
-        tfidf.addDocument(tokens1); // doc 0
-        tfidf.addDocument(tokens2); // doc 1
-
-        // Add background reference corpus across diverse districts/domains
-        for (const seed of SEED_FALLBACK_CHALLENGES) {
-            const seedTokens = this.tokenizeAndClean(`${seed.title} ${seed.description}`);
-            tfidf.addDocument(seedTokens);
-        }
-
-        // Collect all unique terms between candidate and target
-        const allTerms = Array.from(new Set([...tokens1, ...tokens2]));
-
-        let dotProduct = 0;
-        let mag1 = 0;
-        let mag2 = 0;
-
-        for (const term of allTerms) {
-            let score1 = 0;
-            let score2 = 0;
-
-            tfidf.tfidfs(term, (docIndex, score) => {
-                if (docIndex === 0) score1 = score;
-                if (docIndex === 1) score2 = score;
-            });
-
-            dotProduct += score1 * score2;
-            mag1 += score1 * score1;
-            mag2 += score2 * score2;
-        }
-
-        const denominator = Math.sqrt(mag1) * Math.sqrt(mag2);
-        if (denominator === 0) return 0;
-
-        return dotProduct / denominator;
-    }
-
-    /**
      * Core Algorithm:
      * 1. Accept { title, description, district }
      * 2. Combine title + first 150 chars of description into single text
      * 3. Strip common English and Hindi stopwords
-     * 4. Compute TF-IDF vector using natural library
+     * 4. Compute TF-IDF vectors (IDF from the district's own challenges)
      * 5. Query existing challenges in same district
      * 6. Compute cosine similarity for each
      * 7. If similarity > 0.75 => isDuplicate = true
@@ -184,53 +91,25 @@ export class DeduplicationService {
             return { isDuplicate: false };
         }
 
-        // 5: Query existing challenges in the same district from DB
-        let existingChallenges: { id: string; title: string; description: string; createdAt: Date }[] = [];
-        try {
-            existingChallenges = await prisma.challenge.findMany({
-                where: {
-                    district: {
-                        equals: district.trim(),
-                        mode: 'insensitive',
-                    },
-                },
-                select: {
-                    id: true,
-                    title: true,
-                    description: true,
-                    createdAt: true,
-                },
-            });
-        } catch {
-            // Database is offline or not yet migrated, fall back to seed data
-        }
-
-        // If DB returned nothing or error, check fallback seed challenges for that district
-        if (!existingChallenges || existingChallenges.length === 0) {
-            existingChallenges = SEED_FALLBACK_CHALLENGES.filter(
-                (c) => c.district.toLowerCase() === district.trim().toLowerCase()
-            );
-        }
+        // 5: Existing challenges in the same district. DB errors propagate (the route reports them).
+        const existingChallenges = await prisma.challenge.findMany({
+            where: { district: { equals: district.trim(), mode: 'insensitive' } },
+            select: { id: true, title: true, description: true, createdAt: true },
+        });
 
         if (existingChallenges.length === 0) {
             return { isDuplicate: false };
         }
 
-        let maxSimilarity = 0;
-        let mostSimilarChallenge: (typeof existingChallenges)[0] | null = null;
-
-        // 6: Compute cosine similarity for each existing challenge
-        for (const ch of existingChallenges) {
-            const chCombined = `${ch.title || ''} ${(ch.description || '').slice(0, 150)}`.trim();
-            const chTokens = this.tokenizeAndClean(chCombined);
-
-            const similarity = this.computeCosineSimilarity(candidateTokens, chTokens);
-
-            if (similarity > maxSimilarity) {
-                maxSimilarity = similarity;
-                mostSimilarChallenge = ch;
-            }
-        }
+        // 6: Cosine similarity against each existing challenge
+        const sims = tfidfSimilarities([
+            candidateTokens,
+            ...existingChallenges.map((ch) => this.tokenizeAndClean(`${ch.title} ${ch.description.slice(0, 150)}`)),
+        ]);
+        let best = 0;
+        sims.forEach((v, i) => { if (v > sims[best]) best = i; });
+        const maxSimilarity = sims[best] ?? 0;
+        const mostSimilarChallenge = existingChallenges[best] ?? null;
 
         const SIMILARITY_THRESHOLD = 0.75;
         const isDuplicate = maxSimilarity > SIMILARITY_THRESHOLD;

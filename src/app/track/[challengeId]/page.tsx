@@ -18,7 +18,6 @@ import {
     AlertCircle,
     UserCheck,
     Sparkles,
-    MessageSquare,
     CheckCircle2,
 } from 'lucide-react';
 import { SDG_INFO } from '@/data/mockData';
@@ -120,7 +119,7 @@ export default function TrackChallengePage() {
         return (
             <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col items-center justify-center p-6">
                 <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4" />
-                <p className="text-slate-400 text-sm">Retrieving Triple-Helix tracking telemetry...</p>
+                <p className="text-slate-400 text-sm">Loading challenge...</p>
             </div>
         );
     }
@@ -132,7 +131,7 @@ export default function TrackChallengePage() {
                     <AlertCircle className="w-12 h-12 text-rose-400 mx-auto mb-3" />
                     <h1 className="text-xl font-bold text-white mb-2">Challenge Not Found</h1>
                     <p className="text-sm text-slate-400 mb-6">
-                        {error || 'The requested challenge could not be located in the Jharkhand platform registry.'}
+                        {error || 'We could not find a challenge with this tracking ID.'}
                     </p>
                     <div className="flex flex-col gap-2">
                         <Link
@@ -182,7 +181,7 @@ export default function TrackChallengePage() {
                         <div>
                             <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">
-                                    Triple-Helix Public Tracker
+                                    Public Tracker
                                 </span>
                                 <span className="text-xs text-slate-600">•</span>
                                 <span className="text-xs text-slate-400 font-mono">ID: {data.id}</span>
@@ -410,7 +409,7 @@ export default function TrackChallengePage() {
                                     <div className="flex items-start gap-2 text-xs text-slate-300">
                                         <MapPin className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
                                         <div>
-                                            <p className="font-bold text-white">{data.district}, Jharkhand</p>
+                                            <p className="font-bold text-white">{data.district}</p>
                                             {data.block && <p className="text-slate-400">Block: {data.block}</p>}
                                             <p className="text-[10px] text-slate-500 font-mono mt-0.5">
                                                 GPS: {data.gpsLat.toFixed(4)}° N, {data.gpsLng.toFixed(4)}° E
@@ -476,7 +475,7 @@ export default function TrackChallengePage() {
 
                     {/* Right Column: "Who is working on it" card (Shown ONLY after UNIVERSITY_ASSIGNED) */}
                     <div className="space-y-6">
-                        {isPastUniversityAssigned && (
+                        {isPastUniversityAssigned && data.assignedHEI && (
                             <motion.div
                                 initial={{ opacity: 0, y: 15 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -489,38 +488,24 @@ export default function TrackChallengePage() {
 
                                 <div className="space-y-1.5">
                                     <h3 className="text-base font-extrabold text-white">
-                                        {data.assignedHEI?.name || data.assignedInstitutions[0] || 'National Institute of Technology Jamshedpur'}
+                                        {data.assignedHEI.name}
                                     </h3>
                                     <div className="flex items-center gap-1.5 text-xs text-indigo-300">
                                         <MapPin className="w-3.5 h-3.5" />
-                                        <span>
-                                            {data.assignedHEI?.district || `${data.district}, Jharkhand`}
-                                        </span>
+                                        <span>{data.assignedHEI.district}</span>
                                     </div>
-                                </div>
-
-                                {/* Platform Masked Contact (Requirement 2) */}
-                                <div className="bg-indigo-950/60 border border-indigo-800/60 rounded-xl p-3.5 text-xs text-indigo-200 flex items-start gap-2.5">
-                                    <MessageSquare className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
-                                    <p className="leading-relaxed">
-                                        Have questions? The team receives messages via the platform.
-                                    </p>
-                                </div>
-
-                                <div className="pt-1 text-[11px] text-slate-400">
-                                    <span>Faculty mentors and student researchers are operating under institutional R&D and public safety protocols.</span>
                                 </div>
                             </motion.div>
                         )}
 
-                        {/* Triple-Helix Stakeholder Overview */}
+                        {/* How it works */}
                         <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-xl space-y-3 text-xs text-slate-400">
                             <div className="flex items-center gap-2 text-slate-300 font-bold">
                                 <Shield className="w-4 h-4 text-blue-400" />
-                                <span>Triple-Helix Governance Model</span>
+                                <span>How this works</span>
                             </div>
                             <p className="leading-relaxed">
-                                Under Jharkhand Problem Statement SIH26043, Government validates societal priorities, universities engineer prototypes, corporate CSR partners fund deployment, and Gram Panchayats verify on-ground outcomes.
+                                District officers verify reported problems, universities build solutions, CSR partners fund them milestone by milestone, and the community confirms the outcome.
                             </p>
                         </div>
                     </div>

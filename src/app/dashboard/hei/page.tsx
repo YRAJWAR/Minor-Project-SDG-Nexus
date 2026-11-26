@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -59,6 +60,7 @@ interface ChallengeInboxItem {
 
 export default function HEIChallengeInboxPage() {
     const router = useRouter();
+    const { user } = useAuth();
     const [challenges, setChallenges] = useState<ChallengeInboxItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -85,7 +87,7 @@ export default function HEIChallengeInboxPage() {
                 const headers: Record<string, string> = { 'Content-Type': 'application/json' };
                 if (token) headers['Authorization'] = `Bearer ${token}`;
 
-                const res = await fetch('/api/hei/challenges/inbox', { headers });
+                const res = await fetch(`/api/hei/challenges/inbox?email=${encodeURIComponent(user?.email ?? '')}`, { headers });
                 const json = await res.json();
                 if (!res.ok || !json.success) {
                     throw new Error(json.error || 'Failed to fetch challenge inbox');
@@ -282,14 +284,15 @@ export default function HEIChallengeInboxPage() {
                                             <RoutingExplainabilityPanel
                                                 compact={true}
                                                 hei={{
-                                                    name: 'NIT Jamshedpur',
+                                                    name: user?.organization_name ?? 'Your university',
                                                     district: challenge.district,
-                                                    sdgOverlap: (match.sdgOverlap || 85) / 100,
+                                                    sdgOverlap: (match.sdgOverlap ?? 0) / 100,
                                                     sdgMatched: challenge.sdgTags,
-                                                    distKm: match.geoProximity === 100 ? 14 : 38,
-                                                    perfScore: (match.pastPerformance || 90) / 100,
-                                                    totalScore: (match.overall || 89) / 100,
-                                                    departments: ['Civil Engineering', 'Environmental Science'],
+                                                    distKm: null,
+                                                    perfScore: (match.pastPerformance ?? 0) / 100,
+                                                    totalScore: (match.overall ?? 0) / 100,
+                                                    departments: [],
+                                                    reasons: match.reasons,
                                                 }}
                                             />
 
@@ -386,20 +389,19 @@ export default function HEIChallengeInboxPage() {
                                                     AI Institutional Match Explainability
                                                 </h4>
                                                 <span className="text-[10px] text-indigo-600 font-semibold">
-                                                    Triple-Helix Routing Engine
+                                                    Match breakdown
                                                 </span>
                                             </div>
                                             <RoutingExplainabilityPanel
                                                 hei={{
-                                                    name: 'National Institute of Technology Jamshedpur',
+                                                    name: user?.organization_name ?? 'Your university',
                                                     district: challenge.district,
-                                                    sdgOverlap: (match.sdgOverlap || 85) / 100,
+                                                    sdgOverlap: (match.sdgOverlap ?? 0) / 100,
                                                     sdgMatched: challenge.sdgTags,
-                                                    distKm: match.geoProximity === 100 ? 14 : 38,
-                                                    perfScore: (match.pastPerformance || 90) / 100,
-                                                    totalScore: (match.overall || 89) / 100,
-                                                    departments: ['Civil & Environmental Engineering', 'Water Resources', 'Computer Science'],
-                                                    naacGrade: 'A+',
+                                                    distKm: null,
+                                                    perfScore: (match.pastPerformance ?? 0) / 100,
+                                                    totalScore: (match.overall ?? 0) / 100,
+                                                    departments: [],
                                                     reasons: match.reasons,
                                                 }}
                                             />
@@ -430,7 +432,7 @@ export default function HEIChallengeInboxPage() {
                                 Decline & Pass Challenge?
                             </h3>
                             <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                                Passing this challenge removes it from NIT Jamshedpur&apos;s inbox and returns it to the Jharkhand State Innovation routing pool for re-assignment to other institutions.
+                                Passing this challenge removes it from your inbox and returns it to the district officer for re-assignment to other institutions.
                             </p>
 
                             <div className="mt-4">

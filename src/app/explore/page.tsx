@@ -15,7 +15,7 @@ interface PublicOrg {
     verification_status: string;
     project_count: number;
     total_beneficiaries: number;
-    impact_score: number;
+    impact_score: number | null;
     sdg_focus: number[];
 }
 
@@ -172,7 +172,9 @@ export default function ExplorePage() {
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="text-xl font-bold" style={{ color: getScoreColor(org.impact_score) }}>{org.impact_score}</div>
+                                                    {org.impact_score === null
+                                                        ? <div className="text-xs font-semibold text-slate-400">No score yet</div>
+                                                        : <div className="text-xl font-bold" style={{ color: getScoreColor(org.impact_score) }}>{org.impact_score}</div>}
                                                     <div className="text-[10px] text-gray-500">Impact</div>
                                                 </div>
                                             </div>

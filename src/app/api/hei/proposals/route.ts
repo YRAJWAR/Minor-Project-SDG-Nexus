@@ -1,31 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { authenticateRequest } from '@/server/middleware/auth';
+
+// ponytail: SECURITY — the university is resolved from an email the client sends. Phase 1 takes it from the
+// signed-in session (httpOnly cookie) so nobody can act for another university. Do not deploy as-is.
+async function resolveHei(email: unknown) {
+    if (typeof email !== 'string' || !email.trim()) return null;
+    const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() }, include: { hei: true } });
+    return user?.hei ?? null;
+}
+
+const noHei = () =>
+    NextResponse.json(
+        { success: false, error: 'Your account is not linked to a university.', timestamp: new Date().toISOString() },
+        { status: 403 }
+    );
 
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const challengeId = searchParams.get('challengeId');
 
-        // Identify HEI (NIT Jamshedpur default)
-        let hei = await prisma.hEI.findFirst({
-            where: {
-                OR: [
-                    { name: { contains: 'Jamshedpur', mode: 'insensitive' } },
-                    { ugcId: 'NIT-JSR-001' },
-                ],
-            },
-        });
-
-        if (!hei) {
-            hei = await prisma.hEI.findFirst();
-        }
+        const hei = await resolveHei(searchParams.get('email'));
+        if (!hei) return noHei();
 
         if (challengeId) {
             const proposal = await prisma.challengeProposal.findFirst({
                 where: {
                     challengeId,
-                    ...(hei ? { heiId: hei.id } : {}),
+                    heiId: hei.id,
                 },
                 include: {
                     challenge: {
@@ -66,7 +68,7 @@ export async function GET(request: NextRequest) {
 
         // Return all proposals for the HEI
         const proposals = await prisma.challengeProposal.findMany({
-            where: hei ? { heiId: hei.id } : undefined,
+            where: { heiId: hei.id },
             include: {
                 challenge: {
                     select: {
@@ -123,7 +125,16 @@ export async function POST(request: NextRequest) {
             termsAccepted,
             status = 'SUBMITTED', // 'DRAFT' or 'SUBMITTED'
             aiQualityScore,
+            facultyEmail,
         } = body;
+
+        // Universities can only save drafts or submit. Accepting/rejecting is the district officer's decision.
+        if (status !== 'DRAFT' && status !== 'SUBMITTED') {
+            return NextResponse.json(
+                { success: false, error: 'A proposal can only be saved as DRAFT or SUBMITTED.', timestamp: new Date().toISOString() },
+                { status: 400 }
+            );
+        }
 
         if (!challengeId) {
             return NextResponse.json(
@@ -136,6 +147,21 @@ export async function POST(request: NextRequest) {
             if (!approach || typeof approach !== 'string' || approach.trim().length < 10) {
                 return NextResponse.json(
                     { success: false, error: 'Please provide a detailed technical approach (at least 10 characters)', timestamp: new Date().toISOString() },
+                    { status: 400 }
+                );
+            }
+
+            const weeks = Number(timelineWeeks);
+            const budget = Number(budgetRequested);
+            if (!Number.isInteger(weeks) || weeks < 2 || weeks > 52) {
+                return NextResponse.json(
+                    { success: false, error: 'Timeline must be 2–52 weeks', timestamp: new Date().toISOString() },
+                    { status: 400 }
+                );
+            }
+            if (!Number.isFinite(budget) || budget <= 0 || budget > 10_000_000) {
+                return NextResponse.json(
+                    { success: false, error: 'Budget must be between ₹1 and ₹1 crore', timestamp: new Date().toISOString() },
                     { status: 400 }
                 );
             }
@@ -160,33 +186,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Identify HEI
-        let hei = await prisma.hEI.findFirst({
-            where: {
-                OR: [
-                    { name: { contains: 'Jamshedpur', mode: 'insensitive' } },
-                    { ugcId: 'NIT-JSR-001' },
-                ],
-            },
-        });
-
-        if (!hei) {
-            hei = await prisma.hEI.findFirst();
-        }
-
-        if (!hei) {
-            hei = await prisma.hEI.create({
-                data: {
-                    name: 'NIT Jamshedpur',
-                    ugcId: 'NIT-JSR-001',
-                    district: 'East Singhbhum',
-                    departments: ['Civil Engineering', 'Environmental Engineering', 'Computer Science'],
-                    sdgExpertise: [6, 9, 11, 13],
-                    naacGrade: 'A',
-                    pastPerformanceScore: 0.87,
-                },
-            });
-        }
+        const hei = await resolveHei(facultyEmail);
+        if (!hei) return noHei();
 
         // Check if an existing proposal exists for this challenge & HEI
         const existingProposal = await prisma.challengeProposal.findFirst({
@@ -195,10 +196,17 @@ export async function POST(request: NextRequest) {
                 heiId: hei.id,
             },
         });
+        if (existingProposal && existingProposal.status !== 'DRAFT' && existingProposal.status !== 'SUBMITTED') {
+            return NextResponse.json(
+                { success: false, error: `This proposal is already ${existingProposal.status} and can no longer be edited.`, timestamp: new Date().toISOString() },
+                { status: 409 }
+            );
+        }
 
-        const proposalStatus = (status === 'DRAFT' || status === 'ACCEPTED') ? status : 'SUBMITTED';
-        const parsedWeeks = Number(timelineWeeks) || 16;
-        const parsedBudget = Number(budgetRequested) || 450000;
+        const proposalStatus: 'DRAFT' | 'SUBMITTED' = status;
+        // Drafts may be incomplete; missing numbers are stored as 0 rather than invented.
+        const parsedWeeks = Number.isInteger(Number(timelineWeeks)) ? Number(timelineWeeks) : 0;
+        const parsedBudget = Number.isFinite(Number(budgetRequested)) ? Number(budgetRequested) : 0;
         const parsedScore = aiQualityScore ? Number(aiQualityScore) / 100 : null;
 
         let proposal;
@@ -220,11 +228,11 @@ export async function POST(request: NextRequest) {
                 data: {
                     challengeId: challenge.id,
                     heiId: hei.id,
-                    approach: approach || 'Preliminary R&D framework formulated by university research team.',
+                    approach: typeof approach === 'string' ? approach : '',
                     timelineWeeks: parsedWeeks,
                     budgetRequested: parsedBudget,
-                    fundingSource: csrPartner || 'Open to any partner',
-                    ipDeclaration: ipDeclaration || 'Open Source — published under MIT/CC license',
+                    fundingSource: csrPartner || null,
+                    ipDeclaration: ipDeclaration || '',
                     status: proposalStatus,
                     aiQualityScore: parsedScore,
                 },
@@ -242,17 +250,6 @@ export async function POST(request: NextRequest) {
                 });
             } catch (notifErr) {
                 console.warn('Could not dispatch notifications for proposal submission:', notifErr);
-            }
-        } else if (proposalStatus === 'ACCEPTED') {
-            try {
-                const { NotificationTriggers } = await import('@/lib/notifications');
-                await NotificationTriggers.proposalAccepted({
-                    id: proposal.id,
-                    challengeId: challenge.id,
-                    challengeTitle: challenge.title,
-                });
-            } catch (notifErr) {
-                console.warn('Could not dispatch notifications for proposal acceptance:', notifErr);
             }
         }
 
@@ -306,6 +303,15 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json(
                 { success: false, error: 'Proposal not found', timestamp: new Date().toISOString() },
                 { status: 404 }
+            );
+        }
+
+        // ponytail: officer-only decision; enforced by role once real auth lands in Phase 1.
+        const DECISIONS: Record<string, string[]> = { SUBMITTED: ['UNDER_REVIEW', 'ACCEPTED', 'REJECTED'], UNDER_REVIEW: ['ACCEPTED', 'REJECTED'] };
+        if (!(DECISIONS[proposal.status] ?? []).includes(status)) {
+            return NextResponse.json(
+                { success: false, error: `A ${proposal.status} proposal cannot be moved to ${status}.`, timestamp: new Date().toISOString() },
+                { status: 409 }
             );
         }
 

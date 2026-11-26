@@ -52,29 +52,17 @@ async function resolveUserId(req: NextRequest): Promise<string | null> {
         if (user) return user.id;
     }
 
-    // Default fallback: return first active user or null
-    const firstUser = await prisma.user.findFirst();
-    return firstUser?.id || null;
+    // No identifiable user -> no notifications. Never fall back to someone else's.
+    // ponytail: SECURITY — ?userId/?email/?role and mock tokens are still accepted here; Phase 1 removes them.
+    return null;
 }
 
 export async function GET(req: NextRequest) {
     try {
         const userId = await resolveUserId(req);
 
-        let count = 0;
-        if (userId) {
-            count = await prisma.notification.count({
-                where: {
-                    userId,
-                    read: false,
-                },
-            });
-        } else {
-            // Fallback unread count if no specific user
-            count = await prisma.notification.count({
-                where: { read: false },
-            });
-        }
+        // No identifiable user -> 0. Never count other users' notifications.
+        const count = userId ? await prisma.notification.count({ where: { userId, read: false } }) : 0;
 
         return NextResponse.json({
             success: true,
@@ -84,12 +72,9 @@ export async function GET(req: NextRequest) {
         });
     } catch (error: any) {
         console.error('Error fetching unread notification count:', error);
-        return NextResponse.json({
-            success: true,
-            data: { count: 0 },
-            count: 0,
-            error: error.message,
-            timestamp: new Date().toISOString(),
-        });
+        return NextResponse.json(
+            { success: false, error: 'Unread count is temporarily unavailable.', timestamp: new Date().toISOString() },
+            { status: 503 }
+        );
     }
 }

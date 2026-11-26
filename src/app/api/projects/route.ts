@@ -74,8 +74,6 @@ export async function POST(request: NextRequest) {
         const activityContent = `Project "${input.title}" created | Budget: ₹${input.budget_allocated.toLocaleString()} | Beneficiaries: ${input.beneficiaries_count.toLocaleString()} | SDGs: ${classification.sdg_tags.join(', ')}`;
         const activityHash = await sha256(activityContent + now);
 
-        let savedToDb = false;
-
         try {
             await projectRepo.createWithTransaction({
                 id: projectId,
@@ -93,8 +91,6 @@ export async function POST(request: NextRequest) {
                 activity_hash: activityHash,
             });
 
-            savedToDb = true;
-
             // Recalculate org score after project creation
             await recalculateOrgScore(input.organization_id);
 
@@ -107,8 +103,10 @@ export async function POST(request: NextRequest) {
                 entity_id: projectId,
                 new_value: { title: input.title, budget: input.budget_allocated, sdgs: classification.sdg_tags },
             });
-        } catch {
-            console.warn('Prisma DB not available — returning in-memory project response');
+        } catch (dbErr) {
+            if (dbErr instanceof AppError) throw dbErr;
+            console.error('Project could not be saved:', dbErr);
+            throw new AppError('The project could not be saved. Nothing was created — please try again.', 503, 'SERVICE_UNAVAILABLE');
         }
 
         // ─── Step 4: Standardized response ───────────────────
@@ -130,7 +128,7 @@ export async function POST(request: NextRequest) {
                 sdg_source: classification.source,
                 created_at: now,
             },
-            persisted: savedToDb,
+            persisted: true,
         }), { status: 201 });
     } catch (error) {
         return handleApiError(error);
@@ -158,9 +156,9 @@ export async function GET(request: NextRequest) {
                 items,
                 buildPaginationMeta(page, pageSize, total)
             ));
-        } catch {
-            // DB unavailable fallback
-            return NextResponse.json(successResponse([], buildPaginationMeta(1, pageSize, 0)));
+        } catch (dbErr) {
+            console.error('Project list query failed:', dbErr);
+            throw new AppError('Projects are temporarily unavailable.', 503, 'SERVICE_UNAVAILABLE');
         }
     } catch (error) {
         return handleApiError(error);

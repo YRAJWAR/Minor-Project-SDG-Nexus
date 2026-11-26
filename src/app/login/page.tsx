@@ -30,7 +30,7 @@ export default function LoginPage() {
 
     const demoAccounts = [
         { label: 'Citizen', email: 'citizen@jharkhand.gov.in', icon: '👤' },
-        { label: 'Collector (Gov)', email: 'collector@jharkhand.gov.in', icon: '🏛️' },
+        { label: 'District Officer', email: 'collector@jharkhand.gov.in', icon: '🏛️' },
         { label: 'HEI Faculty', email: 'faculty@nitjsr.ac.in', icon: '🎓' },
         { label: 'Corporate (CSR)', email: 'csr@tatasteel.com', icon: '💼' },
         { label: 'NGO Deployer', email: 'admin@pradan.net', icon: '🏢' },

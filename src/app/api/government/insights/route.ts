@@ -1,310 +1,130 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { ALL_DISTRICT_NAMES } from '@/data/jharkhandDistricts';
+import { SDG_INFO } from '@/data/mockData';
 
-export async function GET(_req: NextRequest) {
+const DAY_MS = 24 * 60 * 60 * 1000;
+const PENDING = new Set(['SUBMITTED', 'AI_PROCESSED', 'VALIDATED']);
+const ACTIVE = new Set(['UNIVERSITY_ASSIGNED', 'TEAM_FORMED', 'IN_PROGRESS']);
+const RESOLVED = new Set(['COMPLETED', 'DEPLOYED']);
+const lakhs = (rupees: number) => Math.round(rupees / 1000) / 100; // 2 decimals
+
+// All five insights are computed from live data. When there is no data, the text says so (no invented numbers).
+export async function GET() {
+    let challenges, acceptedProposals, released;
     try {
-        let challenges: any[] = [];
-        let organizations: any[] = [];
-        let heis: any[] = [];
-
-        try {
-            challenges = await prisma.challenge.findMany({
-                select: {
-                    id: true,
-                    title: true,
-                    district: true,
-                    status: true,
-                    sdgTags: true,
-                    createdAt: true,
-                    updatedAt: true,
-                    proposals: {
-                        select: {
-                            id: true,
-                            budgetRequested: true,
-                            status: true,
-                            heiId: true,
-                            hei: {
-                                select: {
-                                    id: true,
-                                    name: true,
-                                    district: true,
-                                },
-                            },
-                        },
-                    },
-                },
-            });
-        } catch (dbErr) {
-            console.warn('Prisma error in /api/government/insights (challenges):', dbErr);
-        }
-
-        try {
-            organizations = await prisma.organization.findMany({
-                where: { type: 'CORPORATE' },
-                include: {
-                    csr_compliance: true,
-                    impact_portfolio: true,
-                },
-                take: 10,
-            });
-        } catch (dbErr) {
-            console.warn('Prisma error in /api/government/insights (organizations):', dbErr);
-        }
-
-        try {
-            heis = await prisma.hEI.findMany({
-                include: {
-                    proposals: {
-                        select: {
-                            id: true,
-                            status: true,
-                            createdAt: true,
-                        },
-                    },
-                },
-                take: 10,
-            });
-        } catch (dbErr) {
-            console.warn('Prisma error in /api/government/insights (HEIs):', dbErr);
-        }
-
-        const districtList = ALL_DISTRICT_NAMES;
-
-        // ─── 1. Most Underserved District ──────────────────────────────
-        // District with most SUBMITTED/VALIDATED challenges and 0 IN_PROGRESS
-        const districtTally: Record<string, { pending: number; inProgress: number }> = {};
-        districtList.forEach((d: string) => {
-            districtTally[d] = { pending: 0, inProgress: 0 };
-        });
-
-        challenges.forEach((ch) => {
-            const d = districtList.find((x: string) => x.toLowerCase() === (ch.district || '').trim().toLowerCase()) || ch.district;
-            if (!districtTally[d]) districtTally[d] = { pending: 0, inProgress: 0 };
-
-            if (ch.status === 'SUBMITTED' || ch.status === 'AI_PROCESSED' || ch.status === 'VALIDATED') {
-                districtTally[d].pending += 1;
-            } else if (ch.status === 'IN_PROGRESS' || ch.status === 'TEAM_FORMED') {
-                districtTally[d].inProgress += 1;
-            }
-        });
-
-        let mostUnderserved = { district: 'Pakur', pending: 4, inProgress: 0 };
-        const eligibleUnderserved = Object.entries(districtTally)
-            .filter(([_, stats]) => stats.inProgress === 0 && stats.pending > 0)
-            .sort((a, b) => b[1].pending - a[1].pending);
-
-        if (eligibleUnderserved.length > 0) {
-            mostUnderserved = {
-                district: eligibleUnderserved[0][0],
-                pending: eligibleUnderserved[0][1].pending,
-                inProgress: 0,
-            };
-        }
-
-        const insight1 = {
-            id: 'insight-1',
-            type: 'UNDERSERVED_DISTRICT',
-            title: 'Most Underserved District',
-            headline: `Most Underserved District: ${mostUnderserved.district} — ${mostUnderserved.pending} pending challenges, 0 active university projects`,
-            district: mostUnderserved.district,
-            pendingCount: mostUnderserved.pending,
-            activeCount: 0,
-            severity: 'CRITICAL',
-            themeColor: '#ef4444',
-            accentBg: 'bg-rose-50 border-rose-200 text-rose-800',
-            icon: '⚠️',
-            chartData: [
-                { name: mostUnderserved.district, pending: mostUnderserved.pending, active: 0 },
-                { name: 'Simdega', pending: 3, active: 1 },
-                { name: 'Latehar', pending: 2, active: 1 },
-                { name: 'Palamu', pending: 2, active: 2 },
-                { name: 'Ranchi', pending: 1, active: 4 },
-            ],
-        };
-
-        // ─── 2. Fastest Resolution District ────────────────────────────
-        // Average days from submission to DEPLOYED
-        const resolutionDaysByDistrict: Record<string, number[]> = {};
-        challenges.forEach((ch) => {
-            if (ch.status === 'DEPLOYED' || ch.status === 'COMPLETED') {
-                const start = new Date(ch.createdAt).getTime();
-                const end = new Date(ch.updatedAt || ch.createdAt).getTime();
-                const days = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
-                const d = ch.district || 'Ranchi';
-                if (!resolutionDaysByDistrict[d]) resolutionDaysByDistrict[d] = [];
-                resolutionDaysByDistrict[d].push(days);
-            }
-        });
-
-        let fastestDistrict = 'Ranchi';
-        let fastestAvgDays = 21;
-
-        const averagedResolution = Object.entries(resolutionDaysByDistrict)
-            .map(([district, daysArr]) => ({
-                district,
-                avgDays: Math.round(daysArr.reduce((a, b) => a + b, 0) / daysArr.length),
-            }))
-            .sort((a, b) => a.avgDays - b.avgDays);
-
-        if (averagedResolution.length > 0) {
-            fastestDistrict = averagedResolution[0].district;
-            fastestAvgDays = averagedResolution[0].avgDays;
-        }
-
-        const insight2 = {
-            id: 'insight-2',
-            type: 'FASTEST_RESOLUTION',
-            title: 'Fastest Resolution Velocity',
-            headline: `Fastest Resolution: ${fastestDistrict} — average ${fastestAvgDays} days from submission to DEPLOYED`,
-            district: fastestDistrict,
-            avgDays: fastestAvgDays,
-            themeColor: '#10b981',
-            accentBg: 'bg-emerald-50 border-emerald-200 text-emerald-800',
-            icon: '⚡',
-            chartData: [
-                { name: fastestDistrict, days: fastestAvgDays },
-                { name: 'East Singhbhum', days: 28 },
-                { name: 'Dhanbad', days: 34 },
-                { name: 'Bokaro', days: 38 },
-                { name: 'State Avg', days: 49 },
-            ],
-        };
-
-        // ─── 3. SDG Coverage Gap ───────────────────────────────────────
-        // SDG [N] has [count] challenges but only [count] funded projects
-        const sdgChallengeCounts: Record<number, number> = {};
-        const sdgFundedCounts: Record<number, number> = {};
-
-        for (let i = 1; i <= 17; i++) {
-            sdgChallengeCounts[i] = 0;
-            sdgFundedCounts[i] = 0;
-        }
-
-        challenges.forEach((ch) => {
-            const tags: number[] = ch.sdgTags || [6];
-            tags.forEach((tag) => {
-                sdgChallengeCounts[tag] = (sdgChallengeCounts[tag] || 0) + 1;
-                const isFunded = ch.proposals?.some((p: any) => p.status === 'ACCEPTED' || p.status === 'MILESTONE_IN_PROGRESS');
-                if (isFunded) {
-                    sdgFundedCounts[tag] = (sdgFundedCounts[tag] || 0) + 1;
-                }
-            });
-        });
-
-        // Find highest gap
-        let topGapSDG = 6;
-        let maxGap = 0;
-        let gapChallenges = 8;
-        let gapFunded = 2;
-
-        for (let i = 1; i <= 17; i++) {
-            const cCount = sdgChallengeCounts[i] || 0;
-            const fCount = sdgFundedCounts[i] || 0;
-            const diff = cCount - fCount;
-            if (diff > maxGap) {
-                maxGap = diff;
-                topGapSDG = i;
-                gapChallenges = cCount;
-                gapFunded = fCount;
-            }
-        }
-
-        if (maxGap === 0) {
-            topGapSDG = 6;
-            gapChallenges = 8;
-            gapFunded = 2;
-        }
-
-        const insight3 = {
-            id: 'insight-3',
-            type: 'SDG_COVERAGE_GAP',
-            title: 'Critical SDG Coverage Gap',
-            headline: `SDG Coverage Gap: SDG ${topGapSDG} has ${gapChallenges} challenges but only ${gapFunded} funded projects`,
-            sdg: topGapSDG,
-            challengesCount: gapChallenges,
-            fundedCount: gapFunded,
-            gapDelta: gapChallenges - gapFunded,
-            themeColor: '#f59e0b',
-            accentBg: 'bg-amber-50 border-amber-200 text-amber-800',
-            icon: '🎯',
-            chartData: [
-                { sdg: `SDG ${topGapSDG}`, challenges: gapChallenges, funded: gapFunded },
-                { sdg: 'SDG 3', challenges: 6, funded: 3 },
-                { sdg: 'SDG 4', challenges: 5, funded: 3 },
-                { sdg: 'SDG 2', challenges: 4, funded: 1 },
-            ],
-        };
-
-        // ─── 4. CSR Utilization ────────────────────────────────────────
-        // Corporate CSR has committed ₹[X]L — [Y]% disbursed via milestone approvals
-        const insight4 = {
-            id: 'insight-4',
-            type: 'CSR_UTILIZATION',
-            title: 'CSR Fund Execution',
-            headline: 'CSR Utilization: Tata Steel CSR has committed ₹45.0L — 68% disbursed via milestone approvals',
-            corporateName: 'Tata Steel CSR',
-            committedAmountLakhs: 45.0,
-            disbursedPercentage: 68,
-            themeColor: '#0284c7',
-            accentBg: 'bg-sky-50 border-sky-200 text-sky-800',
-            icon: '💼',
-            chartData: [
-                { name: 'Disbursed', value: 68, fill: '#0284c7' },
-                { name: 'Pending Milestone Proof', value: 32, fill: '#cbd5e1' },
-            ],
-        };
-
-        // ─── 5. University Engagement ──────────────────────────────────
-        // [HEI name] has accepted [N] challenges this month
-        let topHeiName = 'National Institute of Technology Jamshedpur';
-        let topHeiAcceptedCount = 3;
-
-        if (heis && heis.length > 0) {
-            const sortedByProposals = [...heis].sort((a, b) => (b.proposals?.length || 0) - (a.proposals?.length || 0));
-            if (sortedByProposals[0]?.name) {
-                topHeiName = sortedByProposals[0].name;
-                topHeiAcceptedCount = Math.max(2, sortedByProposals[0].proposals?.length || 3);
-            }
-        }
-
-        const insight5 = {
-            id: 'insight-5',
-            type: 'UNIVERSITY_ENGAGEMENT',
-            title: 'Academic HEI Engagement',
-            headline: `University Engagement: ${topHeiName} has accepted ${topHeiAcceptedCount} challenges this month`,
-            heiName: topHeiName,
-            acceptedCount: topHeiAcceptedCount,
-            themeColor: '#8b5cf6',
-            accentBg: 'bg-purple-50 border-purple-200 text-purple-800',
-            icon: '🏛️',
-            chartData: [
-                { hei: 'NIT Jamshedpur', accepted: topHeiAcceptedCount },
-                { hei: 'BIT Mesra', accepted: 2 },
-                { hei: 'IIT Dhanbad', accepted: 2 },
-                { hei: 'BAU Ranchi', accepted: 1 },
-                { hei: 'Polytechnic Palamu', accepted: 1 },
-            ],
-        };
-
-        return NextResponse.json({
-            success: true,
-            data: {
-                insights: [insight1, insight2, insight3, insight4, insight5],
-                totalGenerated: 5,
-                timestamp: new Date().toISOString(),
-            },
-            timestamp: new Date().toISOString(),
-        });
-    } catch (error: any) {
-        console.error('Failed to generate policy insights:', error);
+        [challenges, acceptedProposals, released] = await Promise.all([
+            prisma.challenge.findMany({
+                select: { district: true, status: true, sdgTags: true, createdAt: true, updatedAt: true },
+            }),
+            prisma.challengeProposal.findMany({
+                where: { status: 'ACCEPTED' },
+                select: { budgetRequested: true, createdAt: true, hei: { select: { name: true } } },
+            }),
+            prisma.milestone.aggregate({ _sum: { fundReleased: true } }),
+        ]);
+    } catch (dbErr) {
+        console.error('Prisma error in /api/government/insights:', dbErr);
         return NextResponse.json(
-            {
-                success: false,
-                error: error.message || 'Failed to generate policy insights',
-                timestamp: new Date().toISOString(),
-            },
-            { status: 500 }
+            { success: false, error: 'Insights are temporarily unavailable.', timestamp: new Date().toISOString() },
+            { status: 503 }
         );
     }
+
+    // 1. Most underserved district: most pending challenges, ranked by pending minus active work.
+    const byDistrict = new Map<string, { pending: number; active: number }>();
+    for (const ch of challenges) {
+        const d = byDistrict.get(ch.district) ?? { pending: 0, active: 0 };
+        if (PENDING.has(ch.status)) d.pending++;
+        if (ACTIVE.has(ch.status)) d.active++;
+        byDistrict.set(ch.district, d);
+    }
+    const ranked = [...byDistrict.entries()]
+        .filter(([, d]) => d.pending > 0)
+        .sort((a, b) => b[1].pending - b[1].active - (a[1].pending - a[1].active));
+    const worst = ranked[0];
+    const mostUnderserved = worst
+        ? {
+            text: `${worst[0]}: ${worst[1].pending} pending challenge(s), ${worst[1].active} with a university`,
+            recommendation: `Prioritise verification and routing for ${worst[0]}.`,
+            chartData: ranked.slice(0, 5).map(([name, d], i) => ({
+                name,
+                count: d.pending,
+                fill: i === 0 ? '#f43f5e' : '#94a3b8',
+            })),
+        }
+        : { text: 'No pending challenges right now.', recommendation: 'Nothing waiting for review.', chartData: [] };
+
+    // 2. Fastest resolution: average days from submission to completion, per district.
+    // ponytail: uses updatedAt as the completion date; a status history table (Phase 2) makes this exact.
+    const days = new Map<string, number[]>();
+    for (const ch of challenges) {
+        if (!RESOLVED.has(ch.status)) continue;
+        const list = days.get(ch.district) ?? [];
+        list.push(Math.max(1, Math.round((ch.updatedAt.getTime() - ch.createdAt.getTime()) / DAY_MS)));
+        days.set(ch.district, list);
+    }
+    const fastest = [...days.entries()]
+        .map(([district, list]) => ({ district, avg: Math.round(list.reduce((a, b) => a + b, 0) / list.length), n: list.length }))
+        .sort((a, b) => a.avg - b.avg)[0];
+    const resolvedCount = challenges.filter((c) => RESOLVED.has(c.status)).length;
+    const fastestResolution = fastest
+        ? { text: `${fastest.district} resolves challenges fastest: ${fastest.avg} days on average`, avgDays: fastest.avg, resolvedCount }
+        : { text: 'No challenges have been resolved yet.', avgDays: 0, resolvedCount: 0 };
+
+    // 3. SDG coverage gap: SDG with the most challenges that have no university assigned yet.
+    const demand = new Map<number, { total: number; unassigned: number }>();
+    for (const ch of challenges) {
+        for (const sdg of ch.sdgTags) {
+            const d = demand.get(sdg) ?? { total: 0, unassigned: 0 };
+            d.total++;
+            if (PENDING.has(ch.status)) d.unassigned++;
+            demand.set(sdg, d);
+        }
+    }
+    const gap = [...demand.entries()].sort((a, b) => b[1].unassigned - a[1].unassigned)[0];
+    const sdgTitle = (n: number) => SDG_INFO.find((s) => s.id === n)?.name ?? `SDG ${n}`;
+    const sdgCoverageGap = gap && gap[1].unassigned > 0
+        ? {
+            text: `SDG ${gap[0]} has ${gap[1].total} challenge(s); ${gap[1].unassigned} still have no university`,
+            sdgNumber: gap[0],
+            sdgTitle: sdgTitle(gap[0]),
+            chartData: [
+                { name: 'Total', value: gap[1].total, fill: '#94a3b8' },
+                { name: 'Unassigned', value: gap[1].unassigned, fill: '#f59e0b' },
+            ],
+        }
+        : { text: 'Every tagged challenge has a university.', sdgNumber: 0, sdgTitle: '—', chartData: [] };
+
+    // 4. CSR utilisation: accepted proposal budgets vs money released against milestones.
+    const committed = acceptedProposals.reduce((s, p) => s + p.budgetRequested, 0);
+    const disbursed = released._sum.fundReleased ?? 0;
+    const csrUtilization = {
+        text: committed > 0
+            ? `₹${lakhs(committed)}L approved across ${acceptedProposals.length} proposal(s); ₹${lakhs(disbursed)}L released`
+            : 'No funded proposals yet.',
+        committedLakhs: lakhs(committed),
+        disbursedLakhs: lakhs(disbursed),
+        disbursedPercent: committed > 0 ? Math.min(100, Math.round((disbursed / committed) * 100)) : 0,
+    };
+
+    // 5. University engagement: university with the most accepted proposals in the last 30 days.
+    const monthAgo = Date.now() - 30 * DAY_MS;
+    const recent = new Map<string, number>();
+    for (const p of acceptedProposals) {
+        if (p.createdAt.getTime() >= monthAgo) recent.set(p.hei.name, (recent.get(p.hei.name) ?? 0) + 1);
+    }
+    const topUni = [...recent.entries()].sort((a, b) => b[1] - a[1])[0];
+    const universityEngagement = {
+        text: topUni ? `${topUni[0]} had ${topUni[1]} proposal(s) accepted in the last 30 days` : 'No proposals accepted in the last 30 days.',
+        acceptedThisMonth: topUni?.[1] ?? 0,
+        totalAssigned: acceptedProposals.length,
+    };
+
+    return NextResponse.json({
+        success: true,
+        data: {
+            insights: { mostUnderserved, fastestResolution, sdgCoverageGap, csrUtilization, universityEngagement },
+        },
+        timestamp: new Date().toISOString(),
+    });
 }

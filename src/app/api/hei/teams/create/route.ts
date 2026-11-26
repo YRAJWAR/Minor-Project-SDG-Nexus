@@ -1,194 +1,95 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { authenticateRequest } from '@/server/middleware/auth';
+import { canTransitionStatus } from '@/middleware/challengeStatus';
 import { NotificationTriggers } from '@/lib/notifications';
 
+const fail = (error: string, status: number) =>
+    NextResponse.json({ success: false, error, timestamp: new Date().toISOString() }, { status });
+
+// Forms the team for a challenge that was routed to the faculty member's university.
+// Every listed student must exist and belong to that university; all writes happen together or not at all.
 export async function POST(request: NextRequest) {
-    try {
-        const body = await request.json();
-        const {
-            challengeId,
-            teamName,
-            facultyName,
-            facultyEmail,
-            backupLead,
-            members,
-        } = body;
+    const body = await request.json().catch(() => null);
+    const { challengeId, teamName, facultyName, facultyEmail, backupLead, members } = body ?? {};
 
-        // Validation
-        if (!challengeId) {
-            return NextResponse.json(
-                { success: false, error: 'Challenge ID is required', timestamp: new Date().toISOString() },
-                { status: 400 }
-            );
-        }
-
-        if (!teamName || typeof teamName !== 'string' || teamName.trim().length < 2) {
-            return NextResponse.json(
-                { success: false, error: 'Team name is required (minimum 2 characters)', timestamp: new Date().toISOString() },
-                { status: 400 }
-            );
-        }
-
-        if (!facultyName || !facultyEmail) {
-            return NextResponse.json(
-                { success: false, error: 'Faculty mentor details are required', timestamp: new Date().toISOString() },
-                { status: 400 }
-            );
-        }
-
-        if (!Array.isArray(members) || members.length < 2) {
-            return NextResponse.json(
-                { success: false, error: 'A team must have at least 2 members before it can be locked', timestamp: new Date().toISOString() },
-                { status: 400 }
-            );
-        }
-
-        // Locate Challenge
-        const challenge = await prisma.challenge.findUnique({
-            where: { id: challengeId },
-        });
-
-        if (!challenge) {
-            return NextResponse.json(
-                { success: false, error: 'Challenge not found', timestamp: new Date().toISOString() },
-                { status: 404 }
-            );
-        }
-
-        // Locate or identify HEI institution (NIT Jamshedpur default)
-        let hei = await prisma.hEI.findFirst({
-            where: {
-                OR: [
-                    { users: { some: { email: facultyEmail } } },
-                    { name: { contains: 'Jamshedpur', mode: 'insensitive' } },
-                ],
-            },
-        });
-
-        if (!hei) {
-            hei = await prisma.hEI.findFirst();
-        }
-
-        if (!hei) {
-            // Fallback HEI creation if DB had no HEI
-            hei = await prisma.hEI.create({
-                data: {
-                    name: 'NIT Jamshedpur',
-                    ugcId: 'NIT-JSR-001',
-                    district: 'East Singhbhum',
-                    departments: ['Civil Engineering', 'Environmental Engineering', 'Computer Science'],
-                    sdgExpertise: [6, 9, 11, 13],
-                    naacGrade: 'A',
-                    pastPerformanceScore: 0.87,
-                },
-            });
-        }
-
-        // Find or create ChallengeProposal
-        let proposal = await prisma.challengeProposal.findFirst({
-            where: { challengeId: challenge.id, heiId: hei.id, team: null },
-        });
-
-        if (!proposal) {
-            proposal = await prisma.challengeProposal.create({
-                data: {
-                    challengeId: challenge.id,
-                    heiId: hei.id,
-                    approach: `Interdisciplinary R&D solution formed by faculty mentor ${facultyName} (${facultyEmail}). Team Name: "${teamName.trim()}". Rapid prototyping and field testing in ${challenge.district}.`,
-                    timelineWeeks: 12,
-                    budgetRequested: 350000,
-                    ipDeclaration: 'All IP and engineering schematics developed are open-source under MIT license for community and state public benefit.',
-                    status: 'SUBMITTED',
-                    aiQualityScore: 0.89,
-                },
-            });
-        }
-
-        // Verify and link StudentProfiles safely
-        const validMembers: { studentProfileId: string; role: string }[] = [];
-
-        for (const m of members) {
-            if (!m.studentProfileId) continue;
-            const sp = await prisma.studentProfile.findUnique({
-                where: { id: m.studentProfileId },
-            });
-            if (sp) {
-                validMembers.push({ studentProfileId: sp.id, role: m.role || 'Developer' });
-            }
-        }
-
-        // Fallback if frontend passed mock/demo student IDs that don't exist in PostgreSQL
-        if (validMembers.length === 0) {
-            const existingStds = await prisma.studentProfile.findMany({ take: members.length });
-            if (existingStds.length > 0) {
-                existingStds.forEach((sp: any, idx: number) => {
-                    validMembers.push({
-                        studentProfileId: sp.id,
-                        role: members[idx]?.role || 'Developer',
-                    });
-                });
-            }
-        }
-
-        // Create ProjectTeam
-        const projectTeam = await prisma.projectTeam.create({
-            data: {
-                proposalId: proposal.id,
-                heiId: hei.id,
-                facultyName: facultyName.trim(),
-                facultyEmail: facultyEmail.trim(),
-                backupLead: backupLead ? backupLead.trim() : null,
-                members: {
-                    create: validMembers,
-                },
-            },
-            include: {
-                members: true,
-            },
-        });
-
-        // Update Challenge status to TEAM_FORMED
-        const updatedChallenge = await prisma.challenge.update({
-            where: { id: challenge.id },
-            data: { status: 'TEAM_FORMED' },
-        });
-
-        // Trigger 3: HEI accepts challenge (TEAM_FORMED) -> P2 for GOV
-        try {
-            await NotificationTriggers.teamFormed(
-                {
-                    id: challenge.id,
-                    title: challenge.title,
-                },
-                hei?.name || 'NIT Jamshedpur'
-            );
-        } catch (notifErr) {
-            console.warn('Failed to send government notification for team formation:', notifErr);
-        }
-
-        return NextResponse.json({
-            success: true,
-            data: {
-                teamId: projectTeam.id,
-                teamName: teamName.trim(),
-                challengeId: updatedChallenge.id,
-                status: updatedChallenge.status,
-                proposalId: proposal.id,
-                facultyMentor: facultyName.trim(),
-                membersCount: projectTeam.members.length,
-            },
-            timestamp: new Date().toISOString(),
-        });
-    } catch (error: any) {
-        console.error('Failed to create project team:', error);
-        return NextResponse.json(
-            {
-                success: false,
-                error: error.message || 'Internal server error while creating project team',
-                timestamp: new Date().toISOString(),
-            },
-            { status: 500 }
-        );
+    if (typeof challengeId !== 'string' || !challengeId) return fail('Challenge ID is required', 400);
+    if (typeof teamName !== 'string' || teamName.trim().length < 2) return fail('Team name is required (minimum 2 characters)', 400);
+    if (typeof facultyName !== 'string' || typeof facultyEmail !== 'string' || !facultyName.trim() || !facultyEmail.trim()) {
+        return fail('Faculty mentor details are required', 400);
     }
+    if (!Array.isArray(members) || members.length < 2 || members.length > 8) return fail('A team needs 2–8 students', 400);
+    const memberIds: string[] = members.map((m: { studentProfileId?: unknown }) => String(m?.studentProfileId ?? ''));
+    if (new Set(memberIds).size !== memberIds.length) return fail('A student can only be added once', 400);
+
+    // ponytail: the university is resolved from the faculty email in the request body. Phase 1 takes it from the
+    // signed-in session instead, so a faculty member cannot act for another university.
+    let result;
+    try {
+        const faculty = await prisma.user.findUnique({ where: { email: facultyEmail.trim().toLowerCase() } });
+        if (!faculty?.heiId) return fail('This faculty email is not registered with a university.', 400);
+
+        const challenge = await prisma.challenge.findUnique({ where: { id: challengeId } });
+        if (!challenge) return fail(`No challenge found with ID "${challengeId}"`, 404);
+        const transition = canTransitionStatus(challenge.status, 'TEAM_FORMED', 'HEI');
+        if (!transition.allowed) return fail(`A team cannot be formed while the challenge is ${challenge.status}.`, 409);
+
+        const proposal = await prisma.challengeProposal.findFirst({
+            where: { challengeId, heiId: faculty.heiId, team: null },
+        });
+        if (!proposal) return fail('This challenge has not been assigned to your university, or a team already exists.', 409);
+
+        const students = await prisma.studentProfile.findMany({
+            where: { id: { in: memberIds } },
+            include: { user: { select: { heiId: true } } },
+        });
+        const valid = new Set(students.filter((s) => s.user.heiId === faculty.heiId).map((s) => s.id));
+        const invalid = memberIds.filter((id) => !valid.has(id));
+        if (invalid.length > 0) return fail(`These students are not registered at your university: ${invalid.join(', ')}`, 400);
+
+        const hei = await prisma.hEI.findUniqueOrThrow({ where: { id: faculty.heiId } });
+
+        result = await prisma.$transaction(async (tx) => {
+            const team = await tx.projectTeam.create({
+                data: {
+                    proposalId: proposal.id,
+                    heiId: hei.id,
+                    facultyName: facultyName.trim(),
+                    facultyEmail: facultyEmail.trim(),
+                    backupLead: typeof backupLead === 'string' && backupLead.trim() ? backupLead.trim() : null,
+                    members: {
+                        create: members.map((m: { studentProfileId: string; role?: string }) => ({
+                            studentProfileId: m.studentProfileId,
+                            role: typeof m.role === 'string' && m.role.trim() ? m.role.trim().slice(0, 60) : 'Member',
+                        })),
+                    },
+                },
+                include: { members: true },
+            });
+            const updated = await tx.challenge.update({ where: { id: challenge.id }, data: { status: 'TEAM_FORMED' } });
+            return { team, updated, hei, challenge };
+        });
+    } catch (dbErr) {
+        console.error('Failed to create project team:', dbErr);
+        return fail('The team could not be saved. Nothing was changed — please try again.', 503);
+    }
+
+    try {
+        await NotificationTriggers.teamFormed({ id: result.challenge.id, title: result.challenge.title }, result.hei.name);
+    } catch (notifErr) {
+        console.warn('Failed to send notification for team formation:', notifErr);
+    }
+
+    return NextResponse.json({
+        success: true,
+        data: {
+            teamId: result.team.id,
+            teamName: teamName.trim(),
+            challengeId: result.updated.id,
+            status: result.updated.status,
+            proposalId: result.team.proposalId,
+            facultyMentor: facultyName.trim(),
+            membersCount: result.team.members.length,
+        },
+        timestamp: new Date().toISOString(),
+    });
 }

@@ -45,40 +45,27 @@ export async function POST(req: NextRequest) {
             body = {};
         }
 
-        const { notificationIds, notificationId, all } = body;
+        const { notificationIds, notificationId } = body;
         const userId = await resolveUserId(req);
 
-        let targetIds: string[] = [];
-        if (Array.isArray(notificationIds)) {
-            targetIds = notificationIds;
-        } else if (notificationId) {
-            targetIds = [notificationId];
+        // Only ever touch the requesting user's own notifications.
+        // ponytail: SECURITY — userId still comes from mock tokens / x-user-id / ?userId until Phase 1.
+        if (!userId) {
+            return NextResponse.json(
+                { success: false, error: 'Sign in to update notifications.', timestamp: new Date().toISOString() },
+                { status: 401 }
+            );
         }
 
-        let updatedCount = 0;
+        const targetIds: string[] = Array.isArray(notificationIds)
+            ? notificationIds.filter((id: unknown): id is string => typeof id === 'string')
+            : typeof notificationId === 'string' ? [notificationId] : [];
 
-        if (targetIds.length > 0) {
-            const result = await prisma.notification.updateMany({
-                where: {
-                    id: { in: targetIds },
-                },
-                data: {
-                    read: true,
-                },
-            });
-            updatedCount = result.count;
-        } else if (all || targetIds.length === 0) {
-            // Mark all read for user (or all unread if user not identified)
-            const result = await prisma.notification.updateMany({
-                where: userId
-                    ? { userId, read: false }
-                    : { read: false },
-                data: {
-                    read: true,
-                },
-            });
-            updatedCount = result.count;
-        }
+        const result = await prisma.notification.updateMany({
+            where: targetIds.length > 0 ? { userId, id: { in: targetIds } } : { userId, read: false },
+            data: { read: true },
+        });
+        const updatedCount = result.count;
 
         return NextResponse.json({
             success: true,

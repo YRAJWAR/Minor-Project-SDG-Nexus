@@ -22,7 +22,7 @@ export const SDG_INFO = [
     { id: 17, name: 'Partnerships', color: '#19486a', icon: '🤝' },
 ];
 
-export type UserRole = 'ngo' | 'government' | 'corporate' | 'donor' | 'hei' | 'citizen' | 'student';
+export type UserRole = 'ngo' | 'government' | 'corporate' | 'hei' | 'citizen' | 'student';
 
 export interface User {
     id: string;
@@ -136,11 +136,6 @@ export const MOCK_USERS: User[] = [
         id: 'u3', name: 'Anita Desai', email: 'corp@sdgnexus.org', password: 'password123',
         role: 'corporate', organization_name: 'TechServe India CSR',
         verification_status: 'verified', created_at: '2024-03-10',
-    },
-    {
-        id: 'u4', name: 'Vikram Patel', email: 'donor@sdgnexus.org', password: 'password123',
-        role: 'donor', organization_name: 'Individual',
-        verification_status: 'verified', created_at: '2024-04-05',
     },
     {
         id: 'org2', name: 'Sanjay Mehta', email: 'sanjay@ecoindia.org', password: 'password123',

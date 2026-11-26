@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────────────────────
 // SDG Nexus — Challenge Status Pipeline Enforcement Middleware
-// Enforces Triple-Helix state transitions and RBAC permissions
+// Enforces challenge state transitions and role permissions
 // ──────────────────────────────────────────────────────────────
 
 export type ChallengeStatusType =

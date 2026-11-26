@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/AuthContext';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -50,6 +51,7 @@ interface QualityScoreData {
 }
 
 export default function ProposalBuilderPage() {
+    const { user } = useAuth();
     const params = useParams();
     const router = useRouter();
     const challengeId = params?.challengeId as string;
@@ -57,6 +59,7 @@ export default function ProposalBuilderPage() {
     // Challenge info
     const [challenge, setChallenge] = useState<any | null>(null);
     const [loadingChallenge, setLoadingChallenge] = useState(true);
+    const [challengeError, setChallengeError] = useState<string | null>(null);
 
     // Form inputs
     const [approach, setApproach] = useState('');
@@ -91,29 +94,10 @@ export default function ProposalBuilderPage() {
                 if (res.ok && json.success && json.data) {
                     setChallenge(json.data);
                 } else {
-                    // Fallback to Challenge #2 or default
-                    setChallenge({
-                        id: challengeId,
-                        title: 'Open defecation & hygiene sanitation in Simdega tribal hamlets',
-                        description:
-                            'Rural cluster of 4 villages lacking decentralized eco-friendly bio-toilets. Requires localized engineering prototype and water recycling unit with Gram Panchayat engagement.',
-                        district: 'Simdega',
-                        category: 'Drinking Water & Sanitation',
-                        sdgTags: [6, 3],
-                        status: 'TEAM_FORMED',
-                    });
+                    setChallengeError(json.error || 'This challenge could not be loaded.');
                 }
             } catch {
-                setChallenge({
-                    id: challengeId,
-                    title: 'Open defecation & hygiene sanitation in Simdega tribal hamlets',
-                    description:
-                        'Rural cluster of 4 villages lacking decentralized eco-friendly bio-toilets. Requires localized engineering prototype and water recycling unit with Gram Panchayat engagement.',
-                    district: 'Simdega',
-                    category: 'Drinking Water & Sanitation',
-                    sdgTags: [6, 3],
-                    status: 'TEAM_FORMED',
-                });
+                setChallengeError('Could not reach the server.');
             } finally {
                 setLoadingChallenge(false);
             }
@@ -128,7 +112,7 @@ export default function ProposalBuilderPage() {
 
         const fetchExistingProposal = async () => {
             try {
-                const res = await fetch(`/api/hei/proposals?challengeId=${challengeId}`);
+                const res = await fetch(`/api/hei/proposals?challengeId=${challengeId}&email=${encodeURIComponent(user?.email ?? '')}`);
                 const json = await res.json();
                 if (res.ok && json.success && json.data) {
                     const p = json.data;
@@ -178,6 +162,7 @@ export default function ProposalBuilderPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     challengeId,
+                    facultyEmail: user?.email,
                     approach,
                     timelineWeeks,
                     budgetRequested: Number(budgetRequested),
@@ -217,6 +202,7 @@ export default function ProposalBuilderPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     challengeId,
+                    facultyEmail: user?.email,
                     approach,
                     timelineWeeks,
                     budgetRequested: Number(budgetRequested),
@@ -274,6 +260,7 @@ export default function ProposalBuilderPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     challengeId,
+                    facultyEmail: user?.email,
                     approach,
                     timelineWeeks,
                     budgetRequested: Number(budgetRequested),
@@ -307,6 +294,18 @@ export default function ProposalBuilderPage() {
         }
     };
 
+
+    if (!loadingChallenge && challengeError) {
+        return (
+            <div className="glass-card p-10 text-center max-w-lg mx-auto mt-10">
+                <AlertCircle className="w-8 h-8 text-rose-500 mx-auto mb-3" />
+                <h2 className="text-base font-bold text-slate-900">Challenge not available</h2>
+                <p className="text-sm text-slate-500 mt-1 mb-5">{challengeError}</p>
+                <Link href="/dashboard/hei" className="text-sm font-semibold text-indigo-600 hover:underline">Back to Challenge Inbox</Link>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6 max-w-5xl mx-auto pb-16">
             {/* Top Navigation Link */}
@@ -321,7 +320,7 @@ export default function ProposalBuilderPage() {
 
                 <div className="flex items-center gap-2 text-xs text-slate-500">
                     <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                    <span>Phase 3: Formal R&D Proposal Formulation</span>
+                    <span>Proposal</span>
                 </div>
             </div>
 
@@ -335,11 +334,11 @@ export default function ProposalBuilderPage() {
                 <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 border border-indigo-800/60 shadow-md">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                         <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 uppercase">
-                            Screen 3 • Proposal Builder
+                            Proposal Builder
                         </span>
                         <span className="flex items-center gap-1 text-xs text-slate-300">
                             <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-                            {challenge?.district || 'Jharkhand'}, Jharkhand
+                            {challenge?.district}
                         </span>
                     </div>
 

@@ -25,7 +25,7 @@ export async function GET(
             dbChallenges = await prisma.challenge.findMany({
                 where: {
                     district: {
-                        contains: decodedDistrict,
+                        equals: decodedDistrict,
                         mode: 'insensitive',
                     },
                 },
@@ -47,14 +47,18 @@ export async function GET(
                 orderBy: { createdAt: 'desc' },
             });
         } catch (dbErr) {
-            console.warn(`Prisma error fetching challenges for district ${decodedDistrict}:`, dbErr);
+            console.error(`Prisma error fetching challenges for district ${decodedDistrict}:`, dbErr);
+            return NextResponse.json(
+                { success: false, error: 'District data is temporarily unavailable.', timestamp: new Date().toISOString() },
+                { status: 503 }
+            );
         }
 
         let totalChallenges = 0;
         let resolvedChallenges = 0;
         let activeEngagements = 0;
         let csrFundingCommitted = 0;
-        let pendingList: any[] = [];
+        const pendingList: { id: string; title: string; status: string; daysPending: number; category: string; sdgs: number[] }[] = [];
 
         if (dbChallenges && dbChallenges.length > 0) {
             totalChallenges = dbChallenges.length;
@@ -95,33 +99,10 @@ export async function GET(
                         status: ch.status,
                         daysPending,
                         category: ch.category,
-                        sdgs: ch.sdgTags || [6],
+                        sdgs: ch.sdgTags,
                     });
                 }
             });
-        } else {
-            // Use baseline profile statistics
-            totalChallenges = profile.baselineChallenges.total;
-            resolvedChallenges = profile.baselineChallenges.resolved;
-            activeEngagements = profile.baselineChallenges.inProgress;
-            csrFundingCommitted = profile.baselineChallenges.fundingCommittedLakhs * 100000;
-
-            // Generate representative pending challenges for this district
-            const pendingCount = Math.max(1, totalChallenges - resolvedChallenges);
-            const demoDays = [14, 9, 4];
-            const demoStatuses = ['VALIDATED', 'UNIVERSITY_ASSIGNED', 'SUBMITTED'];
-
-            for (let i = 0; i < Math.min(3, pendingCount); i++) {
-                const topPressure = profile.sdgPressures[i % profile.sdgPressures.length];
-                pendingList.push({
-                    id: `ch-${profile.name.toLowerCase().replace(/\s+/g, '-')}-0${i + 1}`,
-                    title: `${topPressure.title} remediation in ${profile.headquarters} rural cluster`,
-                    status: demoStatuses[i % demoStatuses.length],
-                    daysPending: demoDays[i] || 7,
-                    category: topPressure.title,
-                    sdgs: [topPressure.sdg],
-                });
-            }
         }
 
         // Sort pending by daysPending descending and take top 3
@@ -136,7 +117,9 @@ export async function GET(
 
         // Recommendation line logic as specified
         let recommendation = '';
-        if (resolutionRate < 40) {
+        if (totalChallenges === 0) {
+            recommendation = 'No challenges have been reported in this district yet.';
+        } else if (resolutionRate < 40) {
             recommendation = `⚠ Recommended: Route ${pendingChallengesCount} pending challenges to ${profile.nearestHei}`;
         } else if (resolutionRate <= 70) {
             recommendation = `📊 Moderate engagement — ${pendingChallengesCount} challenges need university routing`;

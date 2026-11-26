@@ -4,7 +4,6 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
-import NotificationBell from '@/components/ui/NotificationBell';
 import {
     Inbox,
     Users,
@@ -19,9 +18,9 @@ import {
 const HEI_TABS = [
     { label: 'Challenge Inbox', href: '/dashboard/hei', icon: Inbox },
     { label: 'Team Formation', href: '/dashboard/hei/team-formation', icon: Users },
-    { label: 'Proposal Builder', href: '/dashboard/hei/proposals', icon: FileText, badge: 'P8' },
-    { label: 'Milestone Tracker', href: '/dashboard/hei/milestones', icon: Target, badge: 'P8' },
-    { label: 'Student Credentials', href: '/dashboard/hei/credentials', icon: Award, badge: 'NEP 2020' },
+    { label: 'Proposal Builder', href: '/dashboard/hei/proposals', icon: FileText, badge: undefined },
+    { label: 'Milestone Tracker', href: '/dashboard/hei/milestones', icon: Target, badge: undefined },
+    { label: 'Student Credentials', href: '/dashboard/hei/credentials', icon: Award, badge: undefined },
 ];
 
 export default function HEILayout({ children }: { children: React.ReactNode }) {
@@ -46,7 +45,7 @@ export default function HEILayout({ children }: { children: React.ReactNode }) {
                             </span>
                         </div>
                         <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2 mt-0.5">
-                            Triple-Helix University R&D Cell
+                            University Workspace
                         </h1>
                     </div>
                 </div>
@@ -68,7 +67,6 @@ export default function HEILayout({ children }: { children: React.ReactNode }) {
                     </div>
 
                     {/* Notification Bell Component */}
-                    <NotificationBell />
                 </div>
             </header>
 

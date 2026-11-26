@@ -1,169 +1,117 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { computeCredentialHash } from '@/lib/credentials';
+import { computeCredentialHash, creditsForHours, isProjectComplete } from '@/lib/credentials';
 
 export const dynamic = 'force-dynamic';
 
+const HOURS_PER_WEEK_CAP = 40;
+
 interface StudentIssuePayload {
     studentProfileId: string;
-    studentName?: string;
-    branch?: string;
-    year?: number | string;
     creditHours: number;
-    facultyRating: number;
-    overallRating: number;
+    overallRating?: number;
 }
 
+const fail = (error: string, status: number) =>
+    NextResponse.json({ success: false, error, timestamp: new Date().toISOString() }, { status });
+
+// Issues credentials for members of a completed project. All-or-nothing: either every listed
+// student gets a saved credential, or nothing is written and an error explains why.
 export async function POST(request: NextRequest) {
+    const body = await request.json().catch(() => null);
+    const projectId: unknown = body?.projectId;
+    const students: StudentIssuePayload[] = Array.isArray(body?.students) ? body.students : [];
+
+    if (typeof projectId !== 'string' || !projectId) return fail('projectId is required', 400);
+    if (students.length === 0) return fail('No students specified', 400);
+
+    let team;
     try {
-        const body = await request.json();
-        const { projectId, challengeId: reqChallengeId, students } = body;
-
-        if (!students || !Array.isArray(students) || students.length === 0) {
-            return NextResponse.json(
-                { success: false, error: 'No student credentials specified for issuance', timestamp: new Date().toISOString() },
-                { status: 400 }
-            );
-        }
-
-        // Fetch project / challenge metadata
-        let challengeTitle = 'Arsenic Contamination in Drinking Water, Pakur';
-        let challengeDistrict = 'Pakur';
-        let challengeId = reqChallengeId || 'hero-challenge-pakur';
-        let sdgTags: number[] = [6, 3];
-
-        try {
-            if (projectId) {
-                const team = await prisma.projectTeam.findFirst({
-                    where: {
-                        OR: [{ id: projectId }, { proposalId: projectId }],
-                    },
-                    include: {
-                        proposal: {
-                            include: {
-                                challenge: true,
-                            },
-                        },
-                    },
-                });
-
-                if (team?.proposal?.challenge) {
-                    challengeTitle = team.proposal.challenge.title;
-                    challengeDistrict = team.proposal.challenge.district;
-                    challengeId = team.proposal.challenge.id;
-                    sdgTags = team.proposal.challenge.sdgTags || [6, 3];
-                }
-            }
-        } catch (dbErr) {
-            console.warn('DB error fetching challenge for credential issuance:', dbErr);
-        }
-
-        const issuedAt = new Date();
-        const createdCredentials: any[] = [];
-        const credentialIds: string[] = [];
-
-        for (const student of students as StudentIssuePayload[]) {
-            const hours = Number(student.creditHours) || 120;
-            // NEP 2020: 30 learning hours = 1 credit point
-            const creditPoints = Math.max(1, Math.round(hours / 30));
-            const studentId = student.studentProfileId;
-
-            // SHA-256 hash as per specification
-            const hashValue = computeCredentialHash(studentId, challengeId, creditPoints, issuedAt);
-
-            let credentialRecord: any = null;
-
-            try {
-                // Check if studentProfile exists in DB
-                let profile = await prisma.studentProfile.findUnique({
-                    where: { id: studentId },
-                });
-
-                // If profile not found, check if there is an existing profile by userId or create dummy link
-                if (!profile) {
-                    const firstProfile = await prisma.studentProfile.findFirst();
-                    if (firstProfile) {
-                        profile = firstProfile;
-                    }
-                }
-
-                if (profile) {
-                    credentialRecord = await prisma.studentCredential.create({
-                        data: {
-                            studentProfileId: profile.id,
-                            challengeTitle,
-                            challengeDistrict,
-                            sdgTags,
-                            hoursContributed: hours,
-                            creditPoints,
-                            nepCompliant: true,
-                            hashValue,
-                            issuedAt,
-                        },
-                    });
-
-                    // Update student credits and composite rating
-                    await prisma.studentProfile.update({
-                        where: { id: profile.id },
-                        data: {
-                            credits: { increment: creditPoints },
-                            rating: student.overallRating || 4.2,
-                        },
-                    });
-                }
-            } catch (dbErr) {
-                console.warn(`Prisma error creating credential for student ${studentId}:`, dbErr);
-            }
-
-            // Fallback object if database record couldn't be persisted (e.g. mock team member)
-            if (!credentialRecord) {
-                const mockId = `cred-${studentId}-${Date.now().toString(36)}`;
-                credentialRecord = {
-                    id: mockId,
-                    studentProfileId: studentId,
-                    challengeTitle,
-                    challengeDistrict,
-                    sdgTags,
-                    hoursContributed: hours,
-                    creditPoints,
-                    nepCompliant: true,
-                    hashValue,
-                    issuedAt,
-                    studentName: student.studentName,
-                    branch: student.branch,
-                    year: student.year,
-                };
-            }
-
-            credentialIds.push(credentialRecord.id);
-            createdCredentials.push({
-                ...credentialRecord,
-                studentName: student.studentName,
-                branch: student.branch,
-                year: student.year,
-                overallRating: student.overallRating,
-            });
-        }
-
-        const pdfUrls = credentialIds.map((id) => `/api/hei/credentials/${id}/pdf`);
-
-        return NextResponse.json({
-            success: true,
-            data: {
-                credentialIds,
-                pdfUrls,
-                credentials: createdCredentials,
-                challengeTitle,
-                challengeDistrict,
-                issuedAt: issuedAt.toISOString(),
-            },
-            timestamp: new Date().toISOString(),
+        team = await prisma.projectTeam.findFirst({
+            where: { OR: [{ id: projectId }, { proposalId: projectId }] },
+            include: { proposal: { include: { challenge: true } }, members: true, milestones: true },
         });
-    } catch (error: any) {
-        console.error('Error in credentials/issue route:', error);
-        return NextResponse.json(
-            { success: false, error: error.message || 'Internal Server Error', timestamp: new Date().toISOString() },
-            { status: 500 }
-        );
+    } catch (dbErr) {
+        console.error('DB error loading project for credential issuance:', dbErr);
+        return fail('Credential issuing is temporarily unavailable.', 503);
     }
+
+    if (!team) return fail(`No project found for "${projectId}"`, 404);
+    if (!isProjectComplete(team.milestones)) {
+        return fail('Credentials can only be issued after every milestone has been approved.', 409);
+    }
+
+    const challenge = team.proposal.challenge;
+    const memberIds = new Set(team.members.map((m) => m.studentProfileId));
+    const maxHours = team.proposal.timelineWeeks * HOURS_PER_WEEK_CAP;
+
+    for (const s of students) {
+        const hours = Number(s.creditHours);
+        if (!memberIds.has(s.studentProfileId)) return fail(`Student ${s.studentProfileId} is not a member of this team.`, 400);
+        if (!Number.isInteger(hours) || hours < 30 || hours > maxHours) {
+            return fail(`Hours for ${s.studentProfileId} must be a whole number between 30 and ${maxHours}.`, 400);
+        }
+        if (s.overallRating !== undefined && !(s.overallRating >= 1 && s.overallRating <= 5)) {
+            return fail('Ratings must be between 1 and 5.', 400);
+        }
+    }
+
+    const issuedAt = new Date();
+    let created;
+    try {
+        created = await prisma.$transaction(async (tx) => {
+            // ponytail: duplicate check keys on challenge title because credentials don't store challengeId yet (Phase 1).
+            const existing = await tx.studentCredential.findMany({
+                where: { studentProfileId: { in: students.map((s) => s.studentProfileId) }, challengeTitle: challenge.title },
+                select: { studentProfileId: true },
+            });
+            if (existing.length > 0) throw new Error(`ALREADY_ISSUED:${existing.map((e) => e.studentProfileId).join(',')}`);
+
+            const out = [];
+            for (const s of students) {
+                const creditPoints = creditsForHours(s.creditHours);
+                const cred = await tx.studentCredential.create({
+                    data: {
+                        studentProfileId: s.studentProfileId,
+                        challengeTitle: challenge.title,
+                        challengeDistrict: challenge.district,
+                        sdgTags: challenge.sdgTags,
+                        hoursContributed: s.creditHours,
+                        creditPoints,
+                        nepCompliant: true,
+                        hashValue: computeCredentialHash(s.studentProfileId, challenge.id, creditPoints, issuedAt),
+                        issuedAt,
+                    },
+                });
+                await tx.studentProfile.update({
+                    where: { id: s.studentProfileId },
+                    data: {
+                        credits: { increment: creditPoints },
+                        ...(s.overallRating !== undefined ? { rating: s.overallRating } : {}),
+                    },
+                });
+                out.push(cred);
+            }
+            return out;
+        });
+    } catch (err) {
+        if (err instanceof Error && err.message.startsWith('ALREADY_ISSUED:')) {
+            return fail('Credentials were already issued to some of these students for this challenge.', 409);
+        }
+        console.error('Credential issuance failed:', err);
+        return fail('Credentials could not be saved. Nothing was issued — please try again.', 503);
+    }
+
+    return NextResponse.json({
+        success: true,
+        data: {
+            credentialIds: created.map((c) => c.id),
+            pdfUrls: created.map((c) => `/api/hei/credentials/${c.id}/pdf`),
+            credentials: created,
+            challengeTitle: challenge.title,
+            challengeDistrict: challenge.district,
+            issuedAt: issuedAt.toISOString(),
+        },
+        timestamp: new Date().toISOString(),
+    });
 }

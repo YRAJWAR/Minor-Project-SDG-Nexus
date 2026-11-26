@@ -16,10 +16,9 @@ export default function DashboardRedirect() {
                 gov: '/dashboard/government',
                 corporate: '/dashboard/corporate',
                 corp: '/dashboard/corporate',
-                donor: '/dashboard/donor',
                 hei: '/dashboard/hei',
                 citizen: '/citizen/submit',
-                student: '/dashboard/hei',
+                student: '/dashboard/hei/milestones',
             };
             router.push(rolePaths[user.role] || '/dashboard/ngo');
         }

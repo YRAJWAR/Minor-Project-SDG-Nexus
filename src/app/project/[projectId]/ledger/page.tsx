@@ -35,7 +35,7 @@ interface MilestoneLedgerItem {
     status: 'PENDING' | 'SUBMITTED' | 'GP_VERIFIED' | 'CSR_APPROVED' | string;
     proofUrls: string[];
     proofVideoUrl?: string | null;
-    hashValue: string;
+    hashValue: string | null;
     gpsLat?: number | null;
     gpsLng?: number | null;
     exifTimestamp?: string | null;
@@ -58,10 +58,11 @@ interface ProjectLedgerData {
 interface VerificationResult {
     milestoneId: string;
     valid: boolean;
-    storedHash: string;
+    sealed: boolean;
+    storedHash: string | null;
     computedHash: string;
     timestamp: string;
-    coords: string;
+    coords: string | null;
     milestoneTitle?: string;
 }
 
@@ -75,6 +76,7 @@ export default function PublicProjectLedgerPage({
 
     const [loading, setLoading] = useState<boolean>(true);
     const [project, setProject] = useState<ProjectLedgerData | null>(null);
+    const [loadError, setLoadError] = useState<string | null>(null);
     const [milestones, setMilestones] = useState<MilestoneLedgerItem[]>([]);
     const [merkleRoot, setMerkleRoot] = useState<string>('');
     const [expandedMilestoneId, setExpandedMilestoneId] = useState<string | null>(null);
@@ -98,9 +100,12 @@ export default function PublicProjectLedgerPage({
                     setProject(json.data.project);
                     setMilestones(json.data.milestones || []);
                     setMerkleRoot(json.data.merkleRoot || '');
+                } else {
+                    setLoadError(json.error || 'This ledger could not be loaded.');
                 }
             } catch (err) {
                 console.error('Failed to load public ledger:', err);
+                setLoadError('Could not reach the ledger service. Please try again.');
             } finally {
                 setLoading(false);
             }
@@ -142,6 +147,7 @@ export default function PublicProjectLedgerPage({
                     [milestone.id]: {
                         milestoneId: milestone.id,
                         valid: json.data.valid,
+                        sealed: json.data.sealed,
                         storedHash: json.data.storedHash,
                         computedHash: json.data.computedHash,
                         timestamp: json.data.timestamp,
@@ -170,10 +176,9 @@ export default function PublicProjectLedgerPage({
     };
 
     const formatCoordinates = (lat?: number | null, lng?: number | null) => {
-        const defaultLat = 24.6352;
-        const defaultLng = 87.8448;
-        const effectiveLat = lat !== null && lat !== undefined ? lat : defaultLat;
-        const effectiveLng = lng !== null && lng !== undefined ? lng : defaultLng;
+        if (lat === null || lat === undefined || lng === null || lng === undefined) return null;
+        const effectiveLat = lat;
+        const effectiveLng = lng;
 
         const latStr = `${Math.abs(effectiveLat).toFixed(4)}°${effectiveLat >= 0 ? 'N' : 'S'}`;
         const lngStr = `${Math.abs(effectiveLng).toFixed(4)}°${effectiveLng >= 0 ? 'E' : 'W'}`;
@@ -246,16 +251,19 @@ export default function PublicProjectLedgerPage({
         );
     }
 
-    const effectiveProject = project || {
-        id: projectId,
-        teamId: projectId,
-        title: 'Community Drinking Water Contamination & Arsenic Filtration',
-        district: 'Pakur',
-        sdgTags: [6, 3, 11],
-        status: 'IN_PROGRESS',
-        universityName: 'National Institute of Technology Jamshedpur',
-        facultyLead: 'Prof. Anjali Sharma',
-    };
+    if (!project) {
+        return (
+            <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center">
+                <AlertTriangle className="w-10 h-10 text-rose-400 mb-3" />
+                <h2 className="text-base font-bold text-white">Ledger not available</h2>
+                <p className="text-xs text-slate-400 mt-1 mb-5">{loadError || 'No project found.'}</p>
+                <Link href="/track" className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold">
+                    Back to tracking
+                </Link>
+            </div>
+        );
+    }
+    const effectiveProject = project;
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white">
@@ -312,7 +320,7 @@ export default function PublicProjectLedgerPage({
                             </span>
                             <span className="text-xs text-slate-400 flex items-center gap-1">
                                 <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                                {effectiveProject.district} District, Jharkhand
+                                {effectiveProject.district} District
                             </span>
                         </div>
 
@@ -449,12 +457,12 @@ export default function PublicProjectLedgerPage({
                                                 {/* SHA-256 Hash */}
                                                 <td className="py-4 px-4 font-mono">
                                                     <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800 w-fit">
-                                                        <span className="text-slate-300" title={m.hashValue}>
+                                                        <span className="text-slate-300" title={m.hashValue ?? undefined}>
                                                             {formatTruncatedHash(m.hashValue)}
                                                         </span>
                                                         <button
                                                             type="button"
-                                                            onClick={() => copyToClipboard(m.hashValue, m.id)}
+                                                            onClick={() => m.hashValue && copyToClipboard(m.hashValue, m.id)}
                                                             className="text-slate-500 hover:text-slate-200 transition p-0.5"
                                                             title="Copy full SHA-256 hash"
                                                         >
@@ -469,17 +477,21 @@ export default function PublicProjectLedgerPage({
 
                                                 {/* GPS */}
                                                 <td className="py-4 px-4 whitespace-nowrap">
-                                                    <a
-                                                        href={coords.href}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="inline-flex items-center gap-1 text-sky-400 hover:text-sky-300 hover:underline transition font-mono text-[11px]"
-                                                        title="Open in Google Maps"
-                                                    >
-                                                        <MapPin className="w-3 h-3 text-sky-500 shrink-0" />
-                                                        <span>{coords.display}</span>
-                                                        <ExternalLink className="w-2.5 h-2.5 opacity-75" />
-                                                    </a>
+                                                    {coords ? (
+                                                        <a
+                                                            href={coords.href}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-1 text-sky-400 hover:text-sky-300 hover:underline transition font-mono text-[11px]"
+                                                            title="Open in Google Maps"
+                                                        >
+                                                            <MapPin className="w-3 h-3 text-sky-500 shrink-0" />
+                                                            <span>{coords.display}</span>
+                                                            <ExternalLink className="w-2.5 h-2.5 opacity-75" />
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-[11px] text-slate-500">No GPS recorded</span>
+                                                    )}
                                                 </td>
 
                                                 {/* Status Badge */}
@@ -535,9 +547,11 @@ export default function PublicProjectLedgerPage({
                                                                     <span className="text-slate-300">
                                                                         Submitted {new Date(vResult.timestamp).toLocaleString('en-IN')}.
                                                                     </span>
-                                                                    <span className="text-emerald-400 font-mono">
-                                                                        Location: {vResult.coords}
-                                                                    </span>
+                                                                    {vResult.coords && (
+                                                                        <span className="text-emerald-400 font-mono">
+                                                                            Location: {vResult.coords}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                                 <div className="text-[11px] font-mono text-emerald-400/80">
                                                                     Payload integrity confirmed against SHA-256 seal
@@ -548,12 +562,16 @@ export default function PublicProjectLedgerPage({
                                                                 <div className="flex items-center gap-2">
                                                                     <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
                                                                     <span className="font-bold text-white">
-                                                                        ❌ TAMPERED — Computed hash does not match stored hash. Alert raised.
+                                                                        {vResult?.sealed
+                                                                            ? 'Not verified — the recomputed hash does not match the stored hash.'
+                                                                            : 'Not verified — no hash was stored when this milestone was submitted.'}
                                                                     </span>
                                                                 </div>
-                                                                <div className="text-[11px] font-mono text-rose-400">
-                                                                    Expected: {vResult?.computedHash.slice(0, 12)}... ≠ Stored: {vResult?.storedHash.slice(0, 12)}...
-                                                                </div>
+                                                                {vResult?.sealed && (
+                                                                    <div className="text-[11px] font-mono text-rose-400">
+                                                                        Expected: {vResult.computedHash.slice(0, 12)}... ≠ Stored: {vResult.storedHash?.slice(0, 12)}...
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </td>
@@ -676,7 +694,7 @@ export default function PublicProjectLedgerPage({
                                                                             Capture/upload time mismatch:
                                                                         </span>
                                                                         <span>
-                                                                            Photo was captured &gt;2 hours before submission. Flagged for secondary Gram Panchayat cross-verification.
+                                                                            Photo was captured &gt;2 hours before submission. Flagged for extra verification by the district officer.
                                                                         </span>
                                                                     </div>
                                                                 )}

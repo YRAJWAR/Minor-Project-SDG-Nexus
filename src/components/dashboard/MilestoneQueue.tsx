@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 interface QueueItem {
     id: string; projectId: string; title: string; description: string; status: 'SUBMITTED' | 'GP_VERIFIED';
-    submittedAt: string; sealed: boolean; challengeTitle: string; place: string; university: string; suggestedRelease: number;
+    submittedAt: string; sealed: boolean; challengeTitle: string; place: string; university: string; suggestedRelease: number; fixedAmount?: boolean;
 }
 
 // Officer: verify or reject submitted milestones. CSR: release funds for verified ones.
@@ -76,7 +76,7 @@ export default function MilestoneQueue({ mode }: { mode: 'officer' | 'csr' }) {
                             ) : (
                                 <div className="flex items-center gap-2 shrink-0">
                                     <label className="text-xs text-slate-500" htmlFor={`amt-${m.id}`}>₹</label>
-                                    <input id={`amt-${m.id}`} type="number" min={1} inputMode="numeric" className="w-28 rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+                                    <input id={`amt-${m.id}`} type="number" min={1} inputMode="numeric" readOnly={m.fixedAmount} title={m.fixedAmount ? 'Agreed tranche from the selected proposal' : undefined} className="w-28 rounded-lg border border-slate-300 px-2 py-1.5 text-sm read-only:bg-slate-50"
                                         value={amounts[m.id] ?? String(m.suggestedRelease)} onChange={(e) => setAmounts((a) => ({ ...a, [m.id]: e.target.value }))} />
                                     <button type="button" disabled={busy === m.id || !(Number(amounts[m.id] ?? m.suggestedRelease) > 0)} onClick={() => act(m, 'CSR_APPROVED')} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">Release funds</button>
                                 </div>

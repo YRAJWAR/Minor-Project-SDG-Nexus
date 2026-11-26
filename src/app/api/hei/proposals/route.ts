@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireUser, inJurisdiction } from '@/server/middleware/auth';
+import { validatePlan, transition, LifecycleError, type PlanMember, type PlanMilestone } from '@/server/lifecycle';
+import { appendLedger } from '@/server/ledger';
 
 // The university always comes from the signed-in faculty member, never from the request.
 async function sessionHei(request: NextRequest) {
@@ -13,7 +15,18 @@ async function sessionHei(request: NextRequest) {
             { status: 403 }
         );
     }
-    return hei;
+    return { ...hei, facultyId: user.id };
+}
+
+// Normalises what the builder sends; anything malformed becomes empty and is caught by validatePlan on submit.
+function readPlan(body: { members?: unknown; milestones?: unknown }) {
+    const members: PlanMember[] = Array.isArray(body.members)
+        ? body.members.filter((m): m is PlanMember => typeof m?.studentProfileId === 'string').map((m) => ({ studentProfileId: m.studentProfileId, role: typeof m.role === 'string' ? m.role.slice(0, 60) : undefined }))
+        : [];
+    const milestones: PlanMilestone[] = Array.isArray(body.milestones)
+        ? body.milestones.slice(0, 10).map((m: { title?: unknown; week?: unknown; amount?: unknown }) => ({ title: String(m?.title ?? '').slice(0, 120), week: Number(m?.week), amount: Number(m?.amount) }))
+        : [];
+    return { members, milestones };
 }
 
 export async function GET(request: NextRequest) {
@@ -60,9 +73,14 @@ export async function GET(request: NextRequest) {
                 orderBy: { createdAt: 'desc' },
             });
 
+            // Names for the students in the saved plan, so the builder can show them.
+            const ids = ((proposal?.teamPlan as { members?: PlanMember[] } | null)?.members ?? []).map((m) => m.studentProfileId);
+            const planStudents = ids.length
+                ? (await prisma.studentProfile.findMany({ where: { id: { in: ids } }, include: { user: { select: { full_name: true } } } })).map((sp) => ({ id: sp.id, name: sp.user.full_name, branch: sp.branch, year: sp.year }))
+                : [];
             return NextResponse.json({
                 success: true,
-                data: proposal,
+                data: proposal ? { ...proposal, planStudents } : null,
                 timestamp: new Date().toISOString(),
             });
         }
@@ -127,6 +145,7 @@ export async function POST(request: NextRequest) {
             status = 'SUBMITTED', // 'DRAFT' or 'SUBMITTED'
             aiQualityScore,
         } = body;
+        const plan = readPlan(body);
 
         // Universities can only save drafts or submit. Accepting/rejecting is the district officer's decision.
         if (status !== 'DRAFT' && status !== 'SUBMITTED') {
@@ -144,9 +163,9 @@ export async function POST(request: NextRequest) {
         }
 
         if (status === 'SUBMITTED') {
-            if (!approach || typeof approach !== 'string' || approach.trim().length < 10) {
+            if (!approach || typeof approach !== 'string' || approach.trim().length < 50) {
                 return NextResponse.json(
-                    { success: false, error: 'Please provide a detailed technical approach (at least 10 characters)', timestamp: new Date().toISOString() },
+                    { success: false, error: 'Please describe the approach in at least 50 characters', timestamp: new Date().toISOString() },
                     { status: 400 }
                 );
             }
@@ -189,6 +208,25 @@ export async function POST(request: NextRequest) {
         const hei = await sessionHei(request);
         if (hei instanceof NextResponse) return hei;
 
+        if (!['VALIDATED', 'UNIVERSITY_ASSIGNED'].includes(challenge.status)) {
+            return NextResponse.json(
+                { success: false, error: 'This report is not open for proposals.', timestamp: new Date().toISOString() },
+                { status: 409 }
+            );
+        }
+        const teamPlan = { facultyId: hei.facultyId, members: plan.members };
+        if (status === 'SUBMITTED') {
+            const problems = validatePlan(teamPlan, plan.milestones, Number(budgetRequested), Number(timelineWeeks));
+            const ownStudents = await prisma.studentProfile.count({ where: { id: { in: plan.members.map((m) => m.studentProfileId) }, user: { heiId: hei.id } } });
+            if (ownStudents !== plan.members.length) problems.push('Every team member must be a student of your university.');
+            if (problems.length) {
+                return NextResponse.json(
+                    { success: false, error: problems.join(' '), timestamp: new Date().toISOString() },
+                    { status: 400 }
+                );
+            }
+        }
+
         // Check if an existing proposal exists for this challenge & HEI
         const existingProposal = await prisma.challengeProposal.findFirst({
             where: {
@@ -221,6 +259,7 @@ export async function POST(request: NextRequest) {
                     ipDeclaration: ipDeclaration || existingProposal.ipDeclaration,
                     status: proposalStatus,
                     aiQualityScore: parsedScore ?? existingProposal.aiQualityScore,
+                    teamPlan: teamPlan as unknown as object, milestonePlan: plan.milestones as unknown as object,
                 },
             });
         } else {
@@ -235,6 +274,7 @@ export async function POST(request: NextRequest) {
                     ipDeclaration: ipDeclaration || '',
                     status: proposalStatus,
                     aiQualityScore: parsedScore,
+                    teamPlan: teamPlan as unknown as object, milestonePlan: plan.milestones as unknown as object,
                 },
             });
         }
@@ -324,10 +364,22 @@ export async function PATCH(request: NextRequest) {
             );
         }
 
+        // Accepting = selecting this university's plan: done by the lifecycle (team, milestones, ledger, notifications).
+        if (status === 'ACCEPTED') {
+            try {
+                const result = await transition(proposal.challengeId, 'SELECT_PROPOSAL', user, { proposalId });
+                return NextResponse.json({ success: true, data: { id: proposalId, status: 'ACCEPTED', challengeStatus: result.status }, timestamp: new Date().toISOString() });
+            } catch (err) {
+                if (err instanceof LifecycleError) return NextResponse.json({ success: false, error: err.message, timestamp: new Date().toISOString() }, { status: err.status });
+                throw err;
+            }
+        }
+
         const updatedProposal = await prisma.challengeProposal.update({
             where: { id: proposalId },
             data: { status },
         });
+        await appendLedger({ actor_id: user.id, actor_role: user.role, action: `PROPOSAL_${status}`, entity_type: 'Proposal', entity_id: proposalId, previous_value: { status: proposal.status }, new_value: { status } });
 
         // Trigger 5: Proposal ACCEPTED -> P1 for HEI + P1 for CSR company
         if (status === 'ACCEPTED') {

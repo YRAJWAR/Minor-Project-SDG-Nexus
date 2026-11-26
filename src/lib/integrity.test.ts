@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeMilestoneHash } from './merkle';
-import { computeCredentialHash, creditsForHours, isProjectComplete } from './credentials';
+import { computeCredentialHash, creditsForHours, isProjectComplete, blendedRating } from './credentials';
 import { tfidfSimilarities } from '../services/deduplicationService';
 
 test('milestone hash: what submit stores is what verify recomputes', () => {
@@ -41,9 +41,12 @@ test('credits: 30 verified hours = 1 whole credit', () => {
 });
 
 test('project completion: zero milestones is NOT complete', () => {
-    assert.equal(isProjectComplete([]), false);
-    assert.equal(isProjectComplete([{ status: 'CSR_APPROVED' }, { status: 'GP_VERIFIED' }]), false);
-    assert.equal(isProjectComplete([{ status: 'CSR_APPROVED' }, { status: 'CSR_APPROVED' }]), true);
+    assert.equal(isProjectComplete([], 'DEPLOYED'), false);
+    assert.equal(isProjectComplete([{ status: 'CSR_APPROVED' }, { status: 'GP_VERIFIED' }], 'DEPLOYED'), false);
+    assert.equal(isProjectComplete([{ status: 'CSR_APPROVED' }, { status: 'CSR_APPROVED' }], 'DEPLOYED'), true);
+    assert.equal(isProjectComplete([{ status: 'CSR_APPROVED' }, { status: 'CSR_APPROVED' }], 'COMPLETED'), false, 'paid but not yet resolved by the citizen/officer');
+    assert.equal(blendedRating(5, 3), 4.6);
+    assert.equal(blendedRating(4, null), 4);
 });
 
 test('duplicate detection: same problem scores higher than an unrelated one', () => {

@@ -25,9 +25,8 @@ export async function GET(
             where: { id: credentialId },
             include: { student: { include: { user: { include: { hei: true } } } } },
         });
-        // ponytail: credentials don't store challengeId yet, so the hash input is resolved by title.
-        // Phase 1 schema adds Credential.challengeId and removes this lookup.
-        if (cred) challenge = await prisma.challenge.findFirst({ where: { title: cred.challengeTitle } });
+        // Linked by id; credentials issued before challengeId existed fall back to the title.
+        if (cred) challenge = await prisma.challenge.findFirst({ where: cred.challengeId ? { id: cred.challengeId } : { title: cred.challengeTitle } });
     } catch (dbErr) {
         console.error(`DB error fetching credential ${credentialId}:`, dbErr);
         return NextResponse.json(

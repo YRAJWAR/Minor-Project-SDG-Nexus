@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireUser } from '@/server/middleware/auth';
-import { computeCredentialHash, creditsForHours, isProjectComplete } from '@/lib/credentials';
+import { computeCredentialHash, creditsForHours, isProjectComplete, blendedRating } from '@/lib/credentials';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,8 +42,8 @@ export async function POST(request: NextRequest) {
 
     if (!team) return fail(`No project found for "${projectId}"`, 404);
     if (team.heiId !== faculty.heiId) return fail("Only faculty of this team's university can issue its credentials.", 403);
-    if (!isProjectComplete(team.milestones)) {
-        return fail('Credentials can only be issued after every milestone has been approved.', 409);
+    if (!isProjectComplete(team.milestones, team.proposal.challenge.status)) {
+        return fail('Credentials can only be issued once the project is resolved: every milestone paid and the report closed by the officer.', 409);
     }
 
     const challenge = team.proposal.challenge;
@@ -65,9 +65,9 @@ export async function POST(request: NextRequest) {
     let created;
     try {
         created = await prisma.$transaction(async (tx) => {
-            // ponytail: duplicate check keys on challenge title because credentials don't store challengeId yet (Phase 1).
+            // Once per student per report (older credentials, issued before challengeId existed, match by title).
             const existing = await tx.studentCredential.findMany({
-                where: { studentProfileId: { in: students.map((s) => s.studentProfileId) }, challengeTitle: challenge.title },
+                where: { studentProfileId: { in: students.map((s) => s.studentProfileId) }, OR: [{ challengeId: challenge.id }, { challengeId: null, challengeTitle: challenge.title }] },
                 select: { studentProfileId: true },
             });
             if (existing.length > 0) throw new Error(`ALREADY_ISSUED:${existing.map((e) => e.studentProfileId).join(',')}`);
@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
                 const cred = await tx.studentCredential.create({
                     data: {
                         studentProfileId: s.studentProfileId,
+                        challengeId: challenge.id,
                         challengeTitle: challenge.title,
                         challengeDistrict: challenge.district,
                         sdgTags: challenge.sdgTags,
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
                     where: { id: s.studentProfileId },
                     data: {
                         credits: { increment: creditPoints },
-                        ...(s.overallRating !== undefined ? { rating: s.overallRating } : {}),
+                        ...(s.overallRating !== undefined ? { rating: blendedRating(s.overallRating, challenge.citizenRating) } : {}),
                     },
                 });
                 out.push(cred);

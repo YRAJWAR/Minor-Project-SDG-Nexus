@@ -63,3 +63,14 @@ test('funding and work stages: only CSR commits, work starts once funded', () =>
     assert.deepEqual(allowedActions({ id: 'c', status: 'TEAM_FORMED', district: 'Nalgonda', submitterId: null }, officer('Nalgonda')), []);
     assert.ok(allowedActions({ id: 'c', status: 'FUNDED', district: 'Nalgonda', submitterId: null }, { id: 's', role: 'STUDENT' }).includes('START'));
 });
+
+test('closure: only the reporter confirms or disputes; the officer closes after confirmation or 14 days', () => {
+    const done = (extra = {}) => ({ id: 'c', status: 'COMPLETED' as const, district: 'Nalgonda', submitterId: 'citizen1', completedAt: new Date(), confirmedAt: null, ...extra });
+    assert.deepEqual(allowedActions(done(), { id: 'citizen1', role: 'CITIZEN' }).sort(), ['CONFIRM', 'DISPUTE']);
+    assert.deepEqual(allowedActions(done(), { id: 'citizen2', role: 'CITIZEN' }), []);
+    assert.match(blockedReason('CLOSE', done(), officer('Nalgonda')) ?? '', /Waiting/);
+    assert.equal(blockedReason('CLOSE', done({ confirmedAt: new Date() }), officer('Nalgonda')), null);
+    assert.equal(blockedReason('CLOSE', done({ completedAt: new Date(Date.now() - 15 * 86_400_000) }), officer('Nalgonda')), null);
+    assert.match(blockedReason('CLOSE', done({ confirmedAt: new Date() }), officer('Pune')) ?? '', /outside/);
+    assert.match(blockedReason('CONFIRM', done({ confirmedAt: new Date() }), { id: 'citizen1', role: 'CITIZEN' }) ?? '', /already/);
+});

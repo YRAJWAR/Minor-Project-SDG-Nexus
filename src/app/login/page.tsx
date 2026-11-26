@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -14,27 +14,33 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
     const router = useRouter();
+    // The landing page links here with ?email= to prefill a demo account.
+    useEffect(() => { setEmail(new URLSearchParams(window.location.search).get('email') ?? ''); }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setLoading(true);
-        const success = await login(email, password);
-        if (success) {
-            router.push('/dashboard');
-        } else {
-            setError('Invalid credentials. Try the demo accounts below.');
+        const err = await login(email, password);
+        if (err) {
+            setError(err);
+            setLoading(false);
+            return;
         }
-        setLoading(false);
+        // Back to the page the guard sent us from, but only same-site paths.
+        const next = new URLSearchParams(window.location.search).get('next');
+        router.push(next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard');
     };
 
+    // Fictional demo accounts created by prisma/seed.ts.
     const demoAccounts = [
-        { label: 'Citizen', email: 'citizen@jharkhand.gov.in', icon: '👤' },
-        { label: 'District Officer', email: 'collector@jharkhand.gov.in', icon: '🏛️' },
-        { label: 'HEI Faculty', email: 'faculty@nitjsr.ac.in', icon: '🎓' },
-        { label: 'Corporate (CSR)', email: 'csr@tatasteel.com', icon: '💼' },
-        { label: 'NGO Deployer', email: 'admin@pradan.net', icon: '🏢' },
-        { label: 'Student', email: 'student@nitjsr.ac.in', icon: '📚' },
+        { label: 'Citizen', email: 'citizen@demo.sdgnexus.in', icon: '👤' },
+        { label: 'District Officer', email: 'officer.nalgonda@demo.sdgnexus.in', icon: '🏛️' },
+        { label: 'Faculty', email: 'faculty@demo.sdgnexus.in', icon: '🎓' },
+        { label: 'Student', email: 'student@demo.sdgnexus.in', icon: '📚' },
+        { label: 'NGO', email: 'ngo@demo.sdgnexus.in', icon: '🏢' },
+        { label: 'CSR Partner', email: 'csr@demo.sdgnexus.in', icon: '💼' },
+        { label: 'Admin', email: 'admin@demo.sdgnexus.in', icon: '🛡️' },
     ];
 
     return (
@@ -83,11 +89,11 @@ export default function LoginPage() {
 
                 {/* Demo accounts */}
                 <div className="mt-6">
-                    <p className="text-xs text-slate-500 text-center mb-3">Quick Demo Login (password: Demo@1234)</p>
+                    <p className="text-xs text-slate-500 text-center mb-3">Demo accounts (fills the email; the password is on the home page)</p>
                     <div className="grid grid-cols-2 gap-2">
                         {demoAccounts.map(acc => (
                             <button key={acc.email}
-                                onClick={() => { setEmail(acc.email); setPassword('Demo@1234'); }}
+                                type="button" onClick={() => setEmail(acc.email)}
                                 className="px-3 py-2.5 rounded-lg text-xs font-medium transition-all hover:bg-white/10 flex items-center gap-2"
                                 style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#cbd5e1' }}>
                                 <span>{acc.icon}</span>

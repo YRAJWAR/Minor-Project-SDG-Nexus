@@ -13,14 +13,13 @@ export default function DashboardRedirect() {
             const rolePaths: Record<string, string> = {
                 ngo: '/dashboard/ngo',
                 government: '/dashboard/government',
-                gov: '/dashboard/government',
+                admin: '/dashboard/government',
                 corporate: '/dashboard/corporate',
-                corp: '/dashboard/corporate',
                 hei: '/dashboard/hei',
                 citizen: '/citizen/submit',
                 student: '/dashboard/hei/milestones',
             };
-            router.push(rolePaths[user.role] || '/dashboard/ngo');
+            router.replace(rolePaths[user.role] ?? '/citizen/submit');
         }
     }, [user, router]);
 

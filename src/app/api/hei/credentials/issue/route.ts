@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireUser } from '@/server/middleware/auth';
 import { computeCredentialHash, creditsForHours, isProjectComplete } from '@/lib/credentials';
 
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,9 @@ const fail = (error: string, status: number) =>
 // Issues credentials for members of a completed project. All-or-nothing: either every listed
 // student gets a saved credential, or nothing is written and an error explains why.
 export async function POST(request: NextRequest) {
+    const faculty = await requireUser(request, ['FACULTY']);
+    if (faculty instanceof NextResponse) return faculty;
+
     const body = await request.json().catch(() => null);
     const projectId: unknown = body?.projectId;
     const students: StudentIssuePayload[] = Array.isArray(body?.students) ? body.students : [];
@@ -37,6 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!team) return fail(`No project found for "${projectId}"`, 404);
+    if (team.heiId !== faculty.heiId) return fail("Only faculty of this team's university can issue its credentials.", 403);
     if (!isProjectComplete(team.milestones)) {
         return fail('Credentials can only be issued after every milestone has been approved.', 409);
     }

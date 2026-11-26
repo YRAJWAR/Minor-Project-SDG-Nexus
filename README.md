@@ -29,17 +29,31 @@ documented societal challenges.
 - **Reports**: jsPDF
 
 ## Local Setup
+Needs Node 20+ and PostgreSQL 16.
 ```bash
-git clone https://github.com/YRAJWAR/SIH-Project.git
-cd SIH-Project
+git clone https://github.com/YRAJWAR/Minor-Project-SDG-Nexus.git
+cd Minor-Project-SDG-Nexus
 npm install
-cp .env.example .env.local   # fill in your values
-npx prisma migrate dev
-npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
+cp .env.example .env         # set DATABASE_URL and a JWT_SECRET of 32+ characters
+npx prisma migrate deploy    # creates the tables
+npx prisma db seed           # all states/districts, SDGs, demo accounts
+npm run check                # integrity + access-rule tests
 npm run dev
 ```
 
-## SIH 2026
-- **PS Number**: SIH26043
-- **Organization**: Government of Jharkhand
-- **Theme**: Smart Education
+### Demo accounts
+All are fictional and share the password set in `prisma/seed.ts` (`DEMO_PASSWORD`).
+
+| Role | Email |
+|---|---|
+| Admin | admin@demo.sdgnexus.in |
+| District officer (Nalgonda, Telangana) | officer.nalgonda@demo.sdgnexus.in |
+| Citizen | citizen@demo.sdgnexus.in |
+| Faculty | faculty@demo.sdgnexus.in |
+| Student | student@demo.sdgnexus.in |
+| NGO | ngo@demo.sdgnexus.in |
+| CSR partner | csr@demo.sdgnexus.in |
+
+New faculty and students join the demo university with invite code `KVIT-DEMO-2026`.
+
+District list: [KTBsomen/Indian-state-district-json](https://github.com/KTBsomen/Indian-state-district-json) (MIT, from igod.gov.in), 36 states/UTs, 784 districts.

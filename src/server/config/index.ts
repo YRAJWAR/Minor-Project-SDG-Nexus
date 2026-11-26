@@ -13,9 +13,7 @@ const config = {
     databaseUrl: process.env.DATABASE_URL || '',
 
     // ─── JWT ─────────────────────────────────────────────────
-    jwtSecret: process.env.JWT_SECRET || 'sdg-nexus-dev-secret-change-in-production',
-    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '24h',
-    jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+    // JWT secret and expiry live in src/server/middleware/auth.ts (fails closed in production).
 
     // ─── Bcrypt ──────────────────────────────────────────────
     bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10),

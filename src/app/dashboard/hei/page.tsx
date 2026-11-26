@@ -83,11 +83,9 @@ export default function HEIChallengeInboxPage() {
             setLoading(true);
             setError(null);
             try {
-                const token = typeof window !== 'undefined' ? localStorage.getItem('sdg_nexus_token') : null;
                 const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-                if (token) headers['Authorization'] = `Bearer ${token}`;
 
-                const res = await fetch(`/api/hei/challenges/inbox?email=${encodeURIComponent(user?.email ?? '')}`, { headers });
+                const res = await fetch(`/api/hei/challenges/inbox`, { headers });
                 const json = await res.json();
                 if (!res.ok || !json.success) {
                     throw new Error(json.error || 'Failed to fetch challenge inbox');

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -29,13 +29,6 @@ import {
 } from 'lucide-react';
 import { SDG_INFO } from '@/data/mockData';
 
-const JHARKHAND_DISTRICTS = [
-    'Bokaro', 'Chatra', 'Deoghar', 'Dhanbad', 'Dumka',
-    'East Singhbhum', 'Garhwa', 'Giridih', 'Godda', 'Gumla',
-    'Hazaribagh', 'Jamtara', 'Khunti', 'Koderma', 'Latehar',
-    'Lohardaga', 'Pakur', 'Palamu', 'Ramgarh', 'Ranchi',
-    'Sahibganj', 'Saraikela Kharsawan', 'Simdega', 'West Singhbhum'
-].sort();
 
 const CATEGORIES = [
     { id: 'Drinking Water & Sanitation', label: 'Water & Sanitation', icon: Droplets, color: '#26bde2', sdgHint: 'SDG 6' },
@@ -111,7 +104,13 @@ export default function CitizenSubmitPage() {
     const [category, setCategory] = useState<string>('Drinking Water & Sanitation');
     const [urgency, setUrgency] = useState<string>('NORMAL');
 
-    const [district, setDistrict] = useState<string>('Ranchi');
+    const [regions, setRegions] = useState<{ name: string; districts: string[] }[]>([]);
+    const [state, setState] = useState<string>('');
+    const [district, setDistrict] = useState<string>('');
+    useEffect(() => {
+        fetch('/api/regions').then((r) => (r.ok ? r.json() : null)).then((j) => setRegions(j?.data ?? [])).catch(() => undefined);
+    }, []);
+    const districtOptions = regions.find((s) => s.name === state)?.districts ?? [];
     const [block, setBlock] = useState<string>('');
     const [village, setVillage] = useState<string>('');
     const [gpsLat, setGpsLat] = useState<number | null>(null);
@@ -196,7 +195,7 @@ export default function CitizenSubmitPage() {
             },
             (err) => {
                 setGpsDetecting(false);
-                setGpsStatus(`Location error: ${err.message}. Using default district center.`);
+                setGpsStatus(`Location error: ${err.message}. The report will be saved without coordinates.`);
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
@@ -243,11 +242,12 @@ export default function CitizenSubmitPage() {
                 title,
                 description,
                 category,
+                state,
                 district,
                 block: block || undefined,
                 village: village || undefined,
-                gpsLat: gpsLat || 23.6102,
-                gpsLng: gpsLng || 85.2799,
+                gpsLat,
+                gpsLng,
                 photoUrls: photos.map((p) => p.dataUrl),
                 isAnonymous,
                 submitterName: isAnonymous ? undefined : submitterName,
@@ -566,19 +566,21 @@ export default function CitizenSubmitPage() {
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                                            <label htmlFor="cs-state" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                                                State / UT *
+                                            </label>
+                                            <select id="cs-state" value={state} onChange={(e) => { setState(e.target.value); setDistrict(''); }} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                                <option value="">{regions.length ? 'Choose a state…' : 'Loading…'}</option>
+                                                {regions.map((s) => <option key={s.name} value={s.name}>{s.name}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label htmlFor="cs-district" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                                                 District *
                                             </label>
-                                            <select
-                                                value={district}
-                                                onChange={(e) => setDistrict(e.target.value)}
-                                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                            >
-                                                {JHARKHAND_DISTRICTS.map((d) => (
-                                                    <option key={d} value={d}>
-                                                        {d}
-                                                    </option>
-                                                ))}
+                                            <select id="cs-district" value={district} onChange={(e) => setDistrict(e.target.value)} disabled={!state} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50">
+                                                <option value="">{state ? 'Choose a district…' : 'Pick a state first'}</option>
+                                                {districtOptions.map((d) => <option key={d} value={d}>{d}</option>)}
                                             </select>
                                         </div>
 
@@ -656,7 +658,8 @@ export default function CitizenSubmitPage() {
                                         <button
                                             type="button"
                                             onClick={() => setStep(3)}
-                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition"
+                                            disabled={!state || !district}
+                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             Next: Problem & Evidence
                                             <ArrowRight className="w-4 h-4" />
@@ -1009,7 +1012,7 @@ export default function CitizenSubmitPage() {
                                             <div>
                                                 <span className="text-slate-400">Location: </span>
                                                 <span className="text-white font-medium">
-                                                    {district} {block ? `• Block: ${block}` : ''} {village ? `• Village: ${village}` : ''}
+                                                    {district}, {state} {block ? `• Block: ${block}` : ''} {village ? `• Village: ${village}` : ''}
                                                 </span>
                                             </div>
                                             <div>

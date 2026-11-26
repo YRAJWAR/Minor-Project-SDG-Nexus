@@ -1,10 +1,13 @@
-import { NextResponse } from 'next/server';
+import { requireUser } from '@/server/middleware/auth';
+import { NextResponse, NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 
 const RESOLVED = new Set(['COMPLETED', 'DEPLOYED']);
 
 // Challenges per district and resolution rate, computed only from districts that actually have challenges.
-export async function GET() {
+export async function GET(req: NextRequest) {
+    const user = await requireUser(req);
+    if (user instanceof NextResponse) return user;
     let challenges;
     try {
         challenges = await prisma.challenge.findMany({ select: { district: true, status: true } });

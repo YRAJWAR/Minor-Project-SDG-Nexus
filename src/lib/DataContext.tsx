@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import {
-    MOCK_PROJECTS, MOCK_ACTIVITIES, MOCK_DONATIONS, MOCK_IMPACT_SCORES, MOCK_PARTNER_NGOS, MOCK_REGIONS,
     type Project, type Activity, type Donation, type ImpactScore, type PartnerNGO, type RegionData,
 } from '@/data/mockData';
 import CryptoJS from 'crypto-js';
@@ -24,12 +23,13 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | null>(null);
 
 export function DataProvider({ children }: { children: ReactNode }) {
-    const [projects, setProjects] = useState<Project[]>([...MOCK_PROJECTS]);
-    const [activities, setActivities] = useState<Activity[]>([...MOCK_ACTIVITIES]);
-    const [donations, setDonations] = useState<Donation[]>([...MOCK_DONATIONS]);
-    const [impactScores] = useState<ImpactScore[]>([...MOCK_IMPACT_SCORES]);
-    const [organizations] = useState<PartnerNGO[]>([...MOCK_PARTNER_NGOS]);
-    const [regions] = useState<RegionData[]>([...MOCK_REGIONS]);
+    // ponytail: starts empty (no fake data). Pages still reading this get wired to the real APIs in Phase 2.
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [activities, setActivities] = useState<Activity[]>([]);
+    const [donations, setDonations] = useState<Donation[]>([]);
+    const [impactScores] = useState<ImpactScore[]>([]);
+    const [organizations] = useState<PartnerNGO[]>([]);
+    const [regions] = useState<RegionData[]>([]);
 
     const addProject = useCallback((projectData: Omit<Project, 'id' | 'created_at'>): Project => {
         const newProject: Project = {

@@ -43,8 +43,8 @@ interface ChallengeStatusData {
     category: string;
     district: string;
     block?: string;
-    gpsLat: number;
-    gpsLng: number;
+    gpsLat: number | null;
+    gpsLng: number | null;
     photoUrls: string[];
     videoUrls: string[];
     status: string;
@@ -412,7 +412,7 @@ export default function TrackChallengePage() {
                                             <p className="font-bold text-white">{data.district}</p>
                                             {data.block && <p className="text-slate-400">Block: {data.block}</p>}
                                             <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                                                GPS: {data.gpsLat.toFixed(4)}° N, {data.gpsLng.toFixed(4)}° E
+                                                {data.gpsLat !== null && data.gpsLng !== null ? `GPS: ${data.gpsLat.toFixed(4)}°, ${data.gpsLng.toFixed(4)}°` : 'No GPS recorded'}
                                             </p>
                                         </div>
                                     </div>

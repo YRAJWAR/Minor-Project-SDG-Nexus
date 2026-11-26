@@ -1,35 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { authenticateRequest } from '@/server/middleware/auth';
+import { requireUser, inJurisdiction } from '@/server/middleware/auth';
 
 export async function GET(req: NextRequest) {
     try {
+        const user = await requireUser(req, ['OFFICER', 'ADMIN']);
+        if (user instanceof NextResponse) return user;
+
         const { searchParams } = new URL(req.url);
         const statusFilter = (searchParams.get('status') || 'ALL').toUpperCase();
-
-        // Check authentication for GOV role
-        try {
-            const authHeader = req.headers.get('Authorization');
-            if (authHeader?.startsWith('Bearer ')) {
-                const token = authHeader.substring(7);
-                if (!token.startsWith('mock_') && !token.startsWith('test_')) {
-                    const decoded = await authenticateRequest(req);
-                    const role = decoded.role?.toUpperCase();
-                    if (!['GOV', 'GOVERNMENT', 'ADMIN', 'COLLECTOR'].includes(role)) {
-                        return NextResponse.json(
-                            { success: false, error: 'Forbidden: Access restricted to Government and Collectorate roles', timestamp: new Date().toISOString() },
-                            { status: 403 }
-                        );
-                    }
-                }
-            }
-        } catch {
-            // Graceful fallback for mock tokens or demo environment
-        }
 
         let dbChallenges;
         try {
             dbChallenges = await prisma.challenge.findMany({
+                // Officers see only their own district; admins see everything.
+                where: user.role === 'ADMIN' ? {} : { district: { equals: user.district?.name ?? '\u0000', mode: 'insensitive' } },
                 orderBy: { createdAt: 'desc' },
                 include: {
                     proposals: {
@@ -137,6 +122,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     try {
+        const user = await requireUser(req, ['OFFICER', 'ADMIN']);
+        if (user instanceof NextResponse) return user;
+
         const body = await req.json();
         const { challengeId, note } = body;
 
@@ -151,14 +139,17 @@ export async function POST(req: NextRequest) {
         // and hide the challenge that was just escalated.
         // ponytail: there is no escalation flag yet; the ledger in Phase 2 makes escalations visible in the queue.
         try {
-            const challenge = await prisma.challenge.findUnique({ where: { id: challengeId }, select: { id: true, status: true } });
+            const challenge = await prisma.challenge.findUnique({ where: { id: challengeId }, select: { id: true, status: true, district: true } });
             if (!challenge) {
                 return NextResponse.json({ success: false, error: `No challenge found with ID "${challengeId}"` }, { status: 404 });
             }
+            if (!inJurisdiction(user, challenge.district)) {
+                return NextResponse.json({ success: false, error: 'This challenge is outside your district.' }, { status: 403 });
+            }
             await prisma.auditLog.create({
                 data: {
-                    actor_id: 'district-officer',
-                    actor_role: 'GOVERNMENT',
+                    actor_id: user.email,
+                    actor_role: user.role,
                     action: 'CHALLENGE_ESCALATED',
                     entity_type: 'Challenge',
                     entity_id: challengeId,

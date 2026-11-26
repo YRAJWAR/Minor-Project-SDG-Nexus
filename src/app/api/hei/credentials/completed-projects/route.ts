@@ -1,16 +1,19 @@
-import { NextResponse } from 'next/server';
+import { requireUser } from '@/server/middleware/auth';
+import { NextResponse, NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { creditsForHours, isProjectComplete } from '@/lib/credentials';
 
 export const dynamic = 'force-dynamic';
 
 // Projects whose milestones are all approved, i.e. ready for credentials.
-// ponytail: lists every university's projects until Phase 1 scopes requests to the signed-in user's university.
-export async function GET() {
+export async function GET(req: NextRequest) {
+    const user = await requireUser(req, ['FACULTY']);
+    if (user instanceof NextResponse) return user;
     let teams;
     try {
         teams = await prisma.projectTeam.findMany({
-            where: { proposal: { status: 'ACCEPTED' } },
+            // Only the signed-in faculty member's own university.
+            where: { proposal: { status: 'ACCEPTED' }, heiId: user.heiId ?? '\u0000' },
             include: {
                 proposal: { include: { challenge: true } },
                 hei: true,

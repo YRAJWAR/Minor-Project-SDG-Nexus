@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import type { Role } from '@prisma/client';
 
 export interface CreateNotificationParams {
     userId: string;
@@ -56,7 +57,7 @@ export async function createNotification(
  * Notify all users with the specified role(s)
  */
 export async function notifyUsersByRole(
-    roles: string | string[],
+    roles: Role[],
     message: string,
     entityType: string,
     entityId: string,
@@ -64,17 +65,11 @@ export async function notifyUsersByRole(
     challengeId?: string | null
 ) {
     try {
-        const roleArray = Array.isArray(roles) ? roles : [roles];
-        const normalizedRoles = Array.from(
-            new Set(roleArray.flatMap((r) => [r.toUpperCase(), r.toLowerCase()]))
-        );
-
+        // ponytail: notifies everyone with the role, platform-wide. Phase 2 scopes this to the
+        // challenge's district officer, the assigned university and the committed funders.
         const users = await prisma.user.findMany({
-            where: {
-                role: { in: normalizedRoles },
-            },
+            where: { role: { in: roles } },
             select: { id: true },
-            take: 25,
         });
 
         if (users.length === 0) return [];
@@ -136,7 +131,7 @@ export const NotificationTriggers = {
     // 1. Challenge submitted -> P2 for GOV
     async challengeSubmitted(challenge: { id: string; title: string; district: string }) {
         const msg = `New challenge submitted: '${challenge.title}' in ${challenge.district}`;
-        return notifyUsersByRole(['GOVERNMENT', 'GOV'], msg, 'CHALLENGE', challenge.id, 'P2', challenge.id);
+        return notifyUsersByRole(['OFFICER'], msg, 'CHALLENGE', challenge.id, 'P2', challenge.id);
     },
 
     // 2. Challenge VALIDATED -> P2 for submitter + P2 for HEI users
@@ -145,20 +140,20 @@ export const NotificationTriggers = {
         if (challenge.submitterId) {
             await createNotification(challenge.submitterId, msg, 'CHALLENGE', challenge.id, 'P2', challenge.id);
         }
-        return notifyUsersByRole(['HEI'], msg, 'CHALLENGE', challenge.id, 'P2', challenge.id);
+        return notifyUsersByRole(['FACULTY'], msg, 'CHALLENGE', challenge.id, 'P2', challenge.id);
     },
 
     // 3. HEI accepts challenge (TEAM_FORMED) -> P2 for GOV
     async teamFormed(challenge: { id: string; title: string }, heiName: string = 'NIT Jamshedpur') {
         const msg = `${heiName} has formed a team for '${challenge.title}'`;
-        return notifyUsersByRole(['GOVERNMENT', 'GOV'], msg, 'CHALLENGE', challenge.id, 'P2', challenge.id);
+        return notifyUsersByRole(['OFFICER'], msg, 'CHALLENGE', challenge.id, 'P2', challenge.id);
     },
 
     // 4. Proposal SUBMITTED -> P2 for GOV + P2 for matching CSR users
     async proposalSubmitted(proposal: { id: string; challengeId: string; challengeTitle: string }) {
         const msg = `New proposal submitted for '${proposal.challengeTitle}' — funding opportunity`;
-        await notifyUsersByRole(['GOVERNMENT', 'GOV'], msg, 'PROPOSAL', proposal.id, 'P2', proposal.challengeId);
-        return notifyUsersByRole(['CORPORATE', 'CSR'], msg, 'PROPOSAL', proposal.id, 'P2', proposal.challengeId);
+        await notifyUsersByRole(['OFFICER'], msg, 'PROPOSAL', proposal.id, 'P2', proposal.challengeId);
+        return notifyUsersByRole(['CSR'], msg, 'PROPOSAL', proposal.id, 'P2', proposal.challengeId);
     },
 
     // 5. Proposal ACCEPTED -> P1 for HEI + P1 for CSR company
@@ -171,13 +166,13 @@ export const NotificationTriggers = {
         if (heiUserId) {
             await createNotification(heiUserId, msg, 'PROPOSAL', proposal.id, 'P1', proposal.challengeId);
         } else {
-            await notifyUsersByRole(['HEI'], msg, 'PROPOSAL', proposal.id, 'P1', proposal.challengeId);
+            await notifyUsersByRole(['FACULTY'], msg, 'PROPOSAL', proposal.id, 'P1', proposal.challengeId);
         }
 
         if (csrUserId) {
             await createNotification(csrUserId, msg, 'PROPOSAL', proposal.id, 'P1', proposal.challengeId);
         } else {
-            await notifyUsersByRole(['CORPORATE', 'CSR'], msg, 'PROPOSAL', proposal.id, 'P1', proposal.challengeId);
+            await notifyUsersByRole(['CSR'], msg, 'PROPOSAL', proposal.id, 'P1', proposal.challengeId);
         }
     },
 
@@ -187,11 +182,11 @@ export const NotificationTriggers = {
         csrUserId?: string | null
     ) {
         const msg = `Milestone '${milestone.title}' submitted for verification`;
-        await notifyUsersByRole(['GOVERNMENT', 'GOV'], msg, 'MILESTONE', milestone.id, 'P2', milestone.challengeId);
+        await notifyUsersByRole(['OFFICER'], msg, 'MILESTONE', milestone.id, 'P2', milestone.challengeId);
         if (csrUserId) {
             await createNotification(csrUserId, msg, 'MILESTONE', milestone.id, 'P2', milestone.challengeId);
         } else {
-            await notifyUsersByRole(['CORPORATE', 'CSR'], msg, 'MILESTONE', milestone.id, 'P2', milestone.challengeId);
+            await notifyUsersByRole(['CSR'], msg, 'MILESTONE', milestone.id, 'P2', milestone.challengeId);
         }
     },
 
@@ -205,7 +200,7 @@ export const NotificationTriggers = {
         if (heiUserIds.length > 0) {
             await notifyUsers(heiUserIds, msg, 'MILESTONE', milestone.id, 'P2', milestone.challengeId);
         } else {
-            await notifyUsersByRole(['HEI'], msg, 'MILESTONE', milestone.id, 'P2', milestone.challengeId);
+            await notifyUsersByRole(['FACULTY'], msg, 'MILESTONE', milestone.id, 'P2', milestone.challengeId);
         }
 
         if (studentUserIds.length > 0) {
@@ -230,7 +225,7 @@ export const NotificationTriggers = {
         if (heiUserId) {
             await createNotification(heiUserId, msg, 'MILESTONE', milestone.id, 'P1', milestone.challengeId);
         } else {
-            await notifyUsersByRole(['HEI'], msg, 'MILESTONE', milestone.id, 'P1', milestone.challengeId);
+            await notifyUsersByRole(['FACULTY'], msg, 'MILESTONE', milestone.id, 'P1', milestone.challengeId);
         }
     },
 
@@ -243,7 +238,7 @@ export const NotificationTriggers = {
         if (challenge.submitterId) {
             await createNotification(challenge.submitterId, msg, 'CHALLENGE', challenge.id, 'P1', challenge.id);
         }
-        await notifyUsersByRole(['GOVERNMENT', 'GOV', 'HEI', 'CORPORATE', 'CSR', 'NGO'], msg, 'CHALLENGE', challenge.id, 'P2', challenge.id);
+        await notifyUsersByRole(['OFFICER', 'FACULTY', 'CSR', 'NGO'], msg, 'CHALLENGE', challenge.id, 'P2', challenge.id);
     },
 
     // 10. Risk flag triggered -> P1 for GOV + P1 for CSR funder
@@ -254,11 +249,11 @@ export const NotificationTriggers = {
         csrUserId?: string | null
     ) {
         const msg = `⚠ Risk flag: ${flagType} on project '${projectOrChallengeTitle}' — review required`;
-        await notifyUsersByRole(['GOVERNMENT', 'GOV'], msg, 'RISK_FLAG', challengeId || 'risk', 'P1', challengeId);
+        await notifyUsersByRole(['OFFICER'], msg, 'RISK_FLAG', challengeId || 'risk', 'P1', challengeId);
         if (csrUserId) {
             await createNotification(csrUserId, msg, 'RISK_FLAG', challengeId || 'risk', 'P1', challengeId);
         } else {
-            await notifyUsersByRole(['CORPORATE', 'CSR'], msg, 'RISK_FLAG', challengeId || 'risk', 'P1', challengeId);
+            await notifyUsersByRole(['CSR'], msg, 'RISK_FLAG', challengeId || 'risk', 'P1', challengeId);
         }
     },
 };

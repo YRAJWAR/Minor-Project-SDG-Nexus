@@ -1,8 +1,11 @@
-import { NextResponse } from 'next/server';
+import { requireUser } from '@/server/middleware/auth';
+import { NextResponse, NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 
 // Unresolved risk flags, newest first. An empty list means there are none — nothing is invented.
-export async function GET() {
+export async function GET(req: NextRequest) {
+    const user = await requireUser(req, ['OFFICER', 'ADMIN', 'CSR']);
+    if (user instanceof NextResponse) return user;
     let flags;
     try {
         flags = await prisma.riskFlag.findMany({

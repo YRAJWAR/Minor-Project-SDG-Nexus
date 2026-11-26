@@ -1,3 +1,4 @@
+import { requireUser } from '@/server/middleware/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
@@ -50,14 +51,13 @@ function calculateMatchBreakdown(
 }
 
 export async function GET(request: NextRequest) {
-    // ponytail: SECURITY — the university is resolved from ?email= until Phase 1 provides a real session.
-    const email = new URL(request.url).searchParams.get('email')?.trim().toLowerCase() ?? '';
+    const user = await requireUser(request, ['FACULTY']);
+    if (user instanceof NextResponse) return user;
 
     let hei;
     let challenges;
     try {
-        const user = email ? await prisma.user.findUnique({ where: { email }, include: { hei: true } }) : null;
-        hei = user?.hei ?? null;
+        hei = user.heiId ? await prisma.hEI.findUnique({ where: { id: user.heiId } }) : null;
         if (!hei) {
             return NextResponse.json(
                 { success: false, error: 'Your account is not linked to a university.', timestamp: new Date().toISOString() },

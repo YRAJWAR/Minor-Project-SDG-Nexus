@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import type { MilestoneStatus } from '@prisma/client';
+import type { MilestoneStatus, Role } from '@prisma/client';
+import { requireUser, inJurisdiction } from '@/server/middleware/auth';
 
 const fail = (error: string, status: number) =>
     NextResponse.json({ success: false, error, timestamp: new Date().toISOString() }, { status });
 
 // Allowed milestone moves. Anything else is refused.
-// ponytail: role checks (officer verifies, CSR approves) arrive with real auth in Phase 1.
 const NEXT: Record<MilestoneStatus, MilestoneStatus[]> = {
     PENDING: ['SUBMITTED'],
     SUBMITTED: ['GP_VERIFIED', 'REJECTED'],
@@ -18,7 +18,9 @@ const NEXT: Record<MilestoneStatus, MilestoneStatus[]> = {
 const findTeam = (projectId: string) =>
     prisma.projectTeam.findFirst({ where: { OR: [{ id: projectId }, { proposalId: projectId }] }, select: { id: true } });
 
-export async function GET(_request: NextRequest, context: { params: Promise<{ projectId: string }> }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ projectId: string }> }) {
+    const viewer = await requireUser(request);
+    if (viewer instanceof NextResponse) return viewer;
     const { projectId } = await context.params;
 
     let team;
@@ -36,7 +38,19 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ pr
     return NextResponse.json({ success: true, data: team.milestones, timestamp: new Date().toISOString() });
 }
 
+// Who may make each move: the district officer verifies or rejects, a CSR partner releases funds,
+// and the team resubmits after a rejection.
+const MOVER: Record<MilestoneStatus, Role[]> = {
+    PENDING: [],
+    SUBMITTED: ['FACULTY', 'STUDENT'],
+    GP_VERIFIED: ['OFFICER', 'ADMIN'],
+    REJECTED: ['OFFICER', 'ADMIN'],
+    CSR_APPROVED: ['CSR', 'ADMIN'],
+};
+
 export async function PATCH(request: NextRequest, context: { params: Promise<{ projectId: string }> }) {
+    const user = await requireUser(request);
+    if (user instanceof NextResponse) return user;
     const { projectId } = await context.params;
     const body = await request.json().catch(() => null);
     const { milestoneId, status, verifierCode, fundReleased } = body ?? {};
@@ -59,7 +73,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ p
             include: {
                 team: {
                     include: {
-                        proposal: true,
+                        proposal: { include: { challenge: { select: { district: true } } } },
                         members: { include: { student: true } },
                         hei: { include: { users: true } },
                     },
@@ -67,6 +81,16 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ p
             },
         });
         if (!current || current.teamId !== team.id) return fail('Milestone not found in this project', 404);
+        if (!MOVER[next].includes(user.role)) return fail(`Your role cannot move a milestone to ${next}.`, 403);
+        if (user.role === 'OFFICER' && !inJurisdiction(user, current.team.proposal.challenge.district)) {
+            return fail('This project is outside your district.', 403);
+        }
+        if (next === 'SUBMITTED') {
+            const onTeam = user.role === 'FACULTY'
+                ? current.team.heiId === user.heiId
+                : current.team.members.some((m) => m.student.userId === user.id);
+            if (!onTeam) return fail("Only this project's faculty or team members can resubmit.", 403);
+        }
         if (!NEXT[current.status].includes(next)) {
             return fail(`A milestone cannot move from ${current.status} to ${next}.`, 409);
         }

@@ -1,11 +1,20 @@
-import { NextResponse } from 'next/server';
+import { requireUser } from '@/server/middleware/auth';
+import { NextResponse, NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+    const user = await requireUser(req, ['FACULTY', 'STUDENT', 'OFFICER', 'CSR', 'ADMIN']);
+    if (user instanceof NextResponse) return user;
     let acceptedProposals;
     try {
         acceptedProposals = await prisma.challengeProposal.findMany({
-            where: { status: 'ACCEPTED' },
+            where: {
+                status: 'ACCEPTED',
+                // Faculty: own university. Students: teams they belong to. Officers: their district.
+                ...(user.role === 'FACULTY' ? { heiId: user.heiId ?? '\u0000' } : {}),
+                ...(user.role === 'STUDENT' ? { team: { members: { some: { student: { userId: user.id } } } } } : {}),
+                ...(user.role === 'OFFICER' ? { challenge: { district: { equals: user.district?.name ?? '\u0000', mode: 'insensitive' as const } } } : {}),
+            },
             include: { challenge: true, hei: true, team: { include: { milestones: true, members: true } } },
             orderBy: { createdAt: 'desc' },
         });
@@ -17,7 +26,7 @@ export async function GET() {
         );
     }
 
-    // ponytail: lists every university's projects until Phase 1 scopes this to the signed-in user's university.
+    // ponytail: CSR partners see every accepted project until funding commitments exist (Phase 3).
     const now = Date.now();
     const projects = acceptedProposals
         .filter((prop) => prop.team) // a project exists only once its team is formed

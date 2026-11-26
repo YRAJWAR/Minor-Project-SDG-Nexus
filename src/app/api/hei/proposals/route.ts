@@ -1,27 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireUser, inJurisdiction } from '@/server/middleware/auth';
 
-// ponytail: SECURITY — the university is resolved from an email the client sends. Phase 1 takes it from the
-// signed-in session (httpOnly cookie) so nobody can act for another university. Do not deploy as-is.
-async function resolveHei(email: unknown) {
-    if (typeof email !== 'string' || !email.trim()) return null;
-    const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() }, include: { hei: true } });
-    return user?.hei ?? null;
+// The university always comes from the signed-in faculty member, never from the request.
+async function sessionHei(request: NextRequest) {
+    const user = await requireUser(request, ['FACULTY']);
+    if (user instanceof NextResponse) return user;
+    const hei = user.heiId ? await prisma.hEI.findUnique({ where: { id: user.heiId } }) : null;
+    if (!hei) {
+        return NextResponse.json(
+            { success: false, error: 'Your account is not linked to a university.', timestamp: new Date().toISOString() },
+            { status: 403 }
+        );
+    }
+    return hei;
 }
-
-const noHei = () =>
-    NextResponse.json(
-        { success: false, error: 'Your account is not linked to a university.', timestamp: new Date().toISOString() },
-        { status: 403 }
-    );
 
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const challengeId = searchParams.get('challengeId');
 
-        const hei = await resolveHei(searchParams.get('email'));
-        if (!hei) return noHei();
+        const hei = await sessionHei(request);
+        if (hei instanceof NextResponse) return hei;
 
         if (challengeId) {
             const proposal = await prisma.challengeProposal.findFirst({
@@ -125,7 +126,6 @@ export async function POST(request: NextRequest) {
             termsAccepted,
             status = 'SUBMITTED', // 'DRAFT' or 'SUBMITTED'
             aiQualityScore,
-            facultyEmail,
         } = body;
 
         // Universities can only save drafts or submit. Accepting/rejecting is the district officer's decision.
@@ -186,8 +186,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const hei = await resolveHei(facultyEmail);
-        if (!hei) return noHei();
+        const hei = await sessionHei(request);
+        if (hei instanceof NextResponse) return hei;
 
         // Check if an existing proposal exists for this challenge & HEI
         const existingProposal = await prisma.challengeProposal.findFirst({
@@ -284,6 +284,10 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
     try {
+        // Accepting or rejecting a proposal is the district officer's decision.
+        const user = await requireUser(request, ['OFFICER', 'ADMIN']);
+        if (user instanceof NextResponse) return user;
+
         const body = await request.json();
         const { proposalId, status, heiUserId, csrUserId } = body;
 
@@ -306,7 +310,12 @@ export async function PATCH(request: NextRequest) {
             );
         }
 
-        // ponytail: officer-only decision; enforced by role once real auth lands in Phase 1.
+        if (!inJurisdiction(user, proposal.challenge.district)) {
+            return NextResponse.json(
+                { success: false, error: 'This challenge is outside your district.', timestamp: new Date().toISOString() },
+                { status: 403 }
+            );
+        }
         const DECISIONS: Record<string, string[]> = { SUBMITTED: ['UNDER_REVIEW', 'ACCEPTED', 'REJECTED'], UNDER_REVIEW: ['ACCEPTED', 'REJECTED'] };
         if (!(DECISIONS[proposal.status] ?? []).includes(status)) {
             return NextResponse.json(

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireUser } from '@/server/middleware/auth';
 import { computeMilestoneHash } from '@/lib/merkle';
 
 const fail = (error: string, status: number) =>
@@ -12,6 +13,9 @@ const toCoord = (v: unknown, limit: number): number | null => {
 };
 
 export async function POST(request: NextRequest) {
+    const user = await requireUser(request, ['FACULTY', 'STUDENT']);
+    if (user instanceof NextResponse) return user;
+
     const body = await request.json().catch(() => null);
     if (!body) return fail('Invalid request body', 400);
     const { projectId, teamId, title, description, dueDate, proofUrls = [], proofVideoUrl, gpsLat, gpsLng } = body;
@@ -30,13 +34,17 @@ export async function POST(request: NextRequest) {
     try {
         team = await prisma.projectTeam.findFirst({
             where: { OR: [{ id: teamOrProjectId }, { proposalId: teamOrProjectId }] },
-            include: { proposal: true },
+            include: { proposal: true, members: { select: { student: { select: { userId: true } } } } },
         });
     } catch (dbErr) {
         console.error('DB error loading team for milestone:', dbErr);
         return fail('Milestones cannot be submitted right now. Please try again.', 503);
     }
     if (!team) return fail(`No project team found for "${teamOrProjectId}"`, 404);
+    const onTeam = user.role === 'FACULTY'
+        ? team.heiId === user.heiId
+        : team.members.some((m) => m.student.userId === user.id);
+    if (!onTeam) return fail("Only this project's faculty or team members can submit milestones.", 403);
 
     // The hash is computed from exactly what is stored (same timestamp, same numbers), so
     // /api/ledger/verify can recompute it later. Any hash sent by the client is ignored.

@@ -1,103 +1,121 @@
 // ──────────────────────────────────────────────────────────────
-// SDG Nexus — Auth Middleware
-// JWT verification + role-based access control + IDOR protection
+// SDG Nexus — Authentication & authorisation
+// Session = signed JWT in an httpOnly cookie. Every protected route calls
+// requireUser(req, roles) and gets either the user (loaded fresh from the DB)
+// or a ready 401/403 response. No test tokens, headers or query params are trusted.
 // ──────────────────────────────────────────────────────────────
 
-import { NextRequest } from 'next/server';
-import { AppError } from './errorHandler';
-import config from '@/server/config';
-import type { JWTPayload, UserRole } from '@/server/types';
+import { NextRequest, NextResponse } from 'next/server';
+import jwt from 'jsonwebtoken';
+import type { Role } from '@prisma/client';
+import prisma from '@/lib/prisma';
 
-/**
- * Extract and verify JWT from Authorization header.
- * Returns the decoded payload or throws AppError.
- */
-export async function authenticateRequest(request: NextRequest): Promise<JWTPayload> {
-    const authHeader = request.headers.get('Authorization');
+export const SESSION_COOKIE = 'sdg_session';
+const SESSION_DAYS = 7;
 
-    if (!authHeader?.startsWith('Bearer ')) {
-        throw AppError.unauthorized('Missing or invalid Authorization header');
-    }
-
-    const token = authHeader.slice(7);
-
-    try {
-        // Dynamic import to avoid build issues
-        const jwt = await import('jsonwebtoken');
-        const decoded = jwt.default.verify(token, config.jwtSecret) as JWTPayload;
-
-        if (!decoded.userId || !decoded.role) {
-            throw AppError.unauthorized('Invalid token payload');
-        }
-
-        return decoded;
-    } catch (error) {
-        if (error instanceof AppError) throw error;
-
-        const jwtError = error as { name?: string };
-        if (jwtError.name === 'TokenExpiredError') {
-            throw new AppError('Token expired', 401, 'AUTH_EXPIRED_TOKEN');
-        }
-        throw AppError.unauthorized('Invalid authentication token');
-    }
+export interface SessionClaims {
+    sub: string; // user id
+    role: Role;
 }
 
-/**
- * Ensure the authenticated user has one of the required roles.
- */
-export function requireRole(user: JWTPayload, ...allowedRoles: UserRole[]): void {
-    if (!allowedRoles.includes(user.role)) {
-        throw AppError.forbidden(
-            `This action requires one of: ${allowedRoles.join(', ')}. Your role: ${user.role}`
-        );
+// Fail closed in production: no default signing secret.
+function secret(): string {
+    const s = process.env.JWT_SECRET;
+    if (s && s.length >= 32) return s;
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('JWT_SECRET must be set (at least 32 characters) in production');
     }
+    return 'sdg-nexus-local-development-secret-not-for-production';
 }
 
-/**
- * IDOR protection: Verify that the authenticated user owns or has access
- * to the requested resource.
- */
-export async function verifyResourceAccess(
-    user: JWTPayload,
-    resourceOrgId: string,
-): Promise<void> {
-    // Admins can access everything
-    if (user.role === 'ADMIN') return;
-
-    // For other roles, we need to verify they belong to the org
-    try {
-        const prismaModule = await import('@/lib/prisma');
-        const prisma = prismaModule.default;
-
-        // Check if user's org matches resource org
-        // (In production, you'd have a user->org mapping table)
-        const org = await prisma.organization.findUnique({
-            where: { id: resourceOrgId },
-            select: { id: true },
-        });
-
-        if (!org) {
-            throw AppError.notFound('Organization');
-        }
-
-        // Government and Donor roles have read access to all orgs
-        if (user.role === 'GOVERNMENT' || user.role === 'DONOR') return;
-
-        // NGO and Corporate can only access their own org data
-        // Note: In full production, userId -> orgId mapping would be needed
-    } catch (error) {
-        if (error instanceof AppError) throw error;
-        // If DB is unavailable, allow access (fallback mode)
-    }
+export function signSession(user: { id: string; role: Role }): string {
+    return jwt.sign({ sub: user.id, role: user.role }, secret(), { expiresIn: `${SESSION_DAYS}d` });
 }
 
-/**
- * Optional: Extract user from JWT if present (doesn't throw on missing auth).
- */
-export async function optionalAuth(request: NextRequest): Promise<JWTPayload | null> {
+export function readSession(token: string | undefined): SessionClaims | null {
+    if (!token) return null;
     try {
-        return await authenticateRequest(request);
+        const claims = jwt.verify(token, secret()) as SessionClaims;
+        return claims.sub && claims.role ? { sub: claims.sub, role: claims.role } : null;
     } catch {
         return null;
     }
+}
+
+export function setSessionCookie(res: NextResponse, token: string): NextResponse {
+    res.cookies.set(SESSION_COOKIE, token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: SESSION_DAYS * 24 * 60 * 60,
+    });
+    return res;
+}
+
+export function clearSessionCookie(res: NextResponse): NextResponse {
+    res.cookies.set(SESSION_COOKIE, '', { httpOnly: true, path: '/', maxAge: 0 });
+    return res;
+}
+
+const sessionUserSelect = {
+    id: true,
+    full_name: true,
+    email: true,
+    role: true,
+    created_at: true,
+    heiId: true,
+    organizationId: true,
+    districtId: true,
+    hei: { select: { id: true, name: true } },
+    organization: { select: { id: true, name: true, verification_status: true } },
+    district: { select: { id: true, name: true, state: { select: { name: true } } } },
+} as const;
+
+export type SessionUser = NonNullable<Awaited<ReturnType<typeof loadUser>>>;
+
+/** Loads a user with the fields every permission check needs. */
+export function loadUser(id: string) {
+    return prisma.user.findUnique({ where: { id }, select: sessionUserSelect });
+}
+
+/** The signed-in user (fresh from the DB), or null. Never throws for a bad/missing cookie. */
+export async function getSessionUser(req: NextRequest): Promise<SessionUser | null> {
+    const claims = readSession(req.cookies.get(SESSION_COOKIE)?.value);
+    if (!claims) return null;
+    return loadUser(claims.sub);
+}
+
+const deny = (status: 401 | 403, error: string) =>
+    NextResponse.json({ success: false, error, timestamp: new Date().toISOString() }, { status });
+
+/**
+ * Use at the top of a route:
+ *   const user = await requireUser(req, ['OFFICER', 'ADMIN']);
+ *   if (user instanceof NextResponse) return user;
+ * An empty role list means "any signed-in user".
+ */
+export async function requireUser(req: NextRequest, roles: Role[] = []): Promise<SessionUser | NextResponse> {
+    let user: SessionUser | null;
+    try {
+        user = await getSessionUser(req);
+    } catch (err) {
+        console.error('Session lookup failed:', err);
+        return NextResponse.json(
+            { success: false, error: 'Sign-in is temporarily unavailable.', timestamp: new Date().toISOString() },
+            { status: 503 }
+        );
+    }
+    if (!user) return deny(401, 'Please sign in to continue.');
+    if (roles.length > 0 && !roles.includes(user.role)) {
+        return deny(403, 'Your role is not allowed to do this.');
+    }
+    return user;
+}
+
+/** Officers act only inside their district; admins act everywhere. */
+export function inJurisdiction(user: SessionUser, challengeDistrict: string): boolean {
+    if (user.role === 'ADMIN') return true;
+    return user.role === 'OFFICER' && !!user.district &&
+        user.district.name.trim().toLowerCase() === challengeDistrict.trim().toLowerCase();
 }

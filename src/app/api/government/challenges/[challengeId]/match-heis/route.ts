@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { authenticateRequest } from '@/server/middleware/auth';
+import { requireUser, inJurisdiction } from '@/server/middleware/auth';
 import { matchChallengesToHEIs } from '@/services/smartMatchingService';
 
 export async function POST(
@@ -10,47 +10,8 @@ export async function POST(
     try {
         const { challengeId } = await context.params;
 
-        // Role verification: GOV role only
-        // ponytail: SECURITY — x-user-role / ?role= / any token containing "gov" are accepted here.
-        // Phase 1 replaces this with withAuth(['OFFICER']). Do not deploy as-is.
-        let userRole = '';
-        const authHeader = req.headers.get('Authorization');
-
-        if (authHeader?.startsWith('Bearer test_gov_') || authHeader?.startsWith('Bearer mock_gov')) {
-            userRole = 'GOV';
-        } else if (authHeader?.startsWith('Bearer ')) {
-            try {
-                const decoded = await authenticateRequest(req);
-                userRole = decoded.role?.toUpperCase() || '';
-            } catch {
-                // If token decoding fails, check custom header or query
-            }
-        }
-
-        const xUserRole = req.headers.get('x-user-role')?.toUpperCase();
-        if (xUserRole) userRole = xUserRole;
-
-        const { searchParams } = new URL(req.url);
-        const queryRole = searchParams.get('role')?.toUpperCase();
-        if (queryRole) userRole = queryRole;
-
-        const isGovAuthorized =
-            userRole === 'GOV' ||
-            userRole === 'GOVERNMENT' ||
-            userRole === 'ADMIN' ||
-            userRole === 'COLLECTOR' ||
-            authHeader?.includes('gov');
-
-        if (!isGovAuthorized) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: 'Forbidden: Only Government users can run AI HEI matching routing',
-                    timestamp: new Date().toISOString(),
-                },
-                { status: 403 }
-            );
-        }
+        const user = await requireUser(req, ['OFFICER', 'ADMIN']);
+        if (user instanceof NextResponse) return user;
 
         // Fetch challenge and compute matches; a DB failure is reported, never papered over.
         let challenge;
@@ -73,6 +34,12 @@ export async function POST(
             return NextResponse.json(
                 { success: false, error: `No challenge found with ID "${challengeId}"`, timestamp: new Date().toISOString() },
                 { status: 404 }
+            );
+        }
+        if (!inJurisdiction(user, challenge.district)) {
+            return NextResponse.json(
+                { success: false, error: 'This challenge is outside your district.', timestamp: new Date().toISOString() },
+                { status: 403 }
             );
         }
 

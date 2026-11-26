@@ -1,3 +1,4 @@
+import { requireUser } from '@/server/middleware/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
@@ -9,6 +10,8 @@ const parseJson = (v: string | null) => {
 // Real audit log entries only, in the shape the government Audit Trail table reads.
 // ponytail: entries are plain rows, not hash-chained; the tamper-evident ledger arrives in Phase 2.
 export async function GET(request: NextRequest) {
+    const user = await requireUser(request, ['OFFICER', 'ADMIN']);
+    if (user instanceof NextResponse) return user;
     const { searchParams } = new URL(request.url);
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');

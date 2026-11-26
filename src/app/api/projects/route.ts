@@ -3,6 +3,7 @@ import { classifyProjectSDGs, type ClassificationResult } from '@/services/sdgCl
 import { calculateProjectScore } from '@/services/impactScoring';
 import { recalculateOrgScore } from '@/services/impactScoringService';
 import { handleApiError, AppError } from '@/server/middleware/errorHandler';
+import { requireUser } from '@/server/middleware/auth';
 import { validateProjectCreate } from '@/server/validators';
 import { projectRepo, auditLogRepo } from '@/server/repositories';
 import { successResponse, errorResponse, sha256, sanitizeString, parsePagination, buildPaginationMeta } from '@/server/utils';
@@ -21,7 +22,11 @@ import { ERROR_CODES } from '@/server/types';
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json();
+        // Projects are created by an NGO for its own organisation; the organisation comes from the session.
+        const user = await requireUser(request, ['NGO']);
+        if (user instanceof NextResponse) return user;
+        if (!user.organizationId) throw AppError.forbidden('Your account is not linked to an organisation.');
+        const body = { ...(await request.json()), organization_id: user.organizationId };
 
         // ─── Validation ──────────────────────────────────────
         const validation = validateProjectCreate(body);

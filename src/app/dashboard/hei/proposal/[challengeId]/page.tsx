@@ -112,7 +112,7 @@ export default function ProposalBuilderPage() {
 
         const fetchExistingProposal = async () => {
             try {
-                const res = await fetch(`/api/hei/proposals?challengeId=${challengeId}&email=${encodeURIComponent(user?.email ?? '')}`);
+                const res = await fetch(`/api/hei/proposals?challengeId=${challengeId}`);
                 const json = await res.json();
                 if (res.ok && json.success && json.data) {
                     const p = json.data;

@@ -1,3 +1,4 @@
+import { requireUser } from '@/server/middleware/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
@@ -11,6 +12,8 @@ interface ScorePreviewRequest {
 }
 
 export async function POST(request: NextRequest) {
+    const user = await requireUser(request, ['FACULTY']);
+    if (user instanceof NextResponse) return user;
     try {
         const body: ScorePreviewRequest = await request.json();
         const {

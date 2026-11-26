@@ -1,8 +1,11 @@
-import { NextResponse } from 'next/server';
+import { requireUser } from '@/server/middleware/auth';
+import { NextResponse, NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 
 // CSR partners registered on the platform (used for the "preferred CSR partner" choice in proposals).
-export async function GET() {
+export async function GET(req: NextRequest) {
+    const user = await requireUser(req, ['FACULTY']);
+    if (user instanceof NextResponse) return user;
     let orgs;
     try {
         orgs = await prisma.organization.findMany({

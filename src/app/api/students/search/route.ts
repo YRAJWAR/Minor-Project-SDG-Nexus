@@ -1,17 +1,16 @@
+import { requireUser } from '@/server/middleware/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
 // Searches students of the requesting faculty member's university only.
 export async function GET(request: NextRequest) {
-    const { searchParams } = new URL(request.url);
-    const query = searchParams.get('q')?.trim() ?? '';
-    // ponytail: SECURITY — university comes from ?email= until Phase 1 provides the signed-in session.
-    const email = searchParams.get('email')?.trim().toLowerCase() ?? '';
+    const faculty = await requireUser(request, ['FACULTY']);
+    if (faculty instanceof NextResponse) return faculty;
+    const query = new URL(request.url).searchParams.get('q')?.trim() ?? '';
 
     let students;
     try {
-        const faculty = email ? await prisma.user.findUnique({ where: { email } }) : null;
-        if (!faculty?.heiId) {
+        if (!faculty.heiId) {
             return NextResponse.json(
                 { success: false, error: 'Your account is not linked to a university.', timestamp: new Date().toISOString() },
                 { status: 403 }

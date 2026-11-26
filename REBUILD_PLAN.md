@@ -2,7 +2,7 @@
 
 > From a hackathon demo for one state to a working, pan-India platform where every screen is backed by real data and every number can be traced.
 
-Status: **Phase 0 (clean-up + live security fixes) done — 26 Nov 2026. Next: Phase 1 (foundation).** Written from: a code audit of all 231 tracked files, a review of the live site (`sdg-nexus-sih2026.vercel.app`), and a hands-on walkthrough of every role on a local copy.
+Status: **Phase 0 and Phase 1 (foundation) done in code — 26 Nov 2026. Phase 1 still needs one run against a real database (migrate + seed + per-role login check). Next: Phase 2 (lifecycle).** Written from: a code audit of all 231 tracked files, a review of the live site (`sdg-nexus-sih2026.vercel.app`), and a hands-on walkthrough of every role on a local copy.
 
 ### Phase 0 — what was done
 - **No more fake answers:** unknown IDs return 404 and database failures return 503 everywhere (credential verify + PDF, tracking, ledger, matching, inbox, notifications, insights, district/density/risk/audit, org profiles). All `FALLBACK_*` / hero datasets in API routes are gone.
@@ -19,6 +19,20 @@ Status: **Phase 0 (clean-up + live security fixes) done — 26 Nov 2026. Next: P
 - `DataContext` / `mockData.ts` still drive the shared dashboards (stat cards, leaderboard, ledger page, heatmap numbers).
 - Jharkhand **data** (district dropdowns, GeoJSON map, demo login emails, district coordinates) — replaced by the pan-India regions table and seed.
 - Uploads still stored as data URLs; proof hashed from the URL string (Phase 3).
+
+### Phase 1 — what was done
+- **Schema:** 20 unused tables dropped (39 → 19); one `Role` enum (Citizen, Officer, Faculty, Student, NGO, CSR, Admin); `State` + `District` tables; users link to a district (officers), an organisation (NGO/CSR) or a university (faculty/students); universities have an invite code; challenge GPS is optional (no made-up coordinates). One fresh migration: `prisma/migrations/20261126000000_init`.
+- **Real auth:** bcrypt passwords, signed JWT in an httpOnly cookie, `/api/auth/{login,register,logout,me}`. Self sign-up for citizen, faculty/student (invite code), NGO/CSR (organisation starts *pending*). Officers and admins are never self-registered.
+- **Guards:** every non-public API route calls `requireUser(roles)`; officers act only in their own district (`inJurisdiction`); milestone moves are allowed per role. `src/proxy.ts` keeps signed-out users and wrong roles out of pages. Identity can no longer come from `?email=`, `x-user-*` headers or localStorage.
+- **No mock data:** `mockData.ts` keeps only SDG reference data and types; `DataContext` starts empty; the government page's fake funding-gap, underfunded-alert and risk-trend charts are gone and its directory lists real verified organisations.
+- **Pan-India:** citizen form and registration pick state → district from `/api/regions` (36 states/UTs, 784 districts).
+- **Seed:** regions, SDGs, and one fictional account per role (see README).
+- **Check:** `npm run check` now 9 tests (adds sessions, page guard, API 401).
+
+### Left for later phases (marked `ponytail:` in code)
+- Shared dashboards (NGO, corporate, heatmap, ledger page, leaderboard, analytics, profile) read the now-empty `DataContext` and show empty states until Phase 2 wires them to APIs.
+- Map still loads the Jharkhand GeoJSON; HEI inbox district filter still lists Jharkhand districts (Phase 2).
+- Notification recipients by role are platform-wide (Phase 2 scopes them).
 
 ---
 

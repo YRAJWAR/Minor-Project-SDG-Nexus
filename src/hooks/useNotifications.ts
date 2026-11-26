@@ -21,27 +21,8 @@ export function useNotifications() {
     const [loading, setLoading] = useState<boolean>(false);
     const isFetchingRef = useRef(false);
 
-    const getAuthHeaders = useCallback((): Record<string, string> => {
-        const headers: Record<string, string> = {};
-        if (typeof window !== 'undefined') {
-            const token = localStorage.getItem('sdg_nexus_token');
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-            const storedUser = localStorage.getItem('sdg_nexus_user');
-            if (storedUser) {
-                try {
-                    const parsed = JSON.parse(storedUser);
-                    if (parsed.id) headers['x-user-id'] = parsed.id;
-                    if (parsed.role) headers['x-user-role'] = parsed.role;
-                    if (parsed.email) headers['x-user-email'] = parsed.email;
-                } catch {
-                    // Ignore parse error
-                }
-            }
-        }
-        return headers;
-    }, []);
+    // The session cookie rides along automatically; no headers needed.
+    const getAuthHeaders = useCallback((): Record<string, string> => ({}), []);
 
     const fetchUnreadCount = useCallback(async () => {
         try {

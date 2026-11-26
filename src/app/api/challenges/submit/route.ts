@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireUser } from '@/server/middleware/auth';
 import { classifyProjectSDGs } from '@/services/sdgClassifierService';
 import { NotificationTriggers } from '@/lib/notifications';
 
 export async function POST(req: NextRequest) {
     try {
+        const user = await requireUser(req, ['CITIZEN', 'ADMIN']);
+        if (user instanceof NextResponse) return user;
+
         const body = await req.json();
         const {
             title,
             description,
             category,
+            state,
             district,
             block,
             village,
@@ -17,8 +22,6 @@ export async function POST(req: NextRequest) {
             gpsLng,
             photoUrls,
             videoUrls,
-            submitterName,
-            submitterPhone,
             isAnonymous,
             isGpNode,
             vleOperatorCode,
@@ -42,9 +45,17 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        if (!district || typeof district !== 'string') {
+        if (typeof state !== 'string' || typeof district !== 'string' || !state || !district) {
             return NextResponse.json(
-                { success: false, error: 'District is required', timestamp: new Date().toISOString() },
+                { success: false, error: 'State and district are required', timestamp: new Date().toISOString() },
+                { status: 400 }
+            );
+        }
+        // The district must really belong to the chosen state (both come from the regions table).
+        const knownDistrict = await prisma.district.findFirst({ where: { name: district, state: { name: state } }, select: { id: true } });
+        if (!knownDistrict) {
+            return NextResponse.json(
+                { success: false, error: 'Please choose a district from the list for the selected state.', timestamp: new Date().toISOString() },
                 { status: 400 }
             );
         }
@@ -63,20 +74,9 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Submitter attribution
+        // Submitter attribution comes from the signed-in account; anonymous reports hide the name publicly.
         const anonymousFlag = Boolean(isAnonymous);
-        let submittedByStr = 'Anonymous Citizen';
-        if (!anonymousFlag) {
-            if (submitterName && submitterPhone) {
-                submittedByStr = `${submitterName.trim()} (${submitterPhone.trim()})`;
-            } else if (submitterName) {
-                submittedByStr = submitterName.trim();
-            } else if (submitterPhone) {
-                submittedByStr = submitterPhone.trim();
-            } else {
-                submittedByStr = 'Citizen';
-            }
-        }
+        const submittedByStr = anonymousFlag ? 'Anonymous Citizen' : user.full_name;
 
         // Run SDG Classification (Title + Description)
         let sdgTags: number[] = [];
@@ -108,10 +108,11 @@ export async function POST(req: NextRequest) {
             finalDescription = `[MERGED WITH TICKET #${similarChallengeId}] ${finalDescription}`;
         }
 
-        // ponytail: missing GPS falls back to a fixed point because gpsLat/gpsLng are required columns.
-        // Phase 1 makes GPS required in the form (map pin) and validates it against the chosen district.
-        const latitude = typeof gpsLat === 'number' && !isNaN(gpsLat) ? gpsLat : 23.6102;
-        const longitude = typeof gpsLng === 'number' && !isNaN(gpsLng) ? gpsLng : 85.2799;
+        // GPS is optional: no fix means no coordinates, never a made-up point.
+        const okLat = typeof gpsLat === 'number' && Math.abs(gpsLat) <= 90;
+        const okLng = typeof gpsLng === 'number' && Math.abs(gpsLng) <= 180;
+        const latitude = okLat && okLng ? gpsLat : null;
+        const longitude = okLat && okLng ? gpsLng : null;
 
         // Persist Challenge
         let challenge;
@@ -120,7 +121,8 @@ export async function POST(req: NextRequest) {
                 data: {
                     title: title.trim(),
                     description: finalDescription,
-                    district: district.trim(),
+                    state,
+                    district,
                     block: block ? block.trim() : null,
                     gpsLat: latitude,
                     gpsLng: longitude,

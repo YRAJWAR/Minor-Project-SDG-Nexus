@@ -53,7 +53,7 @@ export default function ProposalsIndexPage() {
     useEffect(() => {
         const fetchProposals = async () => {
             try {
-                const res = await fetch(`/api/hei/proposals?email=${encodeURIComponent(user?.email ?? '')}`);
+                const res = await fetch(`/api/hei/proposals`);
                 const json = await res.json();
                 if (res.ok && json.success && Array.isArray(json.data)) {
                     setProposals(json.data);

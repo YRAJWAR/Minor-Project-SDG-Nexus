@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { authenticateRequest } from '@/server/middleware/auth';
+import { requireUser, inJurisdiction } from '@/server/middleware/auth';
 import { canTransitionStatus } from '@/middleware/challengeStatus';
 import { auditLogRepo } from '@/server/repositories';
 import { NotificationTriggers } from '@/lib/notifications';
@@ -50,10 +50,12 @@ function scoreHeiMatch(
 }
 
 export async function GET(
-    _req: NextRequest,
+    req: NextRequest,
     { params }: { params: Promise<{ challengeId: string }> }
 ) {
     try {
+        const user = await requireUser(req, ['OFFICER', 'ADMIN']);
+        if (user instanceof NextResponse) return user;
         const { challengeId } = await params;
 
         let challenge;
@@ -87,6 +89,12 @@ export async function GET(
             return NextResponse.json(
                 { success: false, error: `No challenge found with ID "${challengeId}"`, timestamp: new Date().toISOString() },
                 { status: 404 }
+            );
+        }
+        if (!inJurisdiction(user, challenge.district)) {
+            return NextResponse.json(
+                { success: false, error: 'This challenge is outside your district.', timestamp: new Date().toISOString() },
+                { status: 403 }
             );
         }
 
@@ -140,41 +148,9 @@ export async function POST(
         const body = await req.json().catch(() => ({}));
         const { selectedHeiId } = body;
 
-        // 1. Authenticate & Verify GOV Role
-        // ponytail: SECURITY — a missing/invalid token currently defaults to GOV so the demo UI (which sends no
-        // real token) keeps working. Phase 1 (real auth + withAuth) removes this default. Do not deploy as-is.
-        let userRole = 'GOV';
-        let userId = 'collector-jharkhand';
-
-        try {
-            const authHeader = req.headers.get('Authorization');
-            if (authHeader?.startsWith('Bearer test_gov_') || authHeader?.startsWith('Bearer mock_gov')) {
-                userRole = 'GOV';
-            } else if (authHeader?.startsWith('Bearer ')) {
-                const decoded = await authenticateRequest(req);
-                userRole = decoded.role;
-                userId = decoded.userId;
-            }
-        } catch {
-            // In demo/collector context, allow collector
-        }
-
-        const normalizedRole = userRole.toUpperCase();
-        if (
-            normalizedRole !== 'GOVERNMENT' &&
-            normalizedRole !== 'GOV' &&
-            normalizedRole !== 'ADMIN' &&
-            normalizedRole !== 'SUPERADMIN'
-        ) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: 'Unauthorized: Only Government officials can validate challenges and allocate universities.',
-                    timestamp: new Date().toISOString(),
-                },
-                { status: 403 }
-            );
-        }
+        // 1. Only an officer (in this challenge's district) or an admin may validate and route.
+        const user = await requireUser(req, ['OFFICER', 'ADMIN']);
+        if (user instanceof NextResponse) return user;
 
         // 2. Fetch challenge and candidate universities
         let challenge;
@@ -196,6 +172,12 @@ export async function POST(
             return NextResponse.json(
                 { success: false, error: `No challenge found with ID "${challengeId}"`, timestamp: new Date().toISOString() },
                 { status: 404 }
+            );
+        }
+        if (!inJurisdiction(user, challenge.district)) {
+            return NextResponse.json(
+                { success: false, error: 'This challenge is outside your district.', timestamp: new Date().toISOString() },
+                { status: 403 }
             );
         }
 
@@ -282,8 +264,8 @@ export async function POST(
 
         // 7. Log audit trail
         await auditLogRepo.create({
-            actor_id: userId,
-            actor_role: 'GOVERNMENT',
+            actor_id: user.email,
+            actor_role: user.role,
             action: selectedHeiId ? 'HEI_ALLOCATED' : 'CHALLENGE_VALIDATED',
             entity_type: 'Challenge',
             entity_id: challengeId,

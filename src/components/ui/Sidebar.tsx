@@ -67,7 +67,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
     const { user, logout } = useAuth();
     const pathname = usePathname();
     const role = user?.role || 'ngo';
-    const items = NAV_ITEMS[role] || NAV_ITEMS.ngo;
+    const items = NAV_ITEMS[role === 'admin' ? 'government' : role] || NAV_ITEMS.ngo;
 
     return (
         <>
@@ -156,7 +156,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
                         <p className="text-[11px] truncate text-slate-500">{user?.organization_name}</p>
                     </div>
                 </div>
-                <button onClick={() => { onClose?.(); logout(); }}
+                <button onClick={async () => { onClose?.(); await logout(); window.location.assign('/login'); }}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer"
                     style={{
                         color: '#ef4444',

@@ -1,8 +1,11 @@
+import { requireUser } from '@/server/middleware/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { DeduplicationService } from '@/services/deduplicationService';
 
 export async function POST(req: NextRequest) {
     try {
+        const user = await requireUser(req);
+        if (user instanceof NextResponse) return user;
         const body = await req.json();
         const { title, description, district } = body;
 

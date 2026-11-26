@@ -1,11 +1,14 @@
+import { requireUser } from '@/server/middleware/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getDistrictProfile } from '@/data/jharkhandDistricts';
 
 export async function GET(
-    _req: NextRequest,
+    req: NextRequest,
     context: { params: Promise<{ districtName: string }> }
 ) {
+    const user = await requireUser(req, ['OFFICER', 'ADMIN']);
+    if (user instanceof NextResponse) return user;
     try {
         const { districtName } = await context.params;
         const decodedDistrict = decodeURIComponent(districtName || '').trim();

@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { requireUser } from '@/server/middleware/auth';
+import { NextResponse, NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { SDG_INFO } from '@/data/mockData';
 
@@ -9,7 +10,9 @@ const RESOLVED = new Set(['COMPLETED', 'DEPLOYED']);
 const lakhs = (rupees: number) => Math.round(rupees / 1000) / 100; // 2 decimals
 
 // All five insights are computed from live data. When there is no data, the text says so (no invented numbers).
-export async function GET() {
+export async function GET(req: NextRequest) {
+    const user = await requireUser(req, ['OFFICER', 'ADMIN']);
+    if (user instanceof NextResponse) return user;
     let challenges, acceptedProposals, released;
     try {
         [challenges, acceptedProposals, released] = await Promise.all([

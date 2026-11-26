@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { requireUser } from '@/server/middleware/auth';
+import { NextResponse, NextRequest } from 'next/server';
 import { handleApiError, AppError } from '@/server/middleware/errorHandler';
 import { successResponse } from '@/server/utils';
 import { impactScoreRepo } from '@/server/repositories';
@@ -20,7 +21,9 @@ const WEIGHT_DISTRIBUTION = {
     transparency: 0.15,
 };
 
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const user = await requireUser(req);
+    if (user instanceof NextResponse) return user;
     try {
         const { id } = await params;
 

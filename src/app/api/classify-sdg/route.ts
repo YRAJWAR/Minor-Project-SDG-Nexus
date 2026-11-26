@@ -1,3 +1,4 @@
+import { requireUser } from '@/server/middleware/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { classifyProjectSDGs } from '@/services/sdgClassifierService';
 import { handleApiError, AppError } from '@/server/middleware/errorHandler';
@@ -8,6 +9,8 @@ import { successResponse, sanitizeString } from '@/server/utils';
 // ──────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
+    const user = await requireUser(request);
+    if (user instanceof NextResponse) return user;
     try {
         const { description } = await request.json();
 

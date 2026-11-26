@@ -32,20 +32,20 @@ export default function LandingPage() {
     setTimeout(() => setCopiedEmail(null), 2000);
   };
 
-  // Demo accounts (local/demo use only; replaced by seeded fictional accounts in Phase 1)
+  // Fictional demo accounts created by prisma/seed.ts
   const demoAccounts = [
     {
       role: 'Citizen (Submitter)',
-      name: 'Ramu Oraon',
-      email: 'citizen@jharkhand.gov.in',
+      name: 'Lakshmi Reddy',
+      email: 'citizen@demo.sdgnexus.in',
       badge: 'Public Submitter',
       badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
       description: 'Reports grassroots societal challenges with geo-tagged proof',
     },
     {
       role: 'District Officer (Government)',
-      name: 'Dr. Ramesh Kumar',
-      email: 'collector@jharkhand.gov.in',
+      name: 'District Officer, Nalgonda',
+      email: 'officer.nalgonda@demo.sdgnexus.in',
       badge: 'District Authority',
       badgeColor: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
       description: 'Validates challenges, routes to anchor HEIs & tracks district metrics',
@@ -53,7 +53,7 @@ export default function LandingPage() {
     {
       role: 'University Faculty (HEI Lead)',
       name: 'University faculty lead',
-      email: 'faculty@nitjsr.ac.in',
+      email: 'faculty@demo.sdgnexus.in',
       badge: 'Academic Lead',
       badgeColor: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
       description: 'Reviews matched problems, assigns student teams & submits proposals',
@@ -61,7 +61,7 @@ export default function LandingPage() {
     {
       role: 'Industry Partner (CSR Funder)',
       name: 'CSR funding partner',
-      email: 'csr@tatasteel.com',
+      email: 'csr@demo.sdgnexus.in',
       badge: 'CSR Partner',
       badgeColor: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
       description: 'Funds accepted proposals & releases tranches against validated milestones',
@@ -69,7 +69,7 @@ export default function LandingPage() {
     {
       role: 'Deployment Partner (NGO)',
       name: 'Field NGO partner',
-      email: 'admin@pradan.net',
+      email: 'ngo@demo.sdgnexus.in',
       badge: 'Field Partner',
       badgeColor: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
       description: 'Deploys solutions on the ground and attests field work',
@@ -77,7 +77,7 @@ export default function LandingPage() {
     {
       role: 'University Student (Innovator)',
       name: 'University student',
-      email: 'student@nitjsr.ac.in',
+      email: 'student@demo.sdgnexus.in',
       badge: 'Student',
       badgeColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
       description: 'Does field work, submits proof and earns verifiable credits',

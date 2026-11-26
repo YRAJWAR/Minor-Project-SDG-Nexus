@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireUser } from '@/server/middleware/auth';
 import { canTransitionStatus } from '@/middleware/challengeStatus';
 import { NotificationTriggers } from '@/lib/notifications';
 
@@ -9,25 +10,24 @@ const fail = (error: string, status: number) =>
 // Forms the team for a challenge that was routed to the faculty member's university.
 // Every listed student must exist and belong to that university; all writes happen together or not at all.
 export async function POST(request: NextRequest) {
+    // The faculty lead and the university are the signed-in user — never taken from the request body.
+    const faculty = await requireUser(request, ['FACULTY']);
+    if (faculty instanceof NextResponse) return faculty;
+    if (!faculty.heiId) return fail('Your account is not linked to a university.', 403);
+    const facultyName = faculty.full_name;
+    const facultyEmail = faculty.email;
+
     const body = await request.json().catch(() => null);
-    const { challengeId, teamName, facultyName, facultyEmail, backupLead, members } = body ?? {};
+    const { challengeId, teamName, backupLead, members } = body ?? {};
 
     if (typeof challengeId !== 'string' || !challengeId) return fail('Challenge ID is required', 400);
     if (typeof teamName !== 'string' || teamName.trim().length < 2) return fail('Team name is required (minimum 2 characters)', 400);
-    if (typeof facultyName !== 'string' || typeof facultyEmail !== 'string' || !facultyName.trim() || !facultyEmail.trim()) {
-        return fail('Faculty mentor details are required', 400);
-    }
     if (!Array.isArray(members) || members.length < 2 || members.length > 8) return fail('A team needs 2–8 students', 400);
     const memberIds: string[] = members.map((m: { studentProfileId?: unknown }) => String(m?.studentProfileId ?? ''));
     if (new Set(memberIds).size !== memberIds.length) return fail('A student can only be added once', 400);
 
-    // ponytail: the university is resolved from the faculty email in the request body. Phase 1 takes it from the
-    // signed-in session instead, so a faculty member cannot act for another university.
     let result;
     try {
-        const faculty = await prisma.user.findUnique({ where: { email: facultyEmail.trim().toLowerCase() } });
-        if (!faculty?.heiId) return fail('This faculty email is not registered with a university.', 400);
-
         const challenge = await prisma.challenge.findUnique({ where: { id: challengeId } });
         if (!challenge) return fail(`No challenge found with ID "${challengeId}"`, 404);
         const transition = canTransitionStatus(challenge.status, 'TEAM_FORMED', 'HEI');
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         const invalid = memberIds.filter((id) => !valid.has(id));
         if (invalid.length > 0) return fail(`These students are not registered at your university: ${invalid.join(', ')}`, 400);
 
-        const hei = await prisma.hEI.findUniqueOrThrow({ where: { id: faculty.heiId } });
+        const hei = await prisma.hEI.findUniqueOrThrow({ where: { id: faculty.heiId! } });
 
         result = await prisma.$transaction(async (tx) => {
             const team = await tx.projectTeam.create({

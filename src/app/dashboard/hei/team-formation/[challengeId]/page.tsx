@@ -104,11 +104,9 @@ export default function TeamFormationPage() {
         const timer = setTimeout(async () => {
             setLoadingStudents(true);
             try {
-                const token = typeof window !== 'undefined' ? localStorage.getItem('sdg_nexus_token') : null;
                 const headers: Record<string, string> = {};
-                if (token) headers['Authorization'] = `Bearer ${token}`;
 
-                const res = await fetch(`/api/students/search?q=${encodeURIComponent(searchQuery)}&email=${encodeURIComponent(user?.email ?? "")}`, { headers });
+                const res = await fetch(`/api/students/search?q=${encodeURIComponent(searchQuery)}`, { headers });
                 const json = await res.json();
                 if (res.ok && json.success) {
                     setStudents(json.data || []);
@@ -178,9 +176,7 @@ export default function TeamFormationPage() {
         setLocking(true);
 
         try {
-            const token = typeof window !== 'undefined' ? localStorage.getItem('sdg_nexus_token') : null;
             const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
 
             const res = await fetch('/api/hei/teams/create', {
                 method: 'POST',

@@ -3,5 +3,5 @@
 // ──────────────────────────────────────────────────────────────
 
 export { AppError, handleApiError } from './errorHandler';
-export { authenticateRequest, requireRole, verifyResourceAccess, optionalAuth } from './auth';
+export { requireUser, getSessionUser, inJurisdiction } from './auth';
 export { rateLimit, rateLimitSensitive } from './rateLimit';

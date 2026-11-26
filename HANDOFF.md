@@ -51,7 +51,7 @@ npm run dev                 # http://localhost:3000
 | 1 Foundation (schema, auth, guards, regions) | done |
 | 5 Demo seed | pulled forward, done (smoke script still to do) |
 | 2 Lifecycle core | done |
-| 3 Proposals, funding, milestones | in progress on branch `phase-3-funding` (NOT merged) — see log |
+| 3 Proposals, funding, milestones | done |
 | 4 Closure, credentials, scores | not started |
 | 6 Design (use `.claude/skills/impeccable` guidance) | not started |
 | 7 Ship | not started |
@@ -108,4 +108,14 @@ Format: date · who · branch · what changed (files) · what is unfinished · a
   - Known gaps: `hei/teams/create` (old team-formation page) still sets TEAM_FORMED directly — teams now come from the
     selected proposal, so remove that page from the faculty nav or make the route return 410; proof files are still data
     URLs (hash covers their content); CSR compliance (2% of profit) and NGO attestation not started.
+- 2026-11-26 · Google Antigravity · phase-3-funding → merged to main · Phase 3 verified, fixed, and merged.
+  - Verified: `npx prisma migrate deploy`, `npx prisma db seed` (all ✓ lines), `npm run check` (15/15), and end-to-end API flow
+    (officer `SELECT_PROPOSAL` → CSR `COMMIT_FUNDS` → faculty `milestone/submit` → officer `GP_VERIFIED` → CSR `CSR_APPROVED`
+    exact tranche check → `GET /api/ledger/chain` `valid:true`), then reset DB with `npx prisma db seed`.
+  - Fixed: `src/app/api/challenges/[challengeId]/actions/route.ts` now forwards `proposalId` and `amount` to `transition()`.
+  - Retired obsolete team-formation flow: removed "Team Formation" from `src/components/ui/Sidebar.tsx` and
+    `src/app/dashboard/hei/layout.tsx`, updated `src/app/dashboard/hei/page.tsx` link to `/dashboard/hei/proposal/[challengeId]`,
+    and made `POST /api/hei/teams/create` return HTTP 410.
+  - Note: Chrome DevTools MCP could not connect to local Chrome (`DevToolsActivePort` missing), so the UI walkthrough was
+    verified via API end-to-end + `npm run check` + `npm run build` on `main`. Next: Phase 4 (closure, credentials, scores).
 

@@ -242,6 +242,7 @@ export default function CitizenSubmitPage() {
                 title,
                 description,
                 category,
+                urgency,
                 state,
                 district,
                 block: block || undefined,

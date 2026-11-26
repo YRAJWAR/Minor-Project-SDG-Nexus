@@ -14,7 +14,7 @@
     "db:seed": "npx prisma db seed",
     "db:studio": "npx prisma studio",
     "db:push": "npx prisma db push",
-    "check": "tsx --test src/lib/integrity.test.ts src/server/auth.test.ts"
+    "check": "tsx --test src/lib/integrity.test.ts src/server/auth.test.ts src/server/lifecycle.test.ts"
   },
   "keywords": [],
   "author": "",

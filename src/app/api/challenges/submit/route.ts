@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { requireUser } from '@/server/middleware/auth';
 import { classifyProjectSDGs } from '@/services/sdgClassifierService';
 import { NotificationTriggers } from '@/lib/notifications';
+import { appendLedger } from '@/server/ledger';
 
 export async function POST(req: NextRequest) {
     try {
@@ -28,6 +29,7 @@ export async function POST(req: NextRequest) {
             submittedVia,
             isDuplicate,
             similarChallengeId,
+            urgency,
         } = body;
 
         // Validation
@@ -117,7 +119,8 @@ export async function POST(req: NextRequest) {
         // Persist Challenge
         let challenge;
         try {
-            challenge = await prisma.challenge.create({
+            challenge = await prisma.$transaction(async (tx) => {
+            const c = await tx.challenge.create({
                 data: {
                     title: title.trim(),
                     description: finalDescription,
@@ -133,12 +136,17 @@ export async function POST(req: NextRequest) {
                     sdgTags,
                     aiConfidence,
                     submittedBy: submittedByStr,
+                    submitterId: user.id,
+                    urgency: ['NORMAL', 'MODERATE', 'HIGH', 'CRITICAL'].includes(urgency) ? urgency : 'NORMAL',
                     submitterType: user.role,
                     isAnonymous: anonymousFlag,
                     isDuplicate: Boolean(isDuplicate),
                     duplicateOf: similarChallengeId ? String(similarChallengeId) : null,
                     submittedVia: (isGpNode || submittedVia === 'GRAM_PANCHAYAT_NODE') ? 'GRAM_PANCHAYAT_NODE' : 'PORTAL',
                 },
+            });
+            await appendLedger({ actor_id: user.id, actor_role: user.role, action: 'CHALLENGE_SUBMITTED', entity_type: 'Challenge', entity_id: c.id, new_value: { status: c.status, district, state } }, tx);
+            return c;
             });
         } catch (dbErr) {
             console.error('Database write failed in challenge submission:', dbErr);
@@ -148,7 +156,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Trigger 1: P2 Notification for all GOV users
+        // Notify the officers of this district (scoped in notifyUsersByRole)
         try {
             await NotificationTriggers.challengeSubmitted({
                 id: challenge.id,

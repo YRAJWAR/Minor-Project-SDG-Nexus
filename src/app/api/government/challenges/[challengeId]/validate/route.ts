@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireUser, inJurisdiction } from '@/server/middleware/auth';
-import { canTransitionStatus } from '@/middleware/challengeStatus';
-import { auditLogRepo } from '@/server/repositories';
-import { NotificationTriggers } from '@/lib/notifications';
+import { transition, LifecycleError } from '@/server/lifecycle';
 
 function scoreHeiMatch(
     challenge: { sdgTags: number[]; district: string },
@@ -181,23 +179,6 @@ export async function POST(
             );
         }
 
-        // 3. Status transition check: AI_PROCESSED -> VALIDATED
-        let newStatus = 'VALIDATED';
-        if (challenge.status !== 'VALIDATED') {
-            const check = canTransitionStatus(challenge.status, 'VALIDATED', 'GOV');
-            if (!check.allowed && challenge.status !== 'SUBMITTED') {
-                return NextResponse.json(
-                    {
-                        success: false,
-                        error: 'Unauthorized status transition',
-                        details: check.reason,
-                        timestamp: new Date().toISOString(),
-                    },
-                    { status: 403 }
-                );
-            }
-        }
-
         // 4. Score all candidate HEIs
         const scoredHeis = allHeis.map((hei) => {
             const match = scoreHeiMatch(
@@ -221,67 +202,27 @@ export async function POST(
         // Top 3 HEI matches
         const top3Heis = scoredHeis.sort((a, b) => b.matchScore - a.matchScore).slice(0, 3);
 
-        // 5. If selectedHeiId is provided, transition to UNIVERSITY_ASSIGNED
-        const assignedHei = selectedHeiId ? allHeis.find((h) => h.id === selectedHeiId) ?? null : null;
-        if (selectedHeiId && !assignedHei) {
-            return NextResponse.json(
-                { success: false, error: `No university found with ID "${selectedHeiId}"`, timestamp: new Date().toISOString() },
-                { status: 400 }
-            );
-        }
-        if (assignedHei) newStatus = 'UNIVERSITY_ASSIGNED';
-
-        // 6. Write the assignment and the status change together, or not at all.
+        // 5. Verify (if still awaiting the officer) and optionally assign, through the lifecycle service:
+        //    it checks role, district and status, and writes the change + ledger entry + notifications together.
+        let newStatus = challenge.status;
+        let assignedHei: { id: string; name: string } | null = null;
         try {
-            await prisma.$transaction(async (tx) => {
-                if (assignedHei) {
-                    // ponytail: routing creates a placeholder proposal (fixed budget/timeline) so the university inbox
-                    // can find it. Phase 2 replaces this with real university-written proposals selected by the officer.
-                    await tx.challengeProposal.create({
-                        data: {
-                            challengeId: challenge.id,
-                            heiId: assignedHei.id,
-                            approach: `Assigned by the district officer to ${assignedHei.name}.`,
-                            status: 'SUBMITTED',
-                            timelineWeeks: 12,
-                            budgetRequested: 350000,
-                            ipDeclaration: 'Open source for public benefit.',
-                        },
-                    });
-                }
-                await tx.challenge.update({
-                    where: { id: challengeId },
-                    data: { status: newStatus as any },
-                });
-            });
-        } catch (dbErr) {
-            console.error('DB update failed in validate route:', dbErr);
+            if (challenge.status === 'SUBMITTED' || challenge.status === 'AI_PROCESSED') {
+                newStatus = (await transition(challengeId, 'VERIFY', user)).status;
+            }
+            if (selectedHeiId) {
+                newStatus = (await transition(challengeId, 'ASSIGN', user, { heiId: selectedHeiId })).status;
+                assignedHei = allHeis.find((h) => h.id === selectedHeiId) ?? null;
+            }
+        } catch (err) {
+            if (err instanceof LifecycleError) {
+                return NextResponse.json({ success: false, error: err.message, timestamp: new Date().toISOString() }, { status: err.status });
+            }
+            console.error('Validate/route failed:', err);
             return NextResponse.json(
                 { success: false, error: 'The change could not be saved. Nothing was updated — please try again.', timestamp: new Date().toISOString() },
                 { status: 503 }
             );
-        }
-
-        // 7. Log audit trail
-        await auditLogRepo.create({
-            actor_id: user.email,
-            actor_role: user.role,
-            action: selectedHeiId ? 'HEI_ALLOCATED' : 'CHALLENGE_VALIDATED',
-            entity_type: 'Challenge',
-            entity_id: challengeId,
-            previous_value: { status: challenge.status },
-            new_value: { status: newStatus, assignedHeiId: selectedHeiId || null },
-        });
-
-        // Trigger 2: Challenge VALIDATED -> P2 for submitter + P2 for all HEI users
-        try {
-            await NotificationTriggers.challengeValidated({
-                id: challengeId,
-                title: challenge.title,
-                submitterId: (challenge as { submitterId?: string }).submitterId,
-            });
-        } catch (notifErr) {
-            console.warn('Notification dispatch failed in validate route:', notifErr);
         }
 
         return NextResponse.json({

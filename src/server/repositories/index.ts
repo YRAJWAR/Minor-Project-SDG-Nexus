@@ -324,19 +324,8 @@ export const auditLogRepo = {
         ip_address?: string;
     }) {
         try {
-            const prisma = await getPrisma();
-            return await prisma.auditLog.create({
-                data: {
-                    actor_id: entry.actor_id,
-                    actor_role: entry.actor_role,
-                    action: entry.action,
-                    entity_type: entry.entity_type,
-                    entity_id: entry.entity_id,
-                    previous_value: entry.previous_value ? JSON.stringify(entry.previous_value) : null,
-                    new_value: entry.new_value ? JSON.stringify(entry.new_value) : null,
-                    ip_address: entry.ip_address ?? null,
-                },
-            });
+            const { appendLedger } = await import('@/server/ledger');
+            return await appendLedger(entry);
         } catch {
             // Audit logging should never break the main flow
             console.warn('[Audit] Failed to log:', entry.action, entry.entity_type, entry.entity_id);

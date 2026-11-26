@@ -270,6 +270,8 @@ model AuditLog {
   previous_value String?
   new_value      String?
   ip_address     String?
+  prev_hash      String? // hash of the previous entry: a chain, so editing any old entry breaks every later one
+  hash           String?
   created_at     DateTime @default(now())
 
   @@index([entity_type, entity_id])
@@ -294,6 +296,8 @@ enum ChallengeStatus {
   IN_PROGRESS
   COMPLETED
   DEPLOYED
+  REJECTED // officer turned it down (reason stored)
+  MERGED // folded into another report (mergedIntoId)
 }
 
 enum ProposalStatus {
@@ -371,6 +375,10 @@ model Challenge {
   sdgTags       Int[]
   aiConfidence  Float?
   submittedBy   String
+  submitterId   String? // the account that reported it (kept even when shown as anonymous)
+  urgency       String              @default("NORMAL") // NORMAL | MODERATE | HIGH | CRITICAL
+  rejectReason  String?
+  mergedIntoId  String?
   submitterType String
   isAnonymous   Boolean             @default(false)
   isDuplicate   Boolean             @default(false)
@@ -381,6 +389,7 @@ model Challenge {
   updatedAt     DateTime            @updatedAt
   proposals     ChallengeProposal[]
   notifications Notification[]
+  endorsements  Endorsement[]
 
   @@index([district])
   @@index([status])
@@ -507,4 +516,16 @@ model Notification {
   @@index([read])
   @@index([createdAt(sort: Desc)])
   @@map("notifications")
+}
+
+// A citizen saying "this affects me too". One per user per challenge.
+model Endorsement {
+  id          String    @id @default(cuid())
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  userId      String
+  createdAt   DateTime  @default(now())
+
+  @@unique([challengeId, userId])
+  @@map("endorsements")
 }

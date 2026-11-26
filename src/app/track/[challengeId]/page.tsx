@@ -41,6 +41,10 @@ interface ChallengeStatusData {
     rejectReason?: string | null;
     mergedInto?: { id: string; title: string } | null;
     allowedActions?: string[];
+    citizenRating?: number | null;
+    confirmedAt?: string | null;
+    disputeReason?: string | null;
+    verifiedBeneficiaries?: number | null;
     signedIn?: boolean;
     id: string;
     title: string;
@@ -89,6 +93,17 @@ export default function TrackChallengePage() {
     const [copied, setCopied] = useState<boolean>(false);
     const [reload, setReload] = useState(0);
     const [endorseMsg, setEndorseMsg] = useState<string | null>(null);
+    const [rating, setRating] = useState(0);
+    const [disputing, setDisputing] = useState(false);
+    const [disputeText, setDisputeText] = useState('');
+    const act = async (action: 'CONFIRM' | 'DISPUTE') => {
+        const res = await fetch(`/api/challenges/${challengeId}/actions`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(action === 'CONFIRM' ? { action, rating } : { action, reason: disputeText }),
+        }).then((r) => r.json()).catch(() => ({ success: false, error: 'Could not reach the server.' }));
+        setEndorseMsg(res.success ? (action === 'CONFIRM' ? 'Thank you — your confirmation was recorded.' : 'Your dispute was sent to the district officer and the university.') : res.error);
+        if (res.success) { setDisputing(false); setReload((n) => n + 1); }
+    };
     const endorse = async () => {
         const res = await fetch(`/api/challenges/${challengeId}/actions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'ENDORSE' }) })
             .then((r) => r.json()).catch(() => ({ success: false, error: 'Could not reach the server.' }));
@@ -246,6 +261,36 @@ export default function TrackChallengePage() {
                             This report was merged into <a className="underline" href={`/track/${data.mergedInto.id}`}>{data.mergedInto.title}</a>, which is being followed up. Your support was added to it.
                         </p>
                     )}
+                    {(data.allowedActions?.includes('CONFIRM') || data.allowedActions?.includes('DISPUTE')) && (
+                        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 space-y-3">
+                            <p className="text-sm text-emerald-100"><strong>The university says your problem is fixed.</strong> Is it? Your answer closes the report and counts in their score.</p>
+                            {!disputing ? (
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-xs text-slate-300" id="rate-label">Rate the fix:</span>
+                                    <div role="radiogroup" aria-labelledby="rate-label" className="flex gap-1">
+                                        {[1, 2, 3, 4, 5].map((n) => (
+                                            <button key={n} type="button" role="radio" aria-checked={rating === n} aria-label={`${n} out of 5`} onClick={() => setRating(n)}
+                                                className={`w-8 h-8 rounded-lg text-sm font-bold ${rating >= n ? 'bg-amber-400 text-slate-900' : 'bg-slate-800 text-slate-400'}`}>{n}</button>
+                                        ))}
+                                    </div>
+                                    <button type="button" disabled={!rating} onClick={() => act('CONFIRM')} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold disabled:opacity-50">Yes, it is fixed</button>
+                                    <button type="button" onClick={() => setDisputing(true)} className="px-3 py-1.5 rounded-lg border border-rose-400/40 text-rose-200 text-xs font-semibold">No, it is not fixed</button>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <label htmlFor="dispute" className="text-xs text-slate-300">What is still wrong?</label>
+                                    <textarea id="dispute" rows={3} maxLength={500} value={disputeText} onChange={(e) => setDisputeText(e.target.value)} className="w-full rounded-lg bg-slate-800 border border-slate-700 p-2 text-sm text-white" />
+                                    <div className="flex gap-2">
+                                        <button type="button" disabled={disputeText.trim().length < 10} onClick={() => act('DISPUTE')} className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold disabled:opacity-50">Send dispute</button>
+                                        <button type="button" onClick={() => setDisputing(false)} className="px-3 py-1.5 rounded-lg text-slate-300 text-xs">Cancel</button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    {data.confirmedAt && <p className="text-sm text-emerald-200">Confirmed fixed by the citizen · rated {data.citizenRating}/5</p>}
+                    {data.status === 'IN_PROGRESS' && data.disputeReason && <p className="text-sm text-amber-200">Reopened after a dispute: {data.disputeReason}</p>}
+                    {data.verifiedBeneficiaries != null && <p className="text-sm text-slate-300">Resolved · <strong className="text-white">{data.verifiedBeneficiaries.toLocaleString('en-IN')}</strong> people benefit (verified by the district officer)</p>}
                     <div className="flex flex-wrap items-center gap-3 text-sm text-slate-300">
                         <span><strong className="text-white">{data.endorsements ?? 0}</strong> people say this affects them too</span>
                         {data.allowedActions?.includes('ENDORSE') && (

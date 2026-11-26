@@ -16,11 +16,17 @@ export function computeCredentialHash(
 }
 
 /**
- * A project is complete only when it has milestones and every one has been approved for funding.
- * (Zero milestones is NOT complete.) Shared by the "ready for credentials" list and credential issuing.
+ * Credentials may be issued only for a RESOLVED project: every milestone paid (zero milestones is NOT complete)
+ * and the report closed by the officer (status DEPLOYED, after the citizen confirmed or 14 days passed).
+ * Shared by the "ready for credentials" list and credential issuing.
  */
-export function isProjectComplete(milestones: { status: string }[]): boolean {
-    return milestones.length > 0 && milestones.every((m) => m.status === 'CSR_APPROVED');
+export function isProjectComplete(milestones: { status: string }[], challengeStatus: string): boolean {
+    return challengeStatus === 'DEPLOYED' && milestones.length > 0 && milestones.every((m) => m.status === 'CSR_APPROVED');
+}
+
+/** Student rating on a credential: faculty 80%, the citizen's rating of the fix 20% (faculty alone if none). */
+export function blendedRating(faculty: number, citizen: number | null | undefined): number {
+    return Math.round((citizen ? 0.8 * faculty + 0.2 * citizen : faculty) * 10) / 10;
 }
 
 /** Credits awarded for verified field hours: 30 hours = 1 credit (whole credits only). */

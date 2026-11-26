@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useData } from '@/lib/DataContext';
 import { SDG_INFO } from '@/data/mockData';
+import UniversityScores from '@/components/dashboard/UniversityScores';
 
 type SortBy = 'impact' | 'efficiency' | 'transparency' | 'beneficiaries';
 
@@ -197,6 +198,8 @@ export default function LeaderboardPage() {
                     )}
                 </div>
             </motion.div>
+
+            <UniversityScores />
         </div>
     );
 }

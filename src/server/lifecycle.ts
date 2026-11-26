@@ -7,10 +7,10 @@ import prisma from '@/lib/prisma';
 import { appendLedger } from '@/server/ledger';
 import { audienceWhere } from '@/lib/notifications';
 
-export type Action = 'VERIFY' | 'REJECT' | 'MERGE' | 'ASSIGN' | 'ENDORSE' | 'SELECT_PROPOSAL' | 'COMMIT_FUNDS' | 'START' | 'COMPLETE';
+export type Action = 'VERIFY' | 'REJECT' | 'MERGE' | 'ASSIGN' | 'ENDORSE' | 'SELECT_PROPOSAL' | 'COMMIT_FUNDS' | 'START' | 'COMPLETE' | 'CONFIRM' | 'DISPUTE' | 'CLOSE';
 
 export interface Actor { id: string; role: Role; district?: { name: string } | null; organizationId?: string | null }
-export interface ChallengeLike { id: string; status: ChallengeStatus; district: string; submitterId: string | null }
+export interface ChallengeLike { id: string; status: ChallengeStatus; district: string; submitterId: string | null; completedAt?: Date | null; confirmedAt?: Date | null }
 
 const AWAITING_OFFICER: ChallengeStatus[] = ['SUBMITTED', 'AI_PROCESSED'];
 const CLOSED: ChallengeStatus[] = ['COMPLETED', 'DEPLOYED', 'REJECTED', 'MERGED'];
@@ -27,7 +27,14 @@ const RULES: Record<Action, { from: ChallengeStatus[]; roles: Role[]; officerOnl
     COMMIT_FUNDS: { from: ['TEAM_FORMED'], roles: ['CSR'] },
     START: { from: ['FUNDED'], roles: ['FACULTY', 'STUDENT', 'ADMIN'] }, // taken automatically when the first milestone is submitted
     COMPLETE: { from: ['IN_PROGRESS'], roles: ['CSR', 'OFFICER', 'ADMIN'] }, // taken automatically when the last tranche is released
+    // Phase 4: the reporting citizen confirms (with a rating) or disputes; the officer closes and records verified impact.
+    CONFIRM: { from: ['COMPLETED'], roles: ['CITIZEN', 'NGO'] },
+    DISPUTE: { from: ['COMPLETED'], roles: ['CITIZEN', 'NGO'] },
+    CLOSE: { from: ['COMPLETED'], roles: ['OFFICER', 'ADMIN'], officerOnlyInDistrict: true },
 };
+
+/** Days the officer waits for the citizen's answer before closing without it. */
+export const CONFIRM_WAIT_DAYS = 14;
 
 // ── Proposal plan (team + milestones), checked on submit and again on selection ──
 export interface PlanMember { studentProfileId: string; role?: string }
@@ -64,6 +71,11 @@ export function blockedReason(action: Action, ch: ChallengeLike, actor: Actor): 
         return 'This report is outside your district.';
     }
     if (action === 'ENDORSE' && ch.submitterId === actor.id) return 'You reported this yourself.';
+    if ((action === 'CONFIRM' || action === 'DISPUTE') && ch.submitterId !== actor.id) return 'Only the person who reported this can confirm or dispute the fix.';
+    if (action === 'CONFIRM' && ch.confirmedAt) return 'You have already confirmed this fix.';
+    if (action === 'CLOSE' && !ch.confirmedAt && (!ch.completedAt || Date.now() - ch.completedAt.getTime() < CONFIRM_WAIT_DAYS * 86_400_000)) {
+        return `Waiting for the citizen's confirmation (or ${CONFIRM_WAIT_DAYS} days after completion).`;
+    }
     return null;
 }
 
@@ -96,7 +108,7 @@ export class LifecycleError extends Error {
     constructor(message: string, public status: 400 | 403 | 404 | 409) { super(message); }
 }
 
-export interface Payload { reason?: string; targetId?: string; heiId?: string; sdgTags?: number[]; proposalId?: string; amount?: number }
+export interface Payload { reason?: string; targetId?: string; heiId?: string; sdgTags?: number[]; proposalId?: string; amount?: number; rating?: number; beneficiaries?: number }
 
 /** Runs one action. Throws LifecycleError (with an HTTP status) when it is not allowed. */
 export async function transition(challengeId: string, action: Action, actor: Actor, payload: Payload = {}) {
@@ -104,7 +116,7 @@ export async function transition(challengeId: string, action: Action, actor: Act
     const ch = await prisma.challenge.findUnique({ where: { id: challengeId } });
     if (!ch) throw new LifecycleError(`No report found with ID "${challengeId}"`, 404);
     const blocked = blockedReason(action, ch, actor);
-    if (blocked) throw new LifecycleError(blocked, blocked.includes('not possible while') ? 409 : 403);
+    if (blocked) throw new LifecycleError(blocked, /not possible while|already|Waiting/.test(blocked) ? 409 : 403);
 
     // Preconditions and the change itself, per action.
     let next: ChallengeStatus = ch.status;
@@ -181,7 +193,27 @@ export async function transition(challengeId: string, action: Action, actor: Act
         const open = await prisma.milestone.count({ where: { team: { proposal: { challengeId: ch.id, status: 'ACCEPTED' } }, status: { not: 'CSR_APPROVED' } } });
         if (open > 0) throw new LifecycleError(`${open} milestone(s) are not paid yet.`, 409);
         next = 'COMPLETED';
-        notify = { roles: ['OFFICER'], message: `All milestones of “${ch.title}” are verified and paid. The project is complete.`, extraUserIds: ch.submitterId ? [ch.submitterId] : [] };
+        data.completedAt = new Date();
+        notify = { roles: ['OFFICER'], message: `All milestones of “${ch.title}” are verified and paid. Please check the fix and confirm or dispute it.`, extraUserIds: ch.submitterId ? [ch.submitterId] : [] };
+    } else if (action === 'CONFIRM') {
+        const rating = Number(payload.rating);
+        if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new LifecycleError('Rate the fix from 1 to 5.', 400);
+        data.confirmedAt = new Date();
+        data.citizenRating = rating;
+        notify = { roles: ['OFFICER'], message: `The citizen confirmed the fix for “${ch.title}” (rated ${rating}/5). It can be closed.`, extraUserIds: [] };
+    } else if (action === 'DISPUTE') {
+        const reason = payload.reason?.trim() ?? '';
+        if (reason.length < 10 || reason.length > 500) throw new LifecycleError('Say what is still wrong (10–500 characters).', 400);
+        next = 'IN_PROGRESS';
+        data.disputeReason = reason;
+        data.completedAt = null;
+        notify = { roles: ['OFFICER', 'FACULTY'], message: `The citizen says “${ch.title}” is not fixed: ${reason}`, extraUserIds: [] };
+    } else if (action === 'CLOSE') {
+        const n = Number(payload.beneficiaries);
+        if (!Number.isInteger(n) || n < 1 || n > 10_000_000) throw new LifecycleError('Enter the verified number of people who benefit (a whole number).', 400);
+        next = 'DEPLOYED';
+        data.verifiedBeneficiaries = n;
+        notify = { roles: ['FACULTY'], message: `“${ch.title}” is resolved (${n.toLocaleString('en-IN')} people benefit). Student credentials can now be issued.`, extraUserIds: ch.submitterId ? [ch.submitterId] : [] };
     }
 
     const audience = notify ? [

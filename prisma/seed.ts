@@ -295,11 +295,19 @@ async function main() {
     for (const [ci, [title, description, district, category, sdgTags, status, daysAgo, uniKey]] of CHALLENGES.entries()) {
         const place = PLACES[district];
         const anonymous = ci % 7 === 3;
-        const submitter = ci === 0 || ci === 6 ? CITIZENS[0] : pick(CITIZENS);
+        // Finished projects are resolved (citizen confirmed, officer closed) — except one, left COMPLETED and waiting
+        // for the demo citizen's confirmation so the closing step can be shown live.
+        const awaitingConfirmation = status === 'COMPLETED' && ci === 10;
+        const submitter = ci === 0 || ci === 6 || awaitingConfirmation ? CITIZENS[0] : pick(CITIZENS);
         const created = ago(daysAgo);
+        const resolved = status === 'COMPLETED' && !awaitingConfirmation;
+        const completedAt = status === 'COMPLETED' ? ago(awaitingConfirmation ? 4 : Math.max(20, daysAgo - 140)) : null;
+        const closure = resolved
+            ? { status: 'DEPLOYED' as const, completedAt, confirmedAt: ago(Math.max(15, daysAgo - 145)), citizenRating: 3 + (ci % 3), verifiedBeneficiaries: 250 + ci * 37 }
+            : { status, completedAt };
         const challenge = await prisma.challenge.create({
             data: {
-                title, description, state: place.state, district, category, sdgTags, status,
+                title, description, state: place.state, district, category, sdgTags, ...closure,
                 gpsLat: jitter(place.lat), gpsLng: jitter(place.lng), photoUrls: [], videoUrls: [],
                 aiConfidence: STAGE[status] >= 1 ? Number((0.72 + rand() * 0.25).toFixed(2)) : null,
                 submittedBy: anonymous ? 'Anonymous Citizen' : submitter, submitterType: 'CITIZEN', isAnonymous: anonymous,
@@ -415,14 +423,23 @@ async function main() {
         const released = (await prisma.milestone.aggregate({ where: { teamId: team.id, status: 'CSR_APPROVED' }, _sum: { fundReleased: true } }))._sum.fundReleased ?? 0;
         await prisma.fundingCommitment.update({ where: { challengeId_csrOrgId: { challengeId: challenge.id, csrOrgId: funderId } }, data: { released } });
 
-        if (STAGE[status] >= 6) {
-            const issuedAt = ago(Math.max(5, daysAgo - 120));
+        if (status === 'COMPLETED') {
+            const officerId = officers[district] ?? admin.id, officerRole = officers[district] ? 'OFFICER' : 'ADMIN';
+            ledger.push({ actor_id: csrUser.id, actor_role: 'CSR', action: 'CHALLENGE_COMPLETE', entity_type: 'Challenge', entity_id: challenge.id, previous_value: { status: 'IN_PROGRESS' }, new_value: { status: 'COMPLETED' }, at: completedAt! });
+            if (resolved) {
+                ledger.push({ actor_id: submitterId, actor_role: 'CITIZEN', action: 'CHALLENGE_CONFIRM', entity_type: 'Challenge', entity_id: challenge.id, previous_value: { status: 'COMPLETED' }, new_value: { citizenRating: closure.citizenRating }, at: closure.confirmedAt! });
+                ledger.push({ actor_id: officerId, actor_role: officerRole, action: 'CHALLENGE_CLOSE', entity_type: 'Challenge', entity_id: challenge.id, previous_value: { status: 'COMPLETED' }, new_value: { status: 'DEPLOYED', verifiedBeneficiaries: closure.verifiedBeneficiaries }, at: new Date(closure.confirmedAt!.getTime() + DAY) });
+            }
+        }
+
+        if (resolved) {
+            const issuedAt = ago(Math.max(5, daysAgo - 150));
             for (const m of new Map(members.map((x) => [x.profileId, x])).values()) {
                 const hours = 60 + Math.round(rand() * 6) * 15;
                 const creditPoints = creditsForHours(hours);
                 await prisma.studentCredential.create({
                     data: {
-                        studentProfileId: m.profileId, challengeTitle: title, challengeDistrict: district, sdgTags,
+                        studentProfileId: m.profileId, challengeId: challenge.id, challengeTitle: title, challengeDistrict: district, sdgTags,
                         hoursContributed: hours, creditPoints, issuedAt,
                         hashValue: computeCredentialHash(m.profileId, challenge.id, creditPoints, issuedAt),
                     },
@@ -567,6 +584,7 @@ async function main() {
         [ngoUser.id, 'Your impact score was recalculated from your latest field activity.', 'P3'],
         [citizenIds[0], 'Your report “High fluoride in Marriguda handpump water” is now in progress with Krishna Valley Institute of Technology.', 'P2', hero.id],
         [citizenIds[0], 'Your report “Street lights off on Nakrekal–Kattangur road” was received by the district office.', 'P3'],
+        [citizenIds[0], 'The university says “Tanker-dependent wadis in Purandar taluka” is fixed. Please confirm or dispute it.', 'P1', (await prisma.challenge.findFirstOrThrow({ where: { status: 'COMPLETED' } })).id],
         [admin.id, '2 organisations are waiting for verification.', 'P2'],
     ];
     for (const [i, [userId, message, priority, challengeId]] of notes.entries()) {

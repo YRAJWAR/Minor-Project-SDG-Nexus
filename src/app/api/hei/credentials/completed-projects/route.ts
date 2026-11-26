@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
         );
     }
 
-    const completed = teams.filter((t) => isProjectComplete(t.milestones));
+    const completed = teams.filter((t) => isProjectComplete(t.milestones, t.proposal.challenge.status));
 
     let existing;
     try {

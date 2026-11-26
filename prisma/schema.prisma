@@ -381,6 +381,11 @@ model Challenge {
   submitterId   String? // the account that reported it (kept even when shown as anonymous)
   urgency       String              @default("NORMAL") // NORMAL | MODERATE | HIGH | CRITICAL
   rejectReason  String?
+  completedAt   DateTime? // last tranche paid (COMPLETED)
+  confirmedAt   DateTime? // the reporting citizen confirmed the fix
+  citizenRating Int? // 1–5, from that confirmation
+  disputeReason String? // latest dispute, if the citizen said it is not fixed
+  verifiedBeneficiaries Int? // recorded by the officer at closure; the only beneficiary number scores use
   mergedIntoId  String?
   submitterType String
   isAnonymous   Boolean             @default(false)
@@ -492,6 +497,7 @@ model StudentCredential {
   id                String         @id @default(cuid())
   studentProfileId  String
   student           StudentProfile @relation(fields: [studentProfileId], references: [id])
+  challengeId       String? // the resolved report (older credentials matched by title)
   challengeTitle    String
   challengeDistrict String
   sdgTags           Int[]

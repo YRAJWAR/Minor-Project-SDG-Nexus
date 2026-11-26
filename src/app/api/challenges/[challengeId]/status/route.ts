@@ -71,7 +71,7 @@ export async function GET(
     const dateLabel = (d: Date) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
     // Stage dates come from the ledger; a stage without a ledger entry shows no date rather than a guess.
-    const STAGE_ACTION: Record<string, string> = { SUBMITTED: 'CHALLENGE_SUBMITTED', AI_PROCESSED: 'CHALLENGE_SUBMITTED', VALIDATED: 'CHALLENGE_VERIFY', UNIVERSITY_ASSIGNED: 'CHALLENGE_ASSIGN' };
+    const STAGE_ACTION: Record<string, string> = { SUBMITTED: 'CHALLENGE_SUBMITTED', AI_PROCESSED: 'CHALLENGE_SUBMITTED', VALIDATED: 'CHALLENGE_VERIFY', UNIVERSITY_ASSIGNED: 'CHALLENGE_ASSIGN', TEAM_FORMED: 'CHALLENGE_SELECT_PROPOSAL', IN_PROGRESS: 'CHALLENGE_START', COMPLETED: 'CHALLENGE_COMPLETE', DEPLOYED: 'CHALLENGE_CLOSE' };
     const when = (stageId: string) => history.find((h) => h.action === STAGE_ACTION[stageId])?.created_at;
     const pipeline = PIPELINE_STAGES.map((stage, index) => {
         const at = index === 0 ? challenge.createdAt : when(stage.id) ?? (index === currentStageIndex ? challenge.updatedAt : null);
@@ -111,6 +111,10 @@ export async function GET(
             pipeline,
             endorsements: challenge._count.endorsements,
             rejectReason: challenge.rejectReason,
+            citizenRating: challenge.citizenRating,
+            confirmedAt: challenge.confirmedAt?.toISOString() ?? null,
+            disputeReason: challenge.disputeReason,
+            verifiedBeneficiaries: challenge.verifiedBeneficiaries,
             mergedInto,
             allowedActions: viewer ? allowedActions(challenge, viewer) : [],
             signedIn: !!viewer,

@@ -84,7 +84,8 @@ export async function GET(req: NextRequest) {
                     mergedIntoId: ch.mergedIntoId,
                     allowedActions: allowedActions(ch, user),
                     proposalsCount: ch.proposals?.length || 0,
-                    assignedInstitutions: ch.proposals.map((p) => p.hei.name),
+                    // The selected university once there is one; before that, everyone still bidding.
+                    assignedInstitutions: (ch.proposals.some((p) => p.status === 'ACCEPTED') ? ch.proposals.filter((p) => p.status === 'ACCEPTED') : ch.proposals.filter((p) => p.status !== 'REJECTED')).map((p) => p.hei.name),
                 };
             });
 

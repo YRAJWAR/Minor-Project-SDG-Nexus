@@ -1,0 +1,20 @@
+\chapter{Conclusion \& Future Scope}
+
+\section{Conclusion}
+SDG Nexus addresses a practical gap in how local development problems are solved in India. Citizens can report problems, universities have the talent to design solutions, companies have mandatory CSR budgets, and district officers have the authority to verify---but existing systems connect at most two of these groups and stop short of proving that a problem was actually solved.
+
+This project designed a platform in which a single challenge record carries a problem from a citizen's report, through official verification, explainable university matching, a costed student proposal, CSR co-funding and milestone-by-milestone verification, to the same citizen's confirmation. Three ideas give the design its integrity: a server-side state machine that alone decides which actions are possible; funding that is released only against verified milestones; and a SHA-256 hash-chained ledger that lets anyone check that the recorded history has not been altered. Student credentials and organisational impact scores are derived only from this verified history.
+
+On the implementation side, the audit of the original prototype showed that a working-looking interface can hide fabricated data, false success messages and wrong-record defects. The completed hardening phase removed every fabricated fallback, corrected the integrity, permission and privacy defects, reduced the API from 103 to 34 route files and the source tree from 199 to 111 files, and added automated integrity tests that pass in full. A duplicate-detection experiment showed that the original similarity threshold misses reworded duplicates, which led to the combined text-and-distance rule in the final design. The remaining phases build the complete lifecycle on this cleaned foundation.
+
+\section{Future Scope}
+The immediate work follows the development plan in Chapter~4: real authentication and the India-wide data model (Phase~1), the lifecycle service and ledger (Phase~2), proposals, funding and milestones (Phase~3), closure, credentials and scores (Phase~4), demonstration data and tests (Phase~5), the new interface design (Phase~6), and deployment (Phase~7). Beyond the scope of this minor project, the following extensions are possible:
+\begin{itemize}
+  \item \textbf{Payment integration.} Connecting funding commitments and tranche releases to a payment gateway or bank escrow, so that the recorded release and the actual transfer are the same event.
+  \item \textbf{Government identity and document services.} Using DigiLocker for issuing student credentials and Aadhaar-based or e-mail/OTP verification for reporters.
+  \item \textbf{Multilingual and voice reporting.} Hindi and regional-language interfaces and voice-to-text reporting, so that citizens with limited literacy can report problems.
+  \item \textbf{Mobile application with offline support.} Capturing photographs and location in areas with poor connectivity and synchronising later.
+  \item \textbf{Learning-based classification.} Training an SDG classifier and a duplicate detector on the platform's own verified data, once enough labelled reports exist, while keeping the current transparent methods as a fallback.
+  \item \textbf{Open data.} Publishing anonymised, aggregated challenge and outcome data so that researchers and policymakers can study what kinds of local problems are solved fastest and at what cost.
+  \item \textbf{Public anchoring of ledger roots.} Periodically publishing the ledger's root hashes in an external public record, so that even the platform operator could not rewrite history unnoticed.
+\end{itemize}

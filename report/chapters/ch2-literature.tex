@@ -1,0 +1,74 @@
+\chapter{Literature Review}
+
+This chapter reviews the existing platforms that address parts of the problem, the research and standards on which the proposed system builds, and the gap that remains.
+
+\section{Existing Systems}
+
+\subsection*{Centralized Public Grievance Redress and Monitoring System (CPGRAMS)}
+CPGRAMS is the Government of India's online platform through which citizens lodge grievances with central ministries and departments, and track their status \cite{cpgrams}. It provides wide reach and an official redress channel. However, a grievance is routed to an administrative office rather than to anyone who can design or build a technical solution; there is no mechanism for universities or companies to take up a problem, no milestone-based evidence of work, and no public, verifiable record of how the problem was resolved.
+
+\subsection*{FixMyStreet}
+FixMyStreet, developed by the charity mySociety in the United Kingdom, lets residents report local issues such as potholes and broken street lights on a map, and forwards each report to the responsible council \cite{fixmystreet}. It popularised map-based civic reporting and public status pages. Like other civic reporting tools, it ends at notifying the authority; it does not organise solution building, funding or verification of outcomes.
+
+\subsection*{National CSR Portal}
+The Ministry of Corporate Affairs publishes company-wise CSR spending data on the National CSR Portal, based on statutory disclosures \cite{csrportal}. This brings transparency to \emph{how much} was spent and in which development sectors and states. It is a disclosure system, however, not a collaboration system: it does not match companies with specific verified problems, and it does not link individual tranches of money to evidence of progress.
+
+\subsection*{NGO Darpan}
+NGO Darpan, maintained by NITI Aayog, is a registry in which voluntary organisations obtain a unique identity for interacting with government schemes \cite{ngodarpan}. It helps establish that an NGO exists and is registered, but it does not record project-level outcomes or the organisation's verified track record.
+
+\subsection*{Smart India Hackathon}
+The Smart India Hackathon, run by the Ministry of Education's Innovation Cell and AICTE, invites students to solve problem statements contributed by ministries, departments and industry \cite{sih}. It shows that students can produce valuable prototypes for real problems. Its problem statements, however, come from organisations rather than from citizens, it runs as a time-bound event rather than a continuous pipeline, and prototypes are not systematically funded, deployed and verified on the ground afterwards.
+
+\subsection*{Summary of existing systems}
+Table~\ref{tab:comparison} compares these systems with SDG Nexus across the capabilities needed for a closed loop from problem to verified solution.
+
+\begin{table}[H]
+\centering
+\caption{Comparison of existing systems with SDG Nexus}
+\label{tab:comparison}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{@{}Xcccccc@{}}
+\toprule
+\textbf{Capability} & \rotatebox{70}{\textbf{CPGRAMS}} & \rotatebox{70}{\textbf{FixMyStreet}} & \rotatebox{70}{\textbf{CSR Portal}} & \rotatebox{70}{\textbf{NGO Darpan}} & \rotatebox{70}{\textbf{SIH}} & \rotatebox{70}{\textbf{SDG Nexus}} \\
+\midrule
+Citizen problem reporting          & \checkmark & \checkmark & -- & -- & -- & \checkmark \\
+Official verification of reports    & \checkmark & partial    & -- & -- & -- & \checkmark \\
+Routing to university solvers       & -- & -- & -- & -- & partial & \checkmark \\
+CSR funding linked to a problem     & -- & -- & -- & -- & -- & \checkmark \\
+Milestone proof before payment      & -- & -- & -- & -- & -- & \checkmark \\
+Public, tamper-evident history       & -- & -- & -- & -- & -- & \checkmark \\
+Citizen confirmation of the outcome & partial & partial & -- & -- & -- & \checkmark \\
+Verifiable student credentials      & -- & -- & -- & -- & -- & \checkmark \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Related Work and Foundations}
+
+\subsection*{University--industry--government collaboration}
+Etzkowitz and Leydesdorff describe innovation as arising from the interaction of universities, industry and government, the ``Triple Helix'' model \cite{etzkowitz2000}. SDG Nexus applies this idea at the scale of individual local problems and adds a fourth helix---the citizen---as both the source of the problem and the final judge of the solution. India's National Education Policy 2020 also encourages experiential learning and community engagement in higher education \cite{nep2020}, which the platform supports through verifiable credentials for field work.
+
+\subsection*{Text similarity for duplicate detection}
+Detecting whether a new report describes an existing problem is a text-similarity task. Term frequency--inverse document frequency (TF-IDF) weighting with cosine similarity is a long-established and well-understood baseline for comparing short documents \cite{salton1988}. It is transparent, needs no training data and runs quickly on the small number of reports in one district, which makes it a good fit for an explainable first version.
+
+\subsection*{Geographic distance}
+University matching and duplicate detection both need the distance between two points given by latitude and longitude. The haversine formula gives the great-circle distance on a sphere and is accurate enough for distances within a country \cite{sinnott1984}.
+
+\subsection*{Tamper-evident records}
+Haber and Stornetta showed how linking each record to the hash of the previous one makes it computationally infeasible to alter a past record without detection \cite{haber1991}. Merkle trees summarise many hashes into a single root hash \cite{merkle1987}. Both rely on a secure cryptographic hash function; SDG Nexus uses SHA-256 as specified in FIPS 180-4 \cite{fips180}. These techniques provide tamper evidence without the cost and complexity of a full blockchain.
+
+\subsection*{Authentication and web security}
+Stateless sessions can be implemented with JSON Web Tokens (JWT) \cite{rfc7519}, and passwords should be stored with a slow, salted hash such as bcrypt \cite{provos1999}. The OWASP Top~10 lists the most critical web application security risks, including broken access control and identification failures \cite{owasp2021}; the design of SDG Nexus addresses these through server-side role checks on every action.
+
+\section{Development Gap}
+Based on the review above, the following gaps are addressed by this project:
+\begin{itemize}
+  \item \textbf{No closed loop from report to confirmed outcome.} Existing systems stop at forwarding a complaint or at disclosing spending; none carries a single problem through verification, solution building, funding, proof and citizen confirmation.
+  \item \textbf{No routing of verified problems to academic solvers.} Universities have no continuous, location-aware feed of verified local problems that match their expertise.
+  \item \textbf{No link between money and evidence.} CSR disclosures report totals; there is no mechanism that releases each tranche only after its milestone has been verified.
+  \item \textbf{No verifiable history.} Progress claims, photographs and certificates can be changed after the fact without detection; outsiders have no way to recompute and check them.
+  \item \textbf{No recognition of student field work.} Students who solve real community problems have no verifiable, shareable record of the hours and outcomes they contributed.
+  \item \textbf{Duplicate demand is lost.} When many people report the same problem, the repetition is treated as noise rather than as a signal of priority.
+\end{itemize}
+SDG Nexus is designed to fill each of these gaps within a single platform.

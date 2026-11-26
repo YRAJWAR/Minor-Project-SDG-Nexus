@@ -1,0 +1,501 @@
+\chapter{Proposed Methodology}
+
+\section{Proposed System}
+SDG Nexus is proposed as a secure, full-stack web platform built around one idea: a single \emph{challenge} record that every stakeholder works on, from the citizen's report to the citizen's confirmation. The design follows a small set of principles that shaped every module:
+\begin{enumerate}
+  \item \textbf{One spine.} Every proposal, milestone, payment, ledger entry and credential belongs to a challenge; there is no parallel ``project'' world.
+  \item \textbf{State decides actions.} The challenge's state, checked on the server, decides which actions are allowed and for which roles. The user interface only displays the actions the server reports as allowed.
+  \item \textbf{No invented data.} Unknown identifiers return ``not found'' and failures return an explicit error; demonstration data lives only in a seed script, never in the running application.
+  \item \textbf{People decide, algorithms suggest.} SDG tags, matches and priorities are computed automatically but always shown with their reasons, and an officer confirms them.
+  \item \textbf{Money follows proof.} A funding tranche can be released only after the milestone it pays for has been verified.
+  \item \textbf{Everything can be checked.} Every action is written to a hash-chained ledger, and every credential can be verified by recomputing its hash.
+\end{enumerate}
+
+\section{System Architecture}
+The system follows a layered client--server architecture, shown in Figure~\ref{fig:architecture}. The presentation layer contains the public pages and the role-specific workspaces. Requests reach the API layer, where every protected route passes through an authentication and role check and an input validator. The domain layer contains the business logic; its centre is the lifecycle service, which is the only place where a challenge's state can change and which writes the ledger entry and notifications for each change in the same database transaction. The data layer uses the Prisma ORM over a PostgreSQL database.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  layer/.style={rectangle,draw=nexusline,fill=nexusgrey,rounded corners=3pt,minimum width=12.6cm,minimum height=0.55cm,font=\small\bfseries,anchor=west},
+  box/.style={rectangle,draw=nexusblue,fill=white,rounded corners=2pt,minimum height=0.85cm,text width=2.25cm,align=center,font=\scriptsize},
+  core/.style={box,fill=nexusblue!12,very thick},
+  ext/.style={box,draw=nexusamber,fill=nexusamber!10,text width=2.6cm},
+  arr/.style={-{Stealth[length=2mm]},thick,nexusline}
+]
+% Presentation
+\node[layer] (L1) at (0,0) {Presentation layer (Next.js App Router, React, Tailwind CSS)};
+\node[box] at (1.3,-0.95) {Public pages\\(landing, map, tracker)};
+\node[box] at (3.8,-0.95) {Citizen\\workspace};
+\node[box] at (6.3,-0.95) {Officer\\workspace};
+\node[box] at (8.8,-0.95) {University \&\\student workspace};
+\node[box] at (11.3,-0.95) {NGO, CSR \&\\admin workspaces};
+% API
+\node[layer] (L2) at (0,-2.0) {API layer (Route Handlers)};
+\node[box] at (1.3,-2.95) {Auth (JWT in\\httpOnly cookie)};
+\node[box] at (3.8,-2.95) {Role \& jurisdiction\\guard};
+\node[box] at (6.3,-2.95) {Input\\validators};
+\node[box] at (8.8,-2.95) {Uniform error\\handling (404/503)};
+\node[box] at (11.3,-2.95) {Rate limiting \&\\honeypot};
+% Domain
+\node[layer] (L3) at (0,-4.0) {Domain layer (services)};
+\node[core] at (1.3,-4.95) {Lifecycle\\state machine};
+\node[box] at (3.8,-4.95) {Matching \&\\priority};
+\node[box] at (6.3,-4.95) {Duplicate detection\\(TF-IDF)};
+\node[box] at (8.8,-4.95) {Ledger \&\\credentials};
+\node[box] at (11.3,-4.95) {Scoring \&\\notifications};
+% Data
+\node[layer] (L4) at (0,-6.0) {Data layer};
+\node[box,text width=4.6cm] at (2.55,-6.95) {Prisma ORM};
+\node[box,text width=4.6cm,fill=nexusblue!12] at (7.55,-6.95) {PostgreSQL database};
+\node[box] at (11.3,-6.95) {Daily scheduled\\job (cron)};
+% External
+\node[ext] at (1.6,-8.35) {Object storage\\(proof photos)};
+\node[ext] at (5.0,-8.35) {OpenStreetMap tiles\\+ India GeoJSON};
+\node[ext] at (8.4,-8.35) {Optional language\\model (SDG tags)};
+\node[ext] at (11.6,-8.35) {E-mail / SMS\\(future)};
+\node[font=\scriptsize\itshape,anchor=west] at (0,-9.15) {External services};
+% arrows between layers
+\foreach \y in {-1.45,-3.45,-5.45} \draw[arr] (6.3,\y) -- (6.3,\y-0.5);
+\draw[arr,dashed] (6.3,-7.45) -- (6.3,-7.85);
+\end{tikzpicture}
+\caption{Layered architecture of SDG Nexus}
+\label{fig:architecture}
+\end{figure}
+
+\section{End-to-End Workflow}
+Figure~\ref{fig:workflow} shows the path of a single challenge through the platform, with the role responsible for each step.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  node distance=0.45cm,
+  step/.style={rectangle,draw=nexusblue,fill=nexusblue!8,rounded corners=3pt,text width=8.2cm,minimum height=0.75cm,align=left,font=\small,inner sep=4pt},
+  who/.style={rectangle,draw=nexusline,fill=nexusgrey,rounded corners=2pt,text width=2.6cm,align=center,font=\scriptsize\bfseries,minimum height=0.75cm},
+  dec/.style={diamond,draw=nexusamber,fill=nexusamber!10,aspect=2.6,inner sep=1pt,align=center,font=\scriptsize},
+  arr/.style={-{Stealth[length=2mm]},thick,nexusline}
+]
+\node[step] (s1) {\textbf{1. Report} -- title, description, category, location, photos; duplicate check suggests endorsing an existing report.};
+\node[step,below=of s1] (s2) {\textbf{2. Verify} -- officer confirms the report and its SDG tags, or rejects / merges it.};
+\node[step,below=of s2] (s3) {\textbf{3. Match} -- ranked universities with reasons; the top matches are notified.};
+\node[step,below=of s3] (s4) {\textbf{4. Propose} -- faculty submit an approach, a team of 2--8 students and 2--6 costed milestones.};
+\node[step,below=of s4] (s5) {\textbf{5. Select \& fund} -- officer selects one proposal; CSR partners commit funds until the budget is covered.};
+\node[step,below=of s5] (s6) {\textbf{6. Build \& prove} -- team submits proof per milestone; officer verifies; funder releases that tranche.};
+\node[step,below=of s6] (s7) {\textbf{7. Confirm} -- citizen confirms and rates the fix (or disputes it); officer records verified beneficiaries.};
+\node[step,below=of s7,fill=nexusgreen!12,draw=nexusgreen] (s8) {\textbf{8. Recognise} -- student credentials issued; impact scores updated; full history visible on the public ledger.};
+\node[who,left=0.4cm of s1] {Citizen};
+\node[who,left=0.4cm of s2] {District Officer};
+\node[who,left=0.4cm of s3] {System};
+\node[who,left=0.4cm of s4] {Faculty + Students};
+\node[who,left=0.4cm of s5] {Officer + CSR};
+\node[who,left=0.4cm of s6] {Team, Officer, CSR};
+\node[who,left=0.4cm of s7] {Citizen + Officer};
+\node[who,left=0.4cm of s8] {System + Faculty};
+\foreach \a/\b in {s1/s2,s2/s3,s3/s4,s4/s5,s5/s6,s6/s7,s7/s8} \draw[arr] (\a) -- (\b);
+\draw[arr,nexusred,dashed] (s7.east) -- ++(0.55,0) |- node[pos=0.25,right,font=\scriptsize,text=nexusred]{dispute: rework} (s6.east);
+\end{tikzpicture}
+\caption{End-to-end workflow of a challenge}
+\label{fig:workflow}
+\end{figure}
+
+\section{Challenge Lifecycle}
+The challenge lifecycle is implemented as a finite state machine (Figure~\ref{fig:lifecycle}). A single transition service receives a requested action, checks that the action is allowed from the current state, checks the actor's role and jurisdiction, checks the preconditions, and then writes the new state, the ledger entry and the notifications in one database transaction. The same service returns the list of actions now allowed for the viewer, which the user interface uses to decide which buttons to show.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  st/.style={rectangle,rounded corners=6pt,draw=nexusblue,fill=nexusblue!8,thick,minimum height=0.8cm,minimum width=2.7cm,align=center,font=\scriptsize\bfseries},
+  term/.style={st,draw=nexusgreen,fill=nexusgreen!15},
+  bad/.style={st,draw=nexusred,fill=nexusred!10},
+  arr/.style={-{Stealth[length=2mm]},thick,nexusline},
+  lbl/.style={font=\tiny,align=center,fill=white,inner sep=1pt}
+]
+\node[st] (sub) at (0,0) {SUBMITTED};
+\node[st] (ver) at (4.2,0) {VERIFIED};
+\node[st] (open) at (8.6,0) {OPEN FOR\\PROPOSALS};
+\node[bad] (rej) at (0,-1.7) {REJECTED};
+\node[bad] (mer) at (4.2,-1.7) {MERGED};
+\node[st] (sel) at (8.6,-1.9) {PROPOSAL\\SELECTED};
+\node[st] (fund) at (8.6,-3.8) {FUNDED};
+\node[st] (prog) at (4.2,-3.8) {IN PROGRESS};
+\node[st] (comp) at (0,-3.8) {COMPLETED};
+\node[bad] (disp) at (2.1,-5.6) {DISPUTED};
+\node[term] (res) at (0,-7.0) {RESOLVED};
+\draw[arr] (sub) -- node[lbl,above]{officer\\verifies} (ver);
+\draw[arr] (ver) -- node[lbl,above]{auto} (open);
+\draw[arr] (sub) -- node[lbl,left]{officer rejects\\(reason)} (rej);
+\draw[arr] (sub) -- node[lbl,pos=0.45]{officer merges\\(duplicate)} (mer);
+\draw[arr] (open) -- node[lbl,right]{officer selects\\a proposal} (sel);
+\draw[arr] (sel) -- node[lbl,right]{commitments\\$\geq$ budget} (fund);
+\draw[arr] (fund) -- node[lbl,above]{first milestone\\started} (prog);
+\draw[arr] (prog) -- node[lbl,above]{all milestones\\verified} (comp);
+\draw[arr] (comp) -- node[lbl,left]{citizen confirms\\(or officer after 14 days)} (res);
+\draw[arr] (comp) -- node[lbl,pos=0.5]{citizen\\disputes} (disp);
+\draw[arr] (disp) -| node[lbl,pos=0.75,right]{rework} (prog);
+\end{tikzpicture}
+\caption{State machine of the challenge lifecycle}
+\label{fig:lifecycle}
+\end{figure}
+
+Table~\ref{tab:transitions} lists each transition with the role allowed to perform it and its precondition.
+
+\begin{table}[H]
+\centering
+\caption{Lifecycle transitions, permitted roles and preconditions}
+\label{tab:transitions}
+\small
+\begin{tabularx}{\textwidth}{@{}p{4.3cm}p{2.6cm}X@{}}
+\toprule
+\textbf{Transition} & \textbf{Who} & \textbf{Precondition} \\
+\midrule
+SUBMITTED $\rightarrow$ VERIFIED & Officer & Officer's jurisdiction covers the district; SDG tags confirmed. \\
+SUBMITTED $\rightarrow$ REJECTED & Officer & A reason is recorded. \\
+SUBMITTED $\rightarrow$ MERGED & Officer & Target challenge is open; reporter is notified. \\
+VERIFIED $\rightarrow$ OPEN FOR PROPOSALS & System & Automatic; top-matched universities notified. \\
+OPEN $\rightarrow$ PROPOSAL SELECTED & Officer & Proposal is complete; milestone amounts sum to budget. \\
+SELECTED $\rightarrow$ FUNDED & System & Total CSR commitments $\geq$ proposal budget. \\
+FUNDED $\rightarrow$ IN PROGRESS & Faculty & First milestone started. \\
+IN PROGRESS $\rightarrow$ COMPLETED & System & Every milestone verified. \\
+COMPLETED $\rightarrow$ RESOLVED & Citizen / Officer & Citizen confirms, or 14 days pass without response. \\
+COMPLETED $\rightarrow$ DISPUTED & Citizen & Reason given; returns to IN PROGRESS for rework. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Milestones and Funding}
+A proposal contains between two and six milestones, each with a title, due date and amount; the milestone amounts must add up exactly to the requested budget. Each milestone follows its own small state machine, and its amount is the tranche that the funder releases once the milestone has been verified (Figure~\ref{fig:funding}). The rule \emph{released $\leq$ committed} is enforced inside the database transaction, so it cannot be bypassed from the user interface.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  st/.style={rectangle,rounded corners=5pt,draw=nexusblue,fill=nexusblue!8,thick,minimum height=0.75cm,minimum width=2.3cm,align=center,font=\scriptsize\bfseries},
+  pay/.style={st,draw=nexusgreen,fill=nexusgreen!15},
+  bad/.style={st,draw=nexusred,fill=nexusred!10},
+  arr/.style={-{Stealth[length=2mm]},thick,nexusline},
+  lbl/.style={font=\tiny,align=center,fill=white,inner sep=1pt}
+]
+\node[st] (pl) at (0,0) {PLANNED};
+\node[st] (sb) at (3.4,0) {SUBMITTED};
+\node[st] (vf) at (6.8,0) {VERIFIED};
+\node[pay] (pd) at (10.2,0) {PAID};
+\node[bad] (rj) at (3.4,-1.8) {REJECTED};
+\draw[arr] (pl) -- node[lbl,above]{team uploads proof\\+ hours} (sb);
+\draw[arr] (sb) -- node[lbl,above]{officer checks\\(NGO attests)} (vf);
+\draw[arr] (vf) -- node[lbl,above]{funder releases\\tranche} (pd);
+\draw[arr] (sb) -- node[lbl,right]{reason} (rj);
+\draw[arr] (rj) -| node[lbl,pos=0.75,left]{resubmit} (pl);
+\node[draw=nexusamber,fill=nexusamber!8,rounded corners=3pt,text width=11.6cm,align=left,font=\scriptsize] at (5.1,-3.3)
+{\textbf{Funding rules:} (1) Several CSR funders may co-fund a proposal; the challenge becomes FUNDED when $\sum \text{commitments} \geq \text{budget}$. (2) A tranche equals the amount of one milestone and can be released only after that milestone is VERIFIED, and only by a funder who committed. (3) For every proposal, $\sum \text{released} \leq \sum \text{committed}$, checked inside the transaction.};
+\end{tikzpicture}
+\caption{Milestone states and milestone-linked funding}
+\label{fig:funding}
+\end{figure}
+
+\section{Modules of the System}
+Table~\ref{tab:modules} lists the main modules and their responsibilities. Figure~\ref{fig:usecase} shows the main use cases of each role.
+
+\begin{table}[H]
+\centering
+\caption{Modules of SDG Nexus}
+\label{tab:modules}
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.6cm}X@{}}
+\toprule
+\textbf{Module} & \textbf{Responsibility} \\
+\midrule
+Authentication \& roles & Registration, sign-in with JWT in an httpOnly cookie, seven roles, organisation membership, officer jurisdiction. \\
+Challenge reporting & Multi-step report form, photo compression, location capture, SDG tagging, duplicate detection and endorsements. \\
+Officer queue & Priority-ordered queue with overdue flags, verification, rejection and merging. \\
+Matching & Ranked, explained university suggestions for each verified challenge. \\
+Proposals \& teams & Proposal builder with approach, team, costed milestones and IP declaration; officer selection among competing proposals. \\
+Funding & CSR commitments, co-funding, milestone-linked tranche release, CSR compliance view (2\% obligation). \\
+Milestones \& proof & Proof upload with server-side hashing, hours per student, officer verification, NGO attestation. \\
+Ledger & Append-only, hash-chained record of every action; public timeline and chain verification. \\
+Credentials & Issuing credentials after resolution; public verification page with QR code. \\
+Scores \& dashboards & Impact scores and all statistics computed from stored data only. \\
+Notifications & Event-driven notifications for every lifecycle transition. \\
+Administration & Organisation verification, officer accounts, audit log. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  actor/.style={rectangle,draw=nexusline,fill=nexusgrey,rounded corners=3pt,minimum width=2.1cm,minimum height=0.7cm,font=\scriptsize\bfseries,align=center},
+  uc/.style={ellipse,draw=nexusblue,fill=nexusblue!6,minimum width=3.4cm,minimum height=0.62cm,font=\tiny,align=center,inner sep=1pt},
+  ln/.style={nexusline,thin}
+]
+\node[draw=nexusblue,very thick,rounded corners=6pt,minimum width=8.2cm,minimum height=12.4cm,label={[font=\small\bfseries]above:SDG Nexus}] (sys) at (0,0) {};
+% left actors
+\node[actor] (cit) at (-6.0,4.2) {Citizen};
+\node[actor] (off) at (-6.0,0.6) {District Officer};
+\node[actor] (adm) at (-6.0,-4.4) {Administrator};
+% right actors
+\node[actor] (fac) at (6.0,4.0) {Faculty};
+\node[actor] (stu) at (6.0,1.3) {Student};
+\node[actor] (ngo) at (6.0,-1.6) {NGO};
+\node[actor] (csr) at (6.0,-4.2) {CSR Funder};
+% use cases
+\node[uc] (u1) at (-1.9,5.4) {Report a problem};
+\node[uc] (u2) at (-1.9,4.4) {Endorse / track};
+\node[uc] (u3) at (-1.9,3.4) {Confirm or dispute fix};
+\node[uc] (u4) at (-1.9,1.9) {Verify / reject / merge};
+\node[uc] (u5) at (-1.9,0.9) {Select a proposal};
+\node[uc] (u6) at (-1.9,-0.1) {Verify milestone proof};
+\node[uc] (u7) at (-1.9,-3.9) {Verify organisations};
+\node[uc] (u8) at (-1.9,-4.9) {View audit log};
+\node[uc] (u9) at (1.9,5.0) {Submit proposal + team};
+\node[uc] (u10) at (1.9,4.0) {Issue credentials};
+\node[uc] (u11) at (1.9,2.3) {Upload proof, log hours};
+\node[uc] (u12) at (1.9,1.3) {View own credentials};
+\node[uc] (u13) at (1.9,-1.1) {Attest field work};
+\node[uc] (u14) at (1.9,-3.4) {Commit funds};
+\node[uc] (u15) at (1.9,-4.4) {Release tranche};
+\node[uc] (u16) at (1.9,-5.4) {Track CSR compliance};
+\node[uc,fill=nexusgreen!10,draw=nexusgreen] (u17) at (0,-2.2) {View public ledger \& verify};
+\foreach \u in {u1,u2,u3} \draw[ln] (cit.east) -- (\u.west);
+\foreach \u in {u4,u5,u6} \draw[ln] (off.east) -- (\u.west);
+\foreach \u in {u7,u8} \draw[ln] (adm.east) -- (\u.west);
+\foreach \u in {u9,u10,u11} \draw[ln] (fac.west) -- (\u.east);
+\foreach \u in {u11,u12} \draw[ln] (stu.west) -- (\u.east);
+\foreach \u in {u13} \draw[ln] (ngo.west) -- (\u.east);
+\foreach \u in {u14,u15,u16} \draw[ln] (csr.west) -- (\u.east);
+\draw[ln,dashed] (cit.south east) -- (u17.north west);
+\end{tikzpicture}
+\caption{Use-case diagram of the main roles}
+\label{fig:usecase}
+\end{figure}
+
+\section{Database Design}
+The data model is built around the challenge. It is being consolidated from the prototype's 39 tables to about sixteen, because summary values such as totals and scores are computed by queries instead of being stored in separate tables that can drift out of date. Figure~\ref{fig:er} shows the main entities and relationships, and Table~\ref{tab:entities} describes them.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  ent/.style={rectangle split,rectangle split parts=2,draw=nexusblue,fill=white,rounded corners=2pt,text width=2.55cm,font=\tiny,align=left,rectangle split part fill={nexusblue!15,white}},
+  rel/.style={nexusline,thick},
+  card/.style={font=\tiny\bfseries,text=nexusred}
+]
+\node[ent] (state) at (-5.2,3.6) {\textbf{State / District}\nodepart{two}id, name, lat, lng,\\ sdgIndex};
+\node[ent] (user) at (0,3.6) {\textbf{User}\nodepart{two}id, name, email, passwordHash,\\ role, districtId};
+\node[ent] (org) at (5.2,3.6) {\textbf{Organization}\nodepart{two}id, type (University/NGO/CSR),\\ name, verified, inviteCode};
+\node[ent,fill=nexusblue!5] (ch) at (-2.6,0.6) {\textbf{Challenge}\nodepart{two}id, title, category, severity,\\ districtId, lat, lng, status,\\ sdgTags, reporterId};
+\node[ent] (end) at (-6.2,0.6) {\textbf{Endorsement}\nodepart{two}userId, challengeId};
+\node[ent] (prop) at (2.6,0.6) {\textbf{Proposal}\nodepart{two}id, challengeId, universityId,\\ ngoId, budget, status};
+\node[ent] (mem) at (6.4,0.6) {\textbf{ProposalMember}\nodepart{two}proposalId, userId, role};
+\node[ent] (led) at (-5.2,-2.6) {\textbf{LedgerEntry}\nodepart{two}challengeId, seq, type,\\ payload, prevHash, hash};
+\node[ent] (ms) at (0,-2.6) {\textbf{Milestone}\nodepart{two}proposalId, title, dueDate,\\ amount, status, proofHash};
+\node[ent] (fc) at (5.2,-2.6) {\textbf{FundingCommitment}\nodepart{two}csrOrgId, proposalId, amount};
+\node[ent] (cred) at (-2.6,-5.4) {\textbf{Credential}\nodepart{two}studentId, challengeId,\\ hours, credits, hash};
+\node[ent] (dis) at (2.6,-5.4) {\textbf{Disbursement}\nodepart{two}commitmentId, milestoneId,\\ amount, releasedAt};
+\draw[rel] (state) -- node[card,above]{1 : N} (ch);
+\draw[rel] (user) -- node[card,right,pos=0.4]{1 : N reports} (ch);
+\draw[rel] (user) -- node[card,above]{N : M (membership)} (org);
+\draw[rel] (ch) -- node[card,above]{1 : N} (end);
+\draw[rel] (ch) -- node[card,above]{1 : N} (prop);
+\draw[rel] (prop) -- node[card,above]{1 : N} (mem);
+\draw[rel] (org) -- node[card,right]{1 : N} (prop);
+\draw[rel] (ch) -- node[card,left]{1 : N} (led);
+\draw[rel] (prop) -- node[card,right]{1 : N} (ms);
+\draw[rel] (prop) -- node[card,above,sloped]{1 : N} (fc);
+\draw[rel] (ch) -- node[card,left]{1 : N} (cred);
+\draw[rel] (ms) -- node[card,right]{1 : N} (dis);
+\draw[rel] (fc) -- node[card,below,sloped]{1 : N} (dis);
+\end{tikzpicture}
+\caption{Entity--relationship diagram of the main entities}
+\label{fig:er}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Main entities of the database}
+\label{tab:entities}
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.6cm}X@{}}
+\toprule
+\textbf{Entity} & \textbf{Purpose} \\
+\midrule
+State, District & All Indian states/UTs and districts with centroid coordinates and the state's SDG Index score. \\
+User & Account with role; officers are linked to a district (jurisdiction). \\
+Organization, Membership & Universities, NGOs and CSR companies, with verification status; users belong to organisations with a role. \\
+Challenge & The central record: report details, location, status, SDG tags, verified beneficiaries and citizen rating. \\
+Endorsement & A citizen's ``me too'' on a challenge (one per user per challenge). \\
+Attachment & Uploaded files with their SHA-256 hash, linked to a challenge or milestone. \\
+Proposal, ProposalMember & A university's proposal, its NGO partner and its team members. \\
+Milestone, MilestoneHours & Costed milestones with proof and status; hours contributed by each student. \\
+FundingCommitment, Disbursement & CSR commitments and tranche releases per milestone. \\
+Credential & A student's credential for a resolved challenge (unique per student and challenge). \\
+Notification & Messages to users generated by lifecycle events. \\
+LedgerEntry & Hash-chained record of every action; also serves as the audit log. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Data Flow}
+Figure~\ref{fig:dfd} is the context-level (level-0) data flow diagram, showing the data exchanged between the external entities and the system.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  ext/.style={rectangle,draw=nexusline,fill=nexusgrey,minimum width=2.4cm,minimum height=0.8cm,font=\scriptsize\bfseries,align=center},
+  proc/.style={circle,draw=nexusblue,fill=nexusblue!10,very thick,minimum size=2.9cm,align=center,font=\small\bfseries},
+  arr/.style={-{Stealth[length=2mm]},thick,nexusline},
+  lbl/.style={font=\tiny,align=center,fill=white,inner sep=1pt}
+]
+\node[proc] (p) at (0,0) {0\\SDG Nexus\\System};
+\node[ext] (cit) at (-5.3,2.3) {Citizen};
+\node[ext] (off) at (-5.3,-2.3) {District Officer};
+\node[ext] (uni) at (5.3,2.3) {University};
+\node[ext] (csr) at (5.3,-2.3) {CSR Funder};
+\node[ext] (pub) at (0,3.6) {Public / Verifier};
+\node[ext] (ngo) at (0,-3.6) {NGO Partner};
+\draw[arr] (cit.east) to[bend left=10] node[lbl]{report, photos,\\endorsement, rating} (p);
+\draw[arr] (p) to[bend left=10] node[lbl]{tracking status,\\requests to confirm} (cit.south east);
+\draw[arr] (off.east) to[bend right=10] node[lbl]{verification,\\selection, proof review} (p);
+\draw[arr] (p) to[bend right=10] node[lbl]{priority queue,\\proposals, proof} (off.north east);
+\draw[arr] (uni.west) to[bend right=10] node[lbl]{proposal, team,\\proof, hours} (p);
+\draw[arr] (p) to[bend right=10] node[lbl]{matched challenges,\\decisions} (uni.south west);
+\draw[arr] (csr.west) to[bend left=10] node[lbl]{commitments,\\releases} (p);
+\draw[arr] (p) to[bend left=10] node[lbl]{proposals needing\\funds, compliance} (csr.north west);
+\draw[arr] (p) -- node[lbl]{ledger, credential\\verification} (pub);
+\draw[arr] (ngo) -- node[lbl]{attestations} (p);
+\end{tikzpicture}
+\caption{Context-level (level-0) data flow diagram}
+\label{fig:dfd}
+\end{figure}
+
+\section{Core Algorithms}
+
+\subsection{SDG Classification}
+When a challenge is submitted, its title and description are tagged with the most relevant SDGs. The default classifier is keyword-based: each SDG has a list of weighted keywords, the text is matched against these lists, and the top-scoring goals are returned with a confidence value and a short explanation. An optional language-model classifier can be enabled with an API key; if it is unavailable, the keyword classifier is used, so the platform works without any external service. The officer confirms or edits the tags before verifying the challenge.
+
+\subsection{Priority Score for the Officer's Queue}
+Each pending challenge receives a priority score between 0 and 1 that orders the officer's queue. The score and its breakdown are shown to the officer:
+\begin{equation}
+P = 0.35\,S + 0.25\,\frac{\ln(1+E)}{\ln(1+E_{\max})} + 0.20\,N + 0.20\,\min\!\left(1, \frac{W}{14}\right)
+\end{equation}
+where $S\in[0,1]$ is the severity chosen by the citizen and adjustable by the officer, $E$ is the number of endorsements ($E_{\max}$ is the maximum in the district, and the term is 0 when no challenge in the district has endorsements), $N\in[0,1]$ is the area need derived from the state's SDG India Index score (a lower index gives a higher need), and $W$ is the waiting time in days. Using the logarithm of endorsements prevents a single heavily endorsed report from dominating the queue. A challenge waiting for more than seven days is additionally flagged as overdue.
+
+\subsection{University Matching}
+For a verified challenge $c$ and a university $u$, the match score is
+\begin{equation}
+M(c,u) = 0.40\,O + 0.25\,G + 0.15\,D + 0.15\,T + 0.05\,(1-L)
+\end{equation}
+where $O$ is the SDG overlap (the fraction of the challenge's SDG tags present in the university's declared expertise), $D$ is the department fit for the challenge's category, $T$ is the university's track record (its impact score scaled to $[0,1]$), and $L$ is its current load (active projects relative to capacity). The geographic score $G = \max(0,\,1 - d/500)$ falls linearly to zero at 500\,km, where $d$ is the great-circle distance obtained from the haversine formula \cite{sinnott1984}:
+\begin{equation}
+d = 2R\,\arcsin\!\sqrt{\sin^2\!\frac{\Delta\varphi}{2} + \cos\varphi_1\cos\varphi_2\,\sin^2\!\frac{\Delta\lambda}{2}}
+\end{equation}
+with $R = 6371$\,km, latitudes $\varphi_1,\varphi_2$ and longitudes $\lambda_1,\lambda_2$ in radians. Each component is returned to the user interface so that the officer can see why a university was suggested.
+
+\subsection{Duplicate Detection}\label{sec:dedup}
+Before a report is submitted, it is compared with the open challenges in the same district. Each text is lower-cased, stripped of punctuation and stop-words (English and common Hindi words), and represented as a TF-IDF vector \cite{salton1988}. For a term $t$ in document $d$ among $n$ documents,
+\begin{equation}
+w_{t,d} = \mathrm{tf}_{t,d}\times\left(\ln\frac{n+1}{\mathrm{df}_t+1}+1\right)
+\end{equation}
+where $\mathrm{tf}_{t,d}$ is the number of times $t$ occurs in $d$ and $\mathrm{df}_t$ is the number of documents containing $t$. The inverse document frequency is computed from the district's own reports, so words that appear in many local reports carry less weight. The similarity of the new report $a$ and an existing report $b$ is the cosine similarity
+\begin{equation}
+\mathrm{sim}(a,b) = \frac{\sum_t w_{t,a}\,w_{t,b}}{\sqrt{\sum_t w_{t,a}^2}\;\sqrt{\sum_t w_{t,b}^2}}.
+\end{equation}
+In the design, an existing challenge within 2\,km in the same category with similarity of at least 0.5 is shown to the citizen with the suggestion to endorse it instead of filing a new report. The experiment in Chapter~4 explains why the combination of a lower threshold and a distance check was chosen.
+
+\subsection{Tamper-Evident Ledger}
+Every action on a challenge is stored as a ledger entry with a sequence number. Each entry's hash includes the previous entry's hash (Figure~\ref{fig:hashchain}):
+\begin{equation}
+H_i = \mathrm{SHA256}\big(H_{i-1}\;\|\;\mathrm{canonical}(\text{payload}_i)\;\|\;t_i\big),\qquad H_0 = \mathrm{SHA256}(\text{challenge id})
+\end{equation}
+where $\|$ denotes concatenation and $t_i$ is the timestamp. To verify a challenge's history, the system recomputes every hash from the stored payloads and reports the first entry whose recomputed hash differs from the stored one; any change to a past entry breaks every hash after it \cite{haber1991}. Uploaded proof files are hashed from their bytes on the server, and a Merkle root \cite{merkle1987} summarises all milestone hashes of a project in a single value. Only stored data is used for verification; a hash supplied by the browser is never trusted.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  blk/.style={rectangle split,rectangle split parts=3,draw=nexusblue,fill=white,rounded corners=2pt,text width=2.6cm,font=\tiny,align=left,rectangle split part fill={nexusblue!15,white,nexusgrey}},
+  arr/.style={-{Stealth[length=2mm]},thick,nexusline}
+]
+\node[blk] (b1) at (0,0) {\textbf{Entry 1: SUBMITTED}\nodepart{two}payload: report, location\\ prevHash: $H_0$\nodepart{three}hash: $H_1$ = SHA256($H_0\|p_1\|t_1$)};
+\node[blk] (b2) at (3.6,0) {\textbf{Entry 2: VERIFIED}\nodepart{two}payload: officer, SDG tags\\ prevHash: $H_1$\nodepart{three}hash: $H_2$};
+\node[blk] (b3) at (7.2,0) {\textbf{Entry 3: FUNDED}\nodepart{two}payload: commitments\\ prevHash: $H_2$\nodepart{three}hash: $H_3$};
+\node[blk] (b4) at (10.8,0) {\textbf{Entry 4: MILESTONE}\nodepart{two}payload: proof file hash\\ prevHash: $H_3$\nodepart{three}hash: $H_4$};
+\draw[arr] (b1.east) -- (b2.west);
+\draw[arr] (b2.east) -- (b3.west);
+\draw[arr] (b3.east) -- (b4.west);
+\node[draw=nexusred,fill=nexusred!8,rounded corners=3pt,text width=12.4cm,font=\scriptsize,align=left] at (5.4,-1.85)
+{\textbf{Tamper detection:} if the payload of Entry 2 is edited in the database, the recomputed $H_2$ no longer matches the stored value, and because $H_3$ and $H_4$ depend on $H_2$, verification reports Entry 2 as the first broken link.};
+\end{tikzpicture}
+\caption{Hash chain of ledger entries for one challenge}
+\label{fig:hashchain}
+\end{figure}
+
+\subsection{Credential Verification}
+After a challenge is resolved, each student on the team can be issued one credential for it. The hours on the credential are the sum of the student's verified milestone hours (capped at 40 hours per week of the milestone's duration), and the credits are
+\begin{equation}
+\text{credits} = \left\lfloor \frac{\text{verified hours}}{30} \right\rfloor .
+\end{equation}
+The credential's hash is computed from its canonical fields (student, challenge, credits, issue time). The public verification page loads the stored credential, recomputes the hash and reports \emph{Valid}, \emph{Tampered} or \emph{Not found}; the student's surname is partly masked and no contact details are shown. The rating on the credential combines the faculty rating (40\%), the NGO partner's rating (40\%, or added to the faculty weight if there is no NGO) and the citizen's rating (20\%).
+
+\subsection{Impact Score}
+Universities and NGOs receive an impact score between 0 and 100, computed only from resolved challenges:
+\begin{equation}
+I = 0.30\,R_{\text{time}} + 0.25\,R_{\text{citizen}} + 0.20\,R_{\text{cost}} + 0.15\,R_{\text{proof}} + 0.10\,R_{\text{need}}
+\end{equation}
+where $R_{\text{time}}$ is the fraction of milestones delivered on time, $R_{\text{citizen}}$ is the average citizen rating scaled to $[0,1]$, $R_{\text{cost}}$ compares verified beneficiaries per lakh rupees with the platform median, $R_{\text{proof}}$ is the completeness of submitted proof, and $R_{\text{need}}$ reflects the area need of the challenges taken up; the weighted sum is multiplied by 100. Beneficiary numbers used here are those recorded by the officer at closure, never self-reported values. No score is shown before an organisation's first resolved challenge.
+
+\section{Technology Stack}
+Table~\ref{tab:stack} lists the technologies used and the reason for each choice.
+
+\begin{table}[H]
+\centering
+\caption{Technology stack}
+\label{tab:stack}
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.3cm}p{3.6cm}X@{}}
+\toprule
+\textbf{Layer} & \textbf{Technology} & \textbf{Purpose} \\
+\midrule
+Framework & Next.js 16 (App Router) \cite{nextjs} & Server-rendered pages and API route handlers in one project. \\
+Language & TypeScript 5.9 & Type safety across the front end and back end. \\
+User interface & React 19, Tailwind CSS 4 & Component-based UI with utility-first styling. \\
+Database & PostgreSQL & Relational data, transactions, array columns. \\
+ORM & Prisma 6 \cite{prisma} & Type-safe queries, schema as code, migrations. \\
+Authentication & JWT \cite{rfc7519}, bcrypt \cite{provos1999} & Signed session tokens in httpOnly cookies; salted password hashes. \\
+Integrity & SHA-256 (crypto-js) \cite{fips180} & Ledger hash chain, proof and credential hashes. \\
+Maps & Leaflet, OpenStreetMap & India map with challenge pins; no API key required. \\
+Charts & Recharts & Dashboards and trends. \\
+Documents & jsPDF & Credential certificates as PDF. \\
+Testing & Node.js test runner with tsx & Integrity tests without additional frameworks. \\
+Version control & Git, GitHub & Branch per phase; history of all changes. \\
+Deployment & Vercel, managed PostgreSQL & Hosting with scheduled jobs (cron). \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{System Requirements}
+
+\textbf{Hardware requirements (development):}
+\begin{itemize}
+  \item Processor: Intel Core i5 / AMD Ryzen 5 or higher.
+  \item RAM: 8\,GB minimum (16\,GB recommended).
+  \item Storage: 10\,GB free space for Node.js, dependencies and the database.
+  \item Internet connection for package installation and deployment.
+\end{itemize}
+
+\textbf{Software requirements:}
+\begin{itemize}
+  \item Node.js 20 LTS or later (developed on Node.js 24) and npm.
+  \item PostgreSQL 15 or later (local or managed).
+  \item Git 2.40 or later.
+  \item Operating system: Windows 10/11, macOS or Linux.
+  \item Browser: a current version of Chrome, Edge, Firefox or Safari.
+\end{itemize}
+
+\textbf{Production:} a Vercel project (or any Node.js host) and a managed PostgreSQL database; object storage for uploaded proof files.
+
+\section{Security and Privacy Design}
+\begin{itemize}
+  \item \textbf{Authentication:} passwords hashed with bcrypt; session JWT stored in an httpOnly cookie; the signing secret is required in production with no default value.
+  \item \textbf{Authorisation:} every protected API route checks the user's role, organisation membership and, for officers, district jurisdiction; there are no test tokens or identity hints accepted from query strings or headers.
+  \item \textbf{Validation:} all inputs are validated on the server with length and range limits (for example, money spent cannot exceed the budget and an end date cannot precede the start date).
+  \item \textbf{Honest failures:} unknown identifiers return 404 and database failures return 503, so the interface never shows invented data or a false ``success''.
+  \item \textbf{Abuse protection:} per-user and per-IP submission limits stored in the database, and a hidden honeypot field against bots.
+  \item \textbf{Privacy:} anonymous reporters stay anonymous; phone numbers and e-mail addresses are never returned by public APIs; student surnames are partly masked on public credentials; no personal data is sent to third-party services.
+\end{itemize}

@@ -22,3 +22,6 @@ npm-debug.log*
 prisma/dev.db
 .vercel
 .env*
+
+# Generated report upload bundle
+*-Overleaf.zip

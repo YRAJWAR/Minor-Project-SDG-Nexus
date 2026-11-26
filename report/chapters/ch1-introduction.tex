@@ -1,0 +1,91 @@
+\chapter{Introduction}
+
+\section{Overview}
+In 2015 the member states of the United Nations adopted the 2030 Agenda for Sustainable Development, with seventeen Sustainable Development Goals (SDGs) covering poverty, health, education, water, energy, infrastructure and more \cite{un2015}. India tracks its progress towards these goals at the level of states and districts through the SDG India Index published by NITI Aayog \cite{niti2024}. Much of the remaining gap is made up of very local problems: a village whose borewells contain excess fluoride, a primary health centre whose vaccine refrigerator fails during power cuts, a school without working toilets, a road that floods every monsoon.
+
+Three groups that could solve such problems already exist, but they rarely meet. \textbf{Citizens} can report grievances through public portals, yet they usually see little of what happens next. \textbf{Universities} graduate large numbers of engineering students every year, many of whom complete semester projects on hypothetical problems while real ones remain unsolved a few kilometres away. \textbf{Companies} above a size threshold must spend two per cent of their average net profit on CSR activities under Section 135 of the Companies Act, 2013 \cite{companiesact2013,csrrules2014}, but they often disburse these funds through intermediaries with limited visibility into actual outcomes. The bottleneck is not resources or expertise; it is the absence of a trustworthy way to route each problem to the people who can solve and fund it, and to prove afterwards that the solution was delivered.
+
+SDG Nexus is a web platform built to close this gap. It connects the five stakeholders---citizens, district officers, universities (faculty and students), NGO field partners and CSR funders---around a single shared record: the \emph{challenge}. A challenge starts as a citizen's report and ends only when the same citizen confirms that the problem has been fixed. In between, it is verified by a district officer, matched to suitable universities, solved by a student team with a costed and milestone-based proposal, funded by one or more CSR partners, and documented step by step on a tamper-evident public ledger. Figure~\ref{fig:concept} shows this idea at a glance.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  node distance=1.2cm and 1.6cm,
+  hub/.style={circle,draw=nexusblue,fill=nexusblue!10,very thick,minimum size=3.1cm,align=center,font=\bfseries},
+  actor/.style={rectangle,rounded corners=4pt,draw=nexusline,fill=nexusgrey,minimum width=3.4cm,minimum height=1.05cm,align=center,font=\small},
+  arr/.style={-{Stealth[length=2.5mm]},thick,nexusline}
+]
+\node[hub] (hub) {SDG Nexus\\[-1pt]{\normalfont\footnotesize one shared}\\[-3pt]{\normalfont\footnotesize challenge record}};
+\node[actor,above=1.0cm of hub] (cit) {\textbf{Citizen}\\{\footnotesize reports \& confirms}};
+\node[actor,above left=0.2cm and 1.6cm of hub] (off) {\textbf{District Officer}\\{\footnotesize verifies \& routes}};
+\node[actor,above right=0.2cm and 1.6cm of hub] (uni) {\textbf{University}\\{\footnotesize proposes \& builds}};
+\node[actor,below left=0.4cm and 1.6cm of hub] (ngo) {\textbf{NGO Partner}\\{\footnotesize deploys \& attests}};
+\node[actor,below right=0.4cm and 1.6cm of hub] (csr) {\textbf{CSR Funder}\\{\footnotesize funds per milestone}};
+\node[actor,below=1.0cm of hub,fill=nexusgreen!12,draw=nexusgreen] (out) {\textbf{Verified outcome}\\{\footnotesize ledger, credentials, scores}};
+\foreach \n in {cit,off,uni,ngo,csr} \draw[arr,<->] (\n) -- (hub);
+\draw[arr] (hub) -- (out);
+\end{tikzpicture}
+\caption{Concept of SDG Nexus: five stakeholders working on one shared challenge record}
+\label{fig:concept}
+\end{figure}
+
+The project began as a hackathon prototype built for a single state. For this minor project it is being rebuilt into a pan-India product in which every number shown on screen is computed from stored data, every role can perform only the actions its permissions allow, and every claim of authenticity (a ledger entry or a student credential) can be independently recomputed and checked.
+
+\section{Problem Statement}
+The collaboration between communities, academia, industry and government around local development problems suffers from the following problems:
+\begin{enumerate}
+  \item \textbf{No closed loop for citizens.} Grievance portals collect complaints but do not connect them to anyone who can build a solution, and citizens rarely get to confirm whether the problem was actually solved.
+  \item \textbf{Academic effort is disconnected from real need.} Student projects are rarely based on documented, verified local problems, and the field work students do is not recognised with verifiable credentials.
+  \item \textbf{CSR spending lacks outcome visibility.} Companies can disclose how much they spent, but there is no common mechanism that links each tranche of money to verified evidence of progress.
+  \item \textbf{Duplicate and unverified reports.} The same problem is reported many times in different words, and unverified reports waste the attention of officials.
+  \item \textbf{Claims that cannot be checked.} Progress photographs, impact numbers and certificates are usually self-reported; there is no simple way for an outsider to detect whether a record was altered later.
+  \item \textbf{Fragmented tools.} Reporting, matching, proposals, funding, proof of work and certification happen in separate systems (forms, spreadsheets, e-mail, messaging groups) with no single record tying them together.
+\end{enumerate}
+
+\section{Objectives}
+The objectives of this project are:
+\begin{enumerate}
+  \item To design and implement a single \textbf{challenge lifecycle}, governed by a server-side state machine, that carries a problem from a citizen's report to a citizen-confirmed resolution.
+  \item To provide \textbf{role-based workspaces} for citizens, district officers, faculty, students, NGOs, CSR funders and administrators, where the available actions depend on the challenge's state and the user's role.
+  \item To \textbf{route each verified challenge} to suitable universities using an explainable matching score based on SDG expertise, distance and track record.
+  \item To enforce \textbf{milestone-linked funding}, so that a CSR tranche can be released only after the corresponding milestone's proof has been verified.
+  \item To make the history of every challenge \textbf{tamper-evident} by recording each action in a SHA-256 hash-chained ledger that anyone can verify.
+  \item To issue \textbf{verifiable student credentials} for completed field work, with a public page that recomputes and checks each credential's hash.
+  \item To reduce \textbf{duplicate reports} using text similarity and geographic proximity, and to let citizens endorse an existing report instead.
+  \item To compute \textbf{impact scores and dashboards} only from verified data, so that every number on every screen agrees.
+\end{enumerate}
+
+\section{Scope of the Project}
+\textbf{In scope.} The minor project covers the complete web application: citizen reporting with photographs and location, duplicate detection and endorsements, officer verification and a priority queue, SDG tagging, university matching, proposals with teams and costed milestones, CSR funding commitments and milestone-based releases, milestone proof submission and verification, the public ledger with chain verification, citizen confirmation, student credentials with public verification, organisation impact scores, notifications, an India-wide map, and administrative verification of organisations.
+
+\textbf{Out of scope.} Real payment processing (funding commitments are recorded but no money is moved by the platform), integration with government identity systems such as Aadhaar or DigiLocker, native mobile applications, and legal certification of credentials by regulatory bodies. These are discussed as future work in Chapter~5.
+
+\textbf{Target users.} Citizens anywhere in India; district-level officers; faculty and students of universities and colleges; registered NGOs; and companies' CSR teams. The platform is designed for India as a whole, with states and districts stored as reference data rather than hard-coded.
+
+\section{Stakeholders and Applications}
+Table~\ref{tab:stakeholders} summarises what each stakeholder gains from the platform.
+
+\begin{table}[H]
+\centering
+\caption{Stakeholders and the value they receive}
+\label{tab:stakeholders}
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.1cm}X@{}}
+\toprule
+\textbf{Stakeholder} & \textbf{Role and benefit} \\
+\midrule
+Citizen & Reports a local problem, endorses existing reports, tracks progress publicly and confirms (or disputes) the final outcome. \\
+District Officer & Works from a priority-ordered queue, verifies or merges reports, selects the best proposal and verifies milestone proof. \\
+University (Faculty) & Receives problems that match its expertise, submits proposals with a student team and milestones, and issues credentials. \\
+Student & Works on a real, verified problem, logs field hours and earns a credential that anyone can verify. \\
+NGO Partner & Supports deployment on the ground and attests field work, building a verified track record. \\
+CSR Funder & Funds proposals aligned to its SDG focus, releases money only against verified milestones, and tracks its CSR obligation. \\
+Administrator & Verifies organisations, creates officer accounts and views the full audit log. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{Applications.} Typical uses include drinking-water quality and filtration projects, solar and cold-chain support for health centres, school infrastructure and digital literacy, agricultural extension and pest management, rural connectivity, and waste management. In each case the same lifecycle applies: a verified local problem, a student-built solution, milestone-based funding, and a confirmed outcome.
+
+\section{Organisation of the Report}
+Chapter~2 reviews existing platforms and related work and identifies the development gap. Chapter~3 presents the proposed system: architecture, lifecycle, modules, database design, algorithms, technology stack and requirements. Chapter~4 describes the implementation carried out so far, the testing and the results, and the innovations of the project. Chapter~5 concludes the report and outlines the future scope.

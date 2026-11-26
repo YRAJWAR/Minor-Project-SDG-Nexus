@@ -1,0 +1,121 @@
+% =====================================================================
+%  TITLE PAGE  (page i, number not shown)
+% =====================================================================
+\begin{titlepage}
+\begin{center}
+\thispagestyle{empty}
+{\large A Project Report on}\\[0.6cm]
+{\Large\bfseries \projecttitle}\\[0.9cm]
+{\normalsize Submitted in the Partial Fulfilment of the Requirements for the Degree of}\\[0.3cm]
+{\large\bfseries BACHELOR OF TECHNOLOGY}\\[0.2cm]
+{\normalsize in}\\[0.2cm]
+{\large\bfseries COMPUTER SCIENCE \& ENGINEERING}\\[0.6cm]
+{\normalsize by}\\[0.3cm]
+{\normalsize
+Yashpal Singh Rajwar (24BTCSEAI0107)\\
+Nitin Saini (24BTCSE0160)\\
+Saifullah Ahad (24BTCSEAI0144)\\
+Muzamil Akbar Dar (24BTCSEAI0020)\\}
+\vspace{0.6cm}
+{\normalsize Under the supervision of}\\[0.2cm]
+{\normalsize\bfseries \guide}\\
+{\normalsize \guidedesignation}\\[0.7cm]
+\includegraphics[width=3.2cm]{figures/dbuu-logo.png}\\[0.6cm]
+{\normalsize\bfseries Department of Computer Science and Engineering}\\
+{\normalsize School of Engineering \& Computing (SoEC)}\\[0.2cm]
+{\normalsize\bfseries DEV BHOOMI UTTARAKHAND UNIVERSITY, UTTARAKHAND-248001}\\[0.4cm]
+{\normalsize\bfseries \submissiondate}
+\end{center}
+\end{titlepage}
+\setcounter{page}{2}
+
+% =====================================================================
+%  CANDIDATE'S DECLARATION  (ii)
+% =====================================================================
+\chapter*{CANDIDATE'S DECLARATION}
+\addcontentsline{toc}{chapter}{Candidate's Declaration}
+We hereby declare that the work presented in this project titled, ``\projecttitle'' submitted by us in the partial fulfilment of the requirement of the award of the degree of Bachelor of Technology (B.Tech.) submitted in the Department of Computer Science \& Engineering, Dev Bhoomi Uttarakhand University, Dehradun, is an authentic record of our work carried out under the guidance of \guide, \guidedesignation, Department of Computer Science and Engineering under SoEC, Dev Bhoomi Uttarakhand University, Dehradun.
+
+\vspace{0.8cm}
+\noindent Date: \rule{3cm}{0.4pt}
+
+\vspace{0.6cm}
+\noindent
+\begin{tabularx}{\textwidth}{@{}XX@{}}
+\textbf{Yashpal Singh Rajwar} & \textbf{Nitin Saini} \\
+B.Tech (CSE) & B.Tech (CSE) \\
+Roll No.: 24BTCSEAI0107 & Roll No.: 24BTCSE0160 \\[0.9cm]
+\textbf{Saifullah Ahad} & \textbf{Muzamil Akbar Dar} \\
+B.Tech (CSE) & B.Tech (CSE) \\
+Roll No.: 24BTCSEAI0144 & Roll No.: 24BTCSEAI0020 \\
+\end{tabularx}
+
+\vspace{0.4cm}
+\noindent Dev Bhoomi Uttarakhand University, Dehradun
+
+\vspace{1.4cm}
+\noindent\textbf{Approved By} \hod\\
+Head of the Department\\
+(Computer Science \& Engineering)\\
+Dev Bhoomi Uttarakhand University, Dehradun
+
+% =====================================================================
+%  CERTIFICATE  (iii)
+% =====================================================================
+\chapter*{CERTIFICATE}
+\addcontentsline{toc}{chapter}{Certificate}
+It is to certify that the Project entitled ``\projecttitle'' which is being submitted by Yashpal Singh Rajwar (24BTCSEAI0107), Nitin Saini (24BTCSE0160), Saifullah Ahad (24BTCSEAI0144) and Muzamil Akbar Dar (24BTCSEAI0020) to Dev Bhoomi Uttarakhand University, Dehradun, in the fulfilment of the requirement for the award of the degree of Bachelor of Technology (B.Tech.) is a record of bonafide work carried out by them under my guidance and supervision. The matter presented in this project has not been submitted either in part or full to any University or Institute for award of any degree.
+
+\vspace{2.5cm}
+\noindent\textbf{\guide}\\
+\guidedesignation\\
+Department of Computer Science and Engg.\\
+Dev Bhoomi Uttarakhand University, Dehradun\\
+(Uttarakhand) INDIA
+
+% =====================================================================
+%  ABSTRACT  (iv)
+% =====================================================================
+\chapter*{ABSTRACT}
+\addcontentsline{toc}{chapter}{Abstract}
+Every district in India has documented local problems---contaminated drinking water, failing health-centre equipment, school dropouts, flooded roads. Three groups that could solve them rarely meet: citizens who report problems through grievance portals but seldom see a resolution, universities whose students build semester projects on hypothetical problems, and companies that spend their mandatory Corporate Social Responsibility (CSR) budgets with little visibility into actual outcomes. The missing piece is not resources or expertise but a trustworthy way of routing each problem to the people who can solve and fund it, and of proving that the solution was delivered.
+
+This project presents \textbf{SDG Nexus}, a web platform that turns a citizen's report into a funded, student-built and verified solution aligned to the United Nations Sustainable Development Goals (SDGs). A citizen reports a problem with location and photographs; a district officer verifies it; the platform tags the relevant SDGs and suggests the best-fit universities using an explainable matching score; a faculty-led student team proposes a solution with costed milestones; one or more CSR partners fund it; money is released milestone by milestone only after the officer has checked the submitted proof; and the citizen finally confirms that the problem is fixed. Students then receive credentials whose authenticity anyone can check, and every organisation's impact score is computed only from verified outcomes.
+
+The system is built with Next.js, TypeScript, PostgreSQL and the Prisma ORM. Its core is a single challenge lifecycle governed by a state machine, so that the actions available to each role are decided by the server and every change is written to a tamper-evident, SHA-256 hash-chained ledger. Supporting techniques include TF-IDF cosine similarity for duplicate detection, the haversine distance for geographic matching, a weighted priority score for the officer's queue, and hash recomputation for credential verification.
+
+The report documents the problem, the existing systems and the development gap, the proposed architecture and algorithms, and the current implementation. A hardening phase of the prototype removed all fabricated fallback data, corrected integrity, privacy and role-permission defects, and added automated integrity tests that pass in full. A small experiment on duplicate detection showed that the original similarity threshold misses reworded duplicates, motivating a combined text-and-distance rule in the next phase.
+
+\noindent\textbf{Keywords:} Sustainable Development Goals, civic technology, CSR, university--industry--government collaboration, state machine, hash chain, TF-IDF, Next.js.
+
+% =====================================================================
+%  ACKNOWLEDGEMENT  (v)
+% =====================================================================
+\chapter*{ACKNOWLEDGEMENT}
+\addcontentsline{toc}{chapter}{Acknowledgement}
+At the time of presenting this project report, we express our sincere gratitude to everyone who helped us complete this work.
+
+First and foremost, we would like to thank our supervisor, \textbf{\guide}, \guidedesignation, Department of Computer Science and Engineering, for her expertise, guidance, encouragement and patience throughout the project. Her insightful suggestions shaped the direction of this work and helped us at every stage of the design and development.
+
+We are grateful to \textbf{\hod}, Head of the Department, Computer Science \& Engineering, for providing the facilities and an encouraging environment to carry out this project.
+
+We would also like to thank our parents and families for their constant support and encouragement. Finally, we thank all faculty members, the college management, and the administrative and technical staff of the School of Engineering \& Computing, Dev Bhoomi Uttarakhand University, Dehradun, for their assistance and cooperation.
+
+\vspace{1cm}
+\noindent Date: \rule{3cm}{0.4pt}\hfill
+\begin{tabular}[t]{r}
+Yashpal Singh Rajwar\\ Nitin Saini\\ Saifullah Ahad\\ Muzamil Akbar Dar
+\end{tabular}
+
+% =====================================================================
+%  CONTENTS, LIST OF FIGURES, LIST OF TABLES
+% =====================================================================
+\cleardoublepage
+\addcontentsline{toc}{chapter}{Contents}
+\tableofcontents
+\cleardoublepage
+\addcontentsline{toc}{chapter}{List of Figures}
+\listoffigures
+\cleardoublepage
+\addcontentsline{toc}{chapter}{List of Tables}
+\listoftables

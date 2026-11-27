@@ -336,7 +336,7 @@ async function main() {
     }
 
     // ── People ──────────────────────────────────────────────
-    const password_hash = await bcrypt.hash(DEMO_PASSWORD, 12);
+    const password_hash = await bcrypt.hash(DEMO_PASSWORD, 10); // same work factor as the app (src/server/config)
     const slug = (s: string) => s.toLowerCase().replace(/^dr\.\s*/, '').replace(/[^a-z]+/g, '.').replace(/^\.|\.$/g, '');
     // Emails are unique: a second person whose name gives the same address gets a number added.
     const takenEmails = new Set<string>();

@@ -16,7 +16,8 @@ const config = {
     // JWT secret and expiry live in src/server/middleware/auth.ts (fails closed in production).
 
     // ─── Bcrypt ──────────────────────────────────────────────
-    bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10),
+    // 10 = OWASP's minimum bcrypt work factor; 12 cost ~0.5 s of CPU per sign-in on a small serverless instance.
+    bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10),
 
     // ─── Rate Limiting ───────────────────────────────────────
     rateLimitWindow: parseInt(process.env.RATE_LIMIT_WINDOW || '900000', 10), // 15min

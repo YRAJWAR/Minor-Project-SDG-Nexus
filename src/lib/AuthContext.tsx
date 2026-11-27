@@ -56,10 +56,16 @@ export interface RegisterInput {
 /** Result of login/register: null on success, otherwise a message to show the user. */
 type AuthResult = string | null;
 
+/** Each role's own starting page (also used by /dashboard to forward signed-in users). */
+export const ROLE_HOME: Record<string, string> = {
+    ngo: '/dashboard/ngo', government: '/dashboard/government', admin: '/dashboard/admin', corporate: '/dashboard/corporate',
+    hei: '/dashboard/hei', citizen: '/citizen/submit', student: '/dashboard/hei/milestones',
+};
+
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
-    login: (email: string, password: string) => Promise<AuthResult>;
+    login: (email: string, password: string) => Promise<{ error: string | null; home: string }>;
     register: (input: RegisterInput) => Promise<AuthResult>;
     logout: () => Promise<void>;
 }
@@ -86,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .finally(() => setIsLoading(false));
     }, []);
 
-    const submit = useCallback(async (url: string, body: unknown): Promise<AuthResult> => {
+    const submit = useCallback(async (url: string, body: unknown): Promise<User | string> => {
         try {
             const res = await fetch(url, {
                 method: 'POST',
@@ -95,15 +101,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
             const json = await res.json().catch(() => ({}));
             if (!res.ok || !json.success) return errorMessage(json);
-            setUser(toUser(json.data));
-            return null;
+            const u = toUser(json.data);
+            setUser(u);
+            return u;
         } catch {
             return 'Could not reach the server. Please check your connection.';
         }
     }, []);
 
-    const login = useCallback((email: string, password: string) => submit('/api/auth/login', { email, password }), [submit]);
-    const register = useCallback((input: RegisterInput) => submit('/api/auth/register', input), [submit]);
+    const login = useCallback(async (email: string, password: string) => {
+        const r = await submit('/api/auth/login', { email, password });
+        return typeof r === 'string' ? { error: r, home: '/dashboard' } : { error: null, home: ROLE_HOME[r.role] ?? '/dashboard' };
+    }, [submit]);
+    const register = useCallback(async (input: RegisterInput) => {
+        const r = await submit('/api/auth/register', input);
+        return typeof r === 'string' ? r : null;
+    }, [submit]);
 
     const logout = useCallback(async () => {
         await fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);

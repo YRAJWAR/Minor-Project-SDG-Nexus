@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuth, ROLE_HOME } from '@/lib/AuthContext';
 
 export default function DashboardRedirect() {
     const { user } = useAuth();
@@ -10,16 +10,7 @@ export default function DashboardRedirect() {
 
     useEffect(() => {
         if (user) {
-            const rolePaths: Record<string, string> = {
-                ngo: '/dashboard/ngo',
-                government: '/dashboard/government',
-                admin: '/dashboard/admin',
-                corporate: '/dashboard/corporate',
-                hei: '/dashboard/hei',
-                citizen: '/citizen/submit',
-                student: '/dashboard/hei/milestones',
-            };
-            router.replace(rolePaths[user.role] ?? '/citizen/submit');
+            router.replace(ROLE_HOME[user.role] ?? '/citizen/submit');
         }
     }, [user, router]);
 

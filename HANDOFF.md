@@ -212,3 +212,11 @@ Format: date · who · branch · what changed (files) · what is unfinished · a
     runs against the LOCAL database. Reset the live demo with:
     `node -e "require('dotenv').config({path:'.env.neon',override:true}); require('child_process').execSync('npx prisma db seed',{stdio:'inherit',env:process.env})"`
     (takes ~10–15 minutes over the network; local takes ~30 s).
+- 2026-11-27 · Claude Code · main · Viva prep: `SDG-Nexus-Tech-Stack-Guide.pdf` (repo root, 7 pages, not committed) — the
+  stack, where each library is used, why it was chosen over alternatives, the lifecycle, likely professor questions with answers,
+  and numbers to remember. Made from an HTML page printed with headless Edge; no code changed.
+- 2026-11-27 · Claude Code · phase-10-speed → merged to main · Faster sign-in.
+  - bcrypt work factor 12 → 10 (OWASP minimum; ~0.42 s → ~0.12 s per check) in `src/server/config` and the seed (live reseeded).
+  - Login goes straight to the role's page (`ROLE_HOME` in `src/lib/AuthContext.tsx`, also used by `/dashboard`).
+  - `GET /api/health` (SELECT 1); the sign-in page calls it on load to wake the sleeping Neon database while the person types.
+  - Remaining latency is distance: functions + database are in US East (iad1/us-east-1); moving both to an Asia region is an owner step.

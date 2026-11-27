@@ -6,7 +6,7 @@ import Link from 'next/link';
 interface QueueItem {
     id: string; projectId: string; title: string; description: string; status: 'SUBMITTED' | 'GP_VERIFIED';
     submittedAt: string; sealed: boolean; challengeTitle: string; place: string; university: string; suggestedRelease: number; fixedAmount?: boolean;
-    ngoPartner: string | null; ngoAttested: boolean;
+    ngoPartner: string | null; ngoAttested: boolean; retained?: number; proofDistanceKm: number | null; farKm: number;
 }
 
 // Officer: verify or reject submitted milestones. CSR: release funds for verified ones.
@@ -69,6 +69,16 @@ export default function MilestoneQueue({ mode }: { mode: 'officer' | 'csr' }) {
                                     {m.ngoPartner && <>{' · '}<span className={m.ngoAttested ? 'text-emerald-700' : 'text-amber-700'}>{m.ngoAttested ? `confirmed on the ground by ${m.ngoPartner}` : `not yet confirmed by ${m.ngoPartner}`}</span></>}
                                     {' · '}<Link href={`/project/${m.projectId}/ledger`} className="text-blue-600 hover:underline">ledger</Link>
                                 </p>
+                                {m.proofDistanceKm === null ? (
+                                    <p className="text-xs text-slate-400 mt-0.5">No GPS on the proof or the report: location not checked.</p>
+                                ) : m.proofDistanceKm > m.farKm ? (
+                                    <p className="text-xs font-semibold text-rose-700 mt-0.5">Proof was taken {m.proofDistanceKm} km from the reported spot. Check it is the right site before {mode === 'csr' ? 'paying' : 'verifying'}.</p>
+                                ) : (
+                                    <p className="text-xs text-emerald-700 mt-0.5">Proof taken {m.proofDistanceKm} km from the reported spot.</p>
+                                )}
+                                {mode === 'csr' && !!m.retained && (
+                                    <p className="text-xs text-amber-700 mt-0.5">Last tranche: ₹{m.retained.toLocaleString('en-IN')} of it stays held until the citizen confirms the fix and the officer closes the report.</p>
+                                )}
                             </div>
                             {mode === 'officer' ? (
                                 <div className="flex gap-2 shrink-0">

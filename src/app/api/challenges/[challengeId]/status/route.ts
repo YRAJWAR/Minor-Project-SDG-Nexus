@@ -38,6 +38,7 @@ export async function GET(
     let challenge;
     let history: { action: string; created_at: Date }[] = [];
     let mergedInto: { id: string; title: string } | null = null;
+    let heldBack = 0;
     try {
         challenge = await prisma.challenge.findUnique({
             where: { id: challengeId },
@@ -50,6 +51,7 @@ export async function GET(
         });
         if (challenge) {
             history = await prisma.auditLog.findMany({ where: { entity_type: 'Challenge', entity_id: challenge.id }, orderBy: { seq: 'asc' }, select: { action: true, created_at: true } });
+            heldBack = (await prisma.milestone.aggregate({ where: { team: { proposal: { challengeId: challenge.id, status: 'ACCEPTED' } } }, _sum: { retained: true } }))._sum.retained ?? 0;
             mergedInto = challenge.mergedIntoId ? await prisma.challenge.findUnique({ where: { id: challenge.mergedIntoId }, select: { id: true, title: true } }) : null;
         }
     } catch (dbErr) {
@@ -115,6 +117,7 @@ export async function GET(
             confirmedAt: challenge.confirmedAt?.toISOString() ?? null,
             disputeReason: challenge.disputeReason,
             verifiedBeneficiaries: challenge.verifiedBeneficiaries,
+            heldBack, // ₹ of the last tranche held until the fix is confirmed and closed
             mergedInto,
             allowedActions: viewer ? allowedActions(challenge, viewer) : [],
             signedIn: !!viewer,

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 
-export interface PlanStudent { id: string; name: string; branch?: string; year?: number }
+export interface PlanStudent { id: string; name: string; branch?: string; year?: number; activeProjects?: number }
 export interface PlanRow { title: string; week: number; amount: number }
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
@@ -20,7 +20,7 @@ export default function ProposalPlanEditor({ team, setTeam, milestones, setMiles
     useEffect(() => {
         const t = setTimeout(() => {
             fetch(`/api/students/search?q=${encodeURIComponent(q)}`).then((r) => r.json())
-                .then((j) => setResults(j.success ? j.data.map((s: { id: string; name: string; branch: string; year: number }) => ({ id: s.id, name: s.name, branch: s.branch, year: s.year })) : []))
+                .then((j) => setResults(j.success ? j.data.map((s: { id: string; name: string; branch: string; year: number; activeProjects: number }) => ({ id: s.id, name: s.name, branch: s.branch, year: s.year, activeProjects: s.activeProjects })) : []))
                 .catch(() => setResults([]));
         }, 250);
         return () => clearTimeout(t);
@@ -48,9 +48,9 @@ export default function ProposalPlanEditor({ team, setTeam, milestones, setMiles
                 <ul className="mt-1 max-h-40 overflow-y-auto divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
                     {results.filter((r) => !team.some((t) => t.id === r.id)).slice(0, 8).map((r) => (
                         <li key={r.id}>
-                            <button type="button" disabled={team.length >= 8} onClick={() => setTeam([...team, r])}
+                            <button type="button" disabled={team.length >= 8 || (r.activeProjects ?? 0) >= 3} onClick={() => setTeam([...team, r])}
                                 className="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 disabled:opacity-50">
-                                + {r.name} <span className="text-slate-500">{r.branch} · year {r.year}</span>
+                                + {r.name} <span className="text-slate-500">{r.branch} · year {r.year} · {(r.activeProjects ?? 0) >= 3 ? 'already on 3 active projects' : `${r.activeProjects ?? 0} active project${r.activeProjects === 1 ? '' : 's'}`}</span>
                             </button>
                         </li>
                     ))}

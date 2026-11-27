@@ -31,7 +31,10 @@ export async function GET(request: NextRequest) {
                     }
                     : {}),
             },
-            include: { user: { select: { full_name: true, email: true } } },
+            include: {
+                user: { select: { full_name: true, email: true } },
+                _count: { select: { teamMembers: { where: { team: { proposal: { status: 'ACCEPTED', challenge: { status: { in: ['TEAM_FORMED', 'FUNDED', 'IN_PROGRESS'] } } } } } } } },
+            },
             orderBy: { user: { full_name: 'asc' } },
             take: 50,
         });
@@ -55,7 +58,8 @@ export async function GET(request: NextRequest) {
             skills: sp.skills.slice(0, 4),
             rating: sp.rating,
             credits: sp.credits,
-        })),
+            activeProjects: sp._count.teamMembers, // at most 3 at a time
+        })).sort((a, b) => a.activeProjects - b.activeProjects),
         timestamp: new Date().toISOString(),
     });
 }

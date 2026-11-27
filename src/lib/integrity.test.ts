@@ -90,3 +90,12 @@ test('CSR obligation: Indian financial year and 2% of average net profit', async
     assert.deepEqual(csrObligation(15_00_00_000, 10_00_000), { required: 30_00_000, released: 10_00_000, remaining: 20_00_000, met: false });
     assert.equal(csrObligation(null, 5), null, 'no profit entered = no obligation shown');
 });
+
+test('weekly load: 40 hours a week across all projects of one student', async () => {
+    const { overWeeklyLimit } = await import('./credentials');
+    const d = (s: string) => new Date(s);
+    const other = [{ hours: 60, start: d('2026-01-01'), end: d('2026-01-15') }]; // 30 h/week on another project
+    assert.equal(overWeeklyLimit(other, 20, d('2026-01-01'), d('2026-01-15')).over, false, '30 + 10 = 40 is allowed');
+    assert.equal(overWeeklyLimit(other, 40, d('2026-01-01'), d('2026-01-15')).over, true, '30 + 20 = 50 is refused');
+    assert.equal(overWeeklyLimit(other, 80, d('2026-02-01'), d('2026-02-15')).over, false, 'other weeks do not count');
+});

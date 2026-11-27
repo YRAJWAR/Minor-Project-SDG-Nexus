@@ -12,6 +12,7 @@ import { computeMilestoneHash } from '../src/lib/merkle';
 import { computeCredentialHash, creditsForHours } from '../src/lib/credentials';
 import { entryHash, type LedgerEntry } from '../src/server/ledger';
 import { refreshTrackRecords } from '../src/server/trackRecord';
+import { retentionFor } from '../src/server/lifecycle';
 import { randomUUID } from 'node:crypto';
 import { MORE_PLACES, ISSUES, MORE_UNIVERSITIES, MORE_NGOS, MORE_CSRS, MORE_OFFICERS, NAMES } from './data/demo-world';
 
@@ -403,6 +404,11 @@ async function main() {
 
     // ── Challenges → proposals → teams → milestones → credentials ──
     let tampered = false;
+    let farPlanted = false;
+    // Active projects per student: teams are built from the least busy students (the app allows at most 3 at once).
+    const activeLoad = new Map<string, number>();
+    const leastBusy = <T extends { profileId: string }>(pool: T[], n: number, offset: number) =>
+        [...pool].map((s, i) => ({ s, k: (activeLoad.get(s.profileId) ?? 0) * 100 + ((i - offset + pool.length) % pool.length) })).sort((a, b) => a.k - b.k).slice(0, n).map((x) => x.s); // one proof photo taken far from the site, for the officer's location check
     const ledger: LedgerEntry[] = []; // appended in time order at the end, so the hash chain is valid
     const URGENT = /fluoride|malaria|sickle|landslide|flood|arsenic|cyclone|anaemia|culvert/i;
     const csrIds = CSRS.map((c) => orgByName[c.name]);
@@ -455,7 +461,7 @@ async function main() {
                 const budget = 300000 + Math.round(rand() * 6) * 50000;
                 const weeks = 10 + bi * 3;
                 const pool = students[uni.key];
-                const plan = planFor(facultyIds[uni.key], [pool[(ci + 3) % pool.length].profileId, pool[(ci + 4) % pool.length].profileId, pool[(ci + 5) % pool.length].profileId], budget, weeks);
+                const plan = planFor(facultyIds[uni.key], leastBusy(pool, 3, ci + 3).map((s) => s.profileId), budget, weeks);
                 await prisma.challengeProposal.create({
                     data: {
                         challengeId: challenge.id, heiId: unis[uni.key].id, status: 'SUBMITTED', timelineWeeks: weeks,
@@ -467,6 +473,7 @@ async function main() {
                         budgetRequested: budget, fundingSource: 'CSR', ipDeclaration: 'Open design; the community and district may reuse it freely.',
                         aiQualityScore: Number((0.65 + rand() * 0.25).toFixed(2)), createdAt: ago(daysAgo - 4 + bi),
                         teamPlan: plan.teamPlan, milestonePlan: plan.milestonePlan,
+                        ...(district === 'Nalgonda' && uni.key === 'kvit' ? { ngoPartnerId: orgByName['Neer Sahayog Foundation'], ngoStatus: 'INVITED' } : {}),
                     },
                 });
             }
@@ -481,6 +488,7 @@ async function main() {
             data: {
                 challengeId: challenge.id, heiId: unis[uniKey].id, status: 'ACCEPTED', timelineWeeks: 12 + (ci % 3) * 2,
                 ngoPartnerId: partner ? orgByName[partner.name] : null,
+                ngoStatus: partner ? 'ACCEPTED' : null,
                 approach: `Baseline survey, then a prototype built with ${uni.depts.slice(0, 2).join(' and ')} students, installed with local caretakers and checked 30 days after handover.`,
                 budgetRequested: budget, fundingSource: 'CSR', ipDeclaration: 'Open design; the community and district may reuse it freely.',
                 aiQualityScore: Number((0.74 + rand() * 0.22).toFixed(2)), createdAt: ago(daysAgo - 5),
@@ -490,7 +498,8 @@ async function main() {
 
         const pool = students[uniKey];
         const isHero = ci === 0 || ci === 1; // the demo student is on both Nalgonda projects
-        const members = isHero ? [pool[0], pool[1], pool[2]] : [pool[ci % pool.length], pool[(ci + 1) % pool.length], pool[(ci + 2) % pool.length]];
+        const members = isHero ? [pool[0], pool[1], pool[2]] : leastBusy(pool, 3, ci);
+        if (['TEAM_FORMED', 'FUNDED', 'IN_PROGRESS'].includes(status)) for (const m of members) activeLoad.set(m.profileId, (activeLoad.get(m.profileId) ?? 0) + 1);
         const team = await prisma.projectTeam.create({
             data: {
                 proposalId: proposal.id, heiId: unis[uniKey].id, facultyName: FACULTY[uniKey],
@@ -533,8 +542,10 @@ async function main() {
         for (const [mi, [mTitle, mDesc, share]] of MILESTONE_PLAN.entries()) {
             const st = plan[mi];
             const createdAt = ago(daysAgo - 10 - Math.round((span * (mi + 1)) / 5));
-            const lat = jitter(place.lat, 0.04);
-            const lng = jitter(place.lng, 0.04);
+            const far = !farPlanted && st === 'SUBMITTED' && ci >= HAND_WRITTEN;
+            if (far) farPlanted = true;
+            const lat = Number((jitter(challenge.gpsLat ?? place.lat, 0.02) + (far ? 0.28 : 0)).toFixed(5));
+            const lng = jitter(challenge.gpsLng ?? place.lng, 0.02);
             const sealed = st !== 'PENDING';
             let hashValue = sealed ? computeMilestoneHash('', createdAt, lat, lng) : null;
             // One deliberately altered record so the ledger's tamper check has something to catch.
@@ -551,7 +562,8 @@ async function main() {
                     dueDate: new Date(NOW - (daysAgo - 10) * DAY + ((mi + 1) * (proposal.timelineWeeks * 7 * DAY)) / 4),
                     hashValue, gpsLat: sealed ? lat : null, gpsLng: sealed ? lng : null, createdAt,
                     verifierCode: st === 'GP_VERIFIED' || st === 'CSR_APPROVED' ? `GP-${district.slice(0, 3).toUpperCase()}-${100 + ci * 4 + mi}` : null,
-                    fundReleased: st === 'CSR_APPROVED' ? agreed.amounts[mi] : null,
+                    fundReleased: st === 'CSR_APPROVED' ? agreed.amounts[mi] - (awaitingConfirmation && mi === 3 ? retentionFor(budget, agreed.amounts[mi]) : 0) : null,
+                    retained: st === 'CSR_APPROVED' && awaitingConfirmation && mi === 3 ? retentionFor(budget, agreed.amounts[mi]) : null,
                     releasedAt: st === 'CSR_APPROVED' ? new Date(createdAt.getTime() + 4 * DAY) : null,
                     releasedByOrgId: st === 'CSR_APPROVED' ? payerOf(mi) : null,
                     amount: agreed.amounts[mi],
@@ -560,8 +572,11 @@ async function main() {
         }
 
         // Hours each student logged per sealed milestone.
-        for (const ms of await prisma.milestone.findMany({ where: { teamId: team.id, status: { not: 'PENDING' } }, select: { id: true } })) {
-            const rows = [...new Set(members.map((m) => m.profileId))].map((id) => ({ milestoneId: ms.id, studentProfileId: id, hours: 15 + Math.round(rand() * 6) * 5 }));
+        const timeline = await prisma.milestone.findMany({ where: { teamId: team.id }, orderBy: { dueDate: 'asc' }, select: { id: true, status: true, dueDate: true } });
+        for (const [k, ms] of timeline.entries()) {
+            if (ms.status === 'PENDING') continue;
+            const periodStart = k > 0 ? timeline[k - 1].dueDate : proposal.createdAt, periodEnd = ms.dueDate;
+            const rows = [...new Set(members.map((m) => m.profileId))].map((id) => ({ milestoneId: ms.id, studentProfileId: id, hours: 15 + Math.round(rand() * 6) * 5, periodStart, periodEnd }));
             await prisma.milestoneHours.createMany({ data: rows });
             for (const row of rows) logged.set(row.studentProfileId, (logged.get(row.studentProfileId) ?? 0) + row.hours);
         }

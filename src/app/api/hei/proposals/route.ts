@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireUser, inJurisdiction } from '@/server/middleware/auth';
-import { validatePlan, transition, LifecycleError, type PlanMember, type PlanMilestone } from '@/server/lifecycle';
+import { validatePlan, transition, LifecycleError, overcommittedStudents, type PlanMember, type PlanMilestone } from '@/server/lifecycle';
 import { appendLedger } from '@/server/ledger';
 
 // The university always comes from the signed-in faculty member, never from the request.
@@ -220,6 +220,8 @@ export async function POST(request: NextRequest) {
             const problems = validatePlan(teamPlan, plan.milestones, Number(budgetRequested), Number(timelineWeeks));
             const ownStudents = await prisma.studentProfile.count({ where: { id: { in: plan.members.map((m) => m.studentProfileId) }, user: { heiId: hei.id } } });
             if (ownStudents !== plan.members.length) problems.push('Every team member must be a student of your university.');
+            const busy = await overcommittedStudents(plan.members.map((m) => m.studentProfileId));
+            if (busy.length) problems.push(`${busy.join(', ')} ${busy.length === 1 ? 'is' : 'are'} already on 3 active projects; choose someone else.`);
             if (problems.length) {
                 return NextResponse.json(
                     { success: false, error: problems.join(' '), timestamp: new Date().toISOString() },
@@ -256,6 +258,10 @@ export async function POST(request: NextRequest) {
             ngoId = ngo.id;
         }
 
+        // Naming an NGO sends it an invitation; the NGO must accept before it can attest or rate (same NGO = no change).
+        const ngoStatus = !ngoId ? null : existingProposal?.ngoPartnerId === ngoId ? existingProposal.ngoStatus ?? 'INVITED' : 'INVITED';
+        const newlyInvited = !!ngoId && existingProposal?.ngoPartnerId !== ngoId;
+
         let proposal;
         if (existingProposal) {
             proposal = await prisma.challengeProposal.update({
@@ -266,6 +272,7 @@ export async function POST(request: NextRequest) {
                     budgetRequested: parsedBudget,
                     fundingSource: csrPartner || existingProposal.fundingSource,
                     ngoPartnerId: ngoId,
+                    ngoStatus,
                     ipDeclaration: ipDeclaration || existingProposal.ipDeclaration,
                     status: proposalStatus,
                     aiQualityScore: parsedScore ?? existingProposal.aiQualityScore,
@@ -282,12 +289,20 @@ export async function POST(request: NextRequest) {
                     budgetRequested: parsedBudget,
                     fundingSource: csrPartner || null,
                     ngoPartnerId: ngoId,
+                    ngoStatus,
                     ipDeclaration: ipDeclaration || '',
                     status: proposalStatus,
                     aiQualityScore: parsedScore,
                     teamPlan: teamPlan as unknown as object, milestonePlan: plan.milestones as unknown as object,
                 },
             });
+        }
+
+        if (newlyInvited) {
+            const ngoUsers = await prisma.user.findMany({ where: { organizationId: ngoId!, role: 'NGO' }, select: { id: true } });
+            await prisma.notification.createMany({
+                data: ngoUsers.map((u) => ({ userId: u.id, message: `${hei.name} invited you to be field partner on “${challenge.title}” (${challenge.district}). Accept or decline on your dashboard.`, entityType: 'PROPOSAL', entityId: proposal.id, challengeId: challenge.id, priority: 'P2' })),
+            }).catch((err) => console.warn('NGO invitation notice failed:', err));
         }
 
         // If submitted, create P2 notifications for GOV and CSR roles (Trigger 4)
@@ -316,6 +331,7 @@ export async function POST(request: NextRequest) {
                 budgetRequested: proposal.budgetRequested,
                 fundingSource: proposal.fundingSource,
                 ngoPartnerId: proposal.ngoPartnerId,
+                ngoStatus: proposal.ngoStatus,
                 ipDeclaration: proposal.ipDeclaration,
                 aiQualityScore: proposal.aiQualityScore,
             },

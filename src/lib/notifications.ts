@@ -64,7 +64,7 @@ export async function audienceWhere(roles: Role[], challengeId?: string | null) 
     const ch = await prisma.challenge.findUnique({
         where: { id: challengeId },
         select: {
-            district: true, state: true, proposals: { select: { heiId: true, status: true, ngoPartnerId: true, team: { select: { members: { select: { student: { select: { userId: true } } } } } } } },
+            district: true, state: true, proposals: { select: { heiId: true, status: true, ngoPartnerId: true, ngoStatus: true, team: { select: { members: { select: { student: { select: { userId: true } } } } } } } },
             commitments: { select: { csrOrgId: true } },
         },
     });
@@ -79,7 +79,7 @@ export async function audienceWhere(roles: Role[], challengeId?: string | null) 
                 : role === 'FACULTY' ? { role, hei: heiIds.length ? { id: { in: heiIds } } : { state: ch.state ?? '-' } }
                     // Students on the selected team; the NGO field partner; CSR partners who funded it (every CSR partner until one has).
                     : role === 'STUDENT' ? { role, id: { in: studentIds } }
-                        : role === 'NGO' ? { role, organizationId: accepted?.ngoPartnerId ?? '-' }
+                        : role === 'NGO' ? { role, organizationId: accepted?.ngoStatus === 'ACCEPTED' ? accepted.ngoPartnerId ?? '-' : '-' }
                             : role === 'CSR' && funders.length ? { role, organizationId: { in: funders } }
                                 : { role }),
     };

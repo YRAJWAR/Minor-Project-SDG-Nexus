@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
             universityName: t.hei.name,
             allMilestonesApproved: true,
             citizenRating: challenge.citizenRating,
-            ngoPartner: t.proposal.ngoPartner?.name ?? null,
+            ngoPartner: t.proposal.ngoStatus === 'ACCEPTED' ? t.proposal.ngoPartner?.name ?? null : null,
             teamMembers: t.members.map((m) => ({
                 studentProfileId: m.studentProfileId,
                 studentName: m.student.user.full_name,

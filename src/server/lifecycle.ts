@@ -6,6 +6,7 @@ import type { ChallengeStatus, Role } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { appendLedger } from '@/server/ledger';
 import { audienceWhere } from '@/lib/notifications';
+import { MAX_ACTIVE_TEAMS } from '@/lib/credentials';
 
 export type Action = 'VERIFY' | 'REJECT' | 'MERGE' | 'ASSIGN' | 'ENDORSE' | 'SELECT_PROPOSAL' | 'COMMIT_FUNDS' | 'START' | 'COMPLETE' | 'CONFIRM' | 'DISPUTE' | 'CLOSE';
 
@@ -60,6 +61,21 @@ export function validatePlan(team: TeamPlan | null | undefined, milestones: Plan
     return errors;
 }
 
+// ── Retention: part of the last tranche is held back until the fix is confirmed ──
+// Without it every rupee is paid before the citizen says whether the problem is fixed, and a dispute has no teeth.
+export const RETENTION_SHARE = 0.1;
+/** Held back from the last tranche: 10% of the budget, never more than that tranche. */
+export function retentionFor(budget: number, lastTranche: number) {
+    return Math.min(Math.round(lastTranche), Math.round(budget * RETENTION_SHARE));
+}
+/** What a funder pays now for this milestone, and what stays held (only on the last-due milestone). */
+export function trancheDue(m: { id: string; amount: number | null }, team: { id: string; dueDate: Date }[], budget: number) {
+    if (m.amount === null) return { due: null, retained: 0 };
+    const last = [...team].sort((a, b) => b.dueDate.getTime() - a.dueDate.getTime() || (a.id < b.id ? 1 : -1))[0];
+    const retained = last?.id === m.id ? retentionFor(budget, m.amount) : 0;
+    return { due: Math.round(m.amount) - retained, retained };
+}
+
 const sameDistrict = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 /** Why this actor can't take this action now, or null if they can. */
@@ -110,6 +126,19 @@ export function priority(input: { urgency: string; endorsements: number; distric
         overdue: AWAITING_OFFICER.includes(input.status) && days > OVERDUE_DAYS,
         daysWaiting: Math.floor(days),
     };
+}
+
+/** Students (by name) who are already on MAX_ACTIVE_TEAMS active projects, so cannot join another. */
+export async function overcommittedStudents(studentProfileIds: string[]) {
+    if (!studentProfileIds.length) return [];
+    const rows = await prisma.teamMember.groupBy({
+        by: ['studentProfileId'],
+        where: { studentProfileId: { in: studentProfileIds }, team: { proposal: { status: 'ACCEPTED', challenge: { status: { in: ['TEAM_FORMED', 'FUNDED', 'IN_PROGRESS'] } } } } },
+        _count: true,
+    });
+    const busy = rows.filter((r) => r._count >= MAX_ACTIVE_TEAMS).map((r) => r.studentProfileId);
+    if (!busy.length) return [];
+    return (await prisma.studentProfile.findMany({ where: { id: { in: busy } }, select: { user: { select: { full_name: true } } } })).map((s) => s.user.full_name);
 }
 
 // Citizens who said "this affects me too".
@@ -173,12 +202,15 @@ export async function transition(challengeId: string, action: Action, actor: Act
     let selected: { id: string; heiId: string; teamPlan: unknown; milestonePlan: unknown; budgetRequested: number } | null = null;
     let commitAmount = 0;
     let commitBudget = 0;
+    let held: { id: string; retained: number | null; fundReleased: number | null; releasedByOrgId: string | null }[] = [];
     if (action === 'SELECT_PROPOSAL') {
         const p = payload.proposalId ? await prisma.challengeProposal.findUnique({ where: { id: payload.proposalId }, include: { hei: { select: { name: true } } } }) : null;
         if (!p || p.challengeId !== ch.id) throw new LifecycleError('Choose one of this report\'s proposals.', 400);
         if (p.status !== 'SUBMITTED' && p.status !== 'UNDER_REVIEW') throw new LifecycleError(`A ${p.status.toLowerCase()} proposal cannot be selected.`, 409);
         const problems = validatePlan(p.teamPlan as unknown as TeamPlan, p.milestonePlan as unknown as PlanMilestone[], p.budgetRequested, p.timelineWeeks);
         if (problems.length) throw new LifecycleError(`This proposal is incomplete: ${problems.join(' ')}`, 409);
+        const busy = await overcommittedStudents(((p.teamPlan as unknown as TeamPlan)?.members ?? []).map((m) => m.studentProfileId));
+        if (busy.length) throw new LifecycleError(`${busy.join(', ')} ${busy.length === 1 ? 'is' : 'are'} already on ${MAX_ACTIVE_TEAMS} active projects. The university must change the team first.`, 409);
         selected = p;
         next = 'TEAM_FORMED';
         data.updatedAt = new Date();
@@ -228,6 +260,8 @@ export async function transition(challengeId: string, action: Action, actor: Act
         if (!Number.isInteger(n) || n < 1 || n > 10_000_000) throw new LifecycleError('Enter the verified number of people who benefit (a whole number).', 400);
         next = 'DEPLOYED';
         data.verifiedBeneficiaries = n;
+        // Closing releases what was held back from the last tranche.
+        held = await prisma.milestone.findMany({ where: { team: { proposal: { challengeId: ch.id, status: 'ACCEPTED' } }, retained: { gt: 0 } }, select: { id: true, retained: true, fundReleased: true, releasedByOrgId: true } });
         notify = { roles: ['FACULTY', 'STUDENT', 'CSR', 'NGO'], message: `“${ch.title}” is resolved (${n.toLocaleString('en-IN')} people benefit). Student credentials can now be issued.`, extraUserIds: [...(ch.submitterId ? [ch.submitterId] : []), ...(await supporters(ch.id))] };
     }
 
@@ -273,6 +307,12 @@ export async function transition(challengeId: string, action: Action, actor: Act
                 },
             });
         }
+        for (const m of held) {
+            await tx.milestone.update({ where: { id: m.id }, data: { fundReleased: (m.fundReleased ?? 0) + m.retained!, retained: 0 } });
+            if (m.releasedByOrgId) {
+                await tx.fundingCommitment.update({ where: { challengeId_csrOrgId: { challengeId: ch.id, csrOrgId: m.releasedByOrgId } }, data: { released: { increment: m.retained! } } });
+            }
+        }
         if (action === 'COMMIT_FUNDS' && commitAmount) {
             await tx.fundingCommitment.upsert({
                 where: { challengeId_csrOrgId: { challengeId: ch.id, csrOrgId: actor.organizationId! } },
@@ -286,7 +326,7 @@ export async function transition(challengeId: string, action: Action, actor: Act
         await appendLedger({
             actor_id: actor.id, actor_role: actor.role, action: `CHALLENGE_${action}`, entity_type: 'Challenge', entity_id: ch.id,
             previous_value: { status: ch.status },
-            new_value: { status: next, ...data, ...(hei ? { heiId: hei.id } : {}), ...(selected ? { proposalId: selected.id } : {}), ...(commitAmount ? { committed: commitAmount, csrOrgId: actor.organizationId } : {}) },
+            new_value: { status: next, ...data, ...(hei ? { heiId: hei.id } : {}), ...(selected ? { proposalId: selected.id } : {}), ...(commitAmount ? { committed: commitAmount, csrOrgId: actor.organizationId } : {}), ...(held.length ? { retentionReleased: held.reduce((t, m) => t + (m.retained ?? 0), 0) } : {}) },
         }, tx);
         if (notify && audience.length) {
             await tx.notification.createMany({

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireUser, inJurisdiction } from '@/server/middleware/auth';
-import { matchChallengesToHEIs } from '@/services/smartMatchingService';
+import { rankUniversities } from '@/server/matching';
 
 export async function POST(
     req: NextRequest,
@@ -19,9 +19,9 @@ export async function POST(
         try {
             challenge = await prisma.challenge.findUnique({
                 where: { id: challengeId },
-                select: { id: true, title: true, district: true, sdgTags: true, gpsLat: true, gpsLng: true, status: true },
+                select: { id: true, title: true, district: true, state: true, category: true, sdgTags: true, gpsLat: true, gpsLng: true, status: true },
             });
-            if (challenge) matches = await matchChallengesToHEIs(challenge, 3);
+            if (challenge) matches = await rankUniversities(challenge, 3);
         } catch (dbErr) {
             console.error('Prisma lookup error in match-heis:', dbErr);
             return NextResponse.json(

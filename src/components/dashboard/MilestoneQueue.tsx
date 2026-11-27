@@ -6,6 +6,7 @@ import Link from 'next/link';
 interface QueueItem {
     id: string; projectId: string; title: string; description: string; status: 'SUBMITTED' | 'GP_VERIFIED';
     submittedAt: string; sealed: boolean; challengeTitle: string; place: string; university: string; suggestedRelease: number; fixedAmount?: boolean;
+    ngoPartner: string | null; ngoAttested: boolean;
 }
 
 // Officer: verify or reject submitted milestones. CSR: release funds for verified ones.
@@ -65,6 +66,7 @@ export default function MilestoneQueue({ mode }: { mode: 'officer' | 'csr' }) {
                                 <p className="text-xs text-slate-400 mt-0.5">
                                     Submitted {new Date(m.submittedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                                     {' · '}{m.sealed ? 'hash sealed' : 'not sealed'}
+                                    {m.ngoPartner && <>{' · '}<span className={m.ngoAttested ? 'text-emerald-700' : 'text-amber-700'}>{m.ngoAttested ? `confirmed on the ground by ${m.ngoPartner}` : `not yet confirmed by ${m.ngoPartner}`}</span></>}
                                     {' · '}<Link href={`/project/${m.projectId}/ledger`} className="text-blue-600 hover:underline">ledger</Link>
                                 </p>
                             </div>

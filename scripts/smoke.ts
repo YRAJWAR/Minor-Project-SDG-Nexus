@@ -68,7 +68,7 @@ async function main() {
     const milestones: { id: string; amount: number }[] = await call(faculty, `/api/hei/milestones/${teamId}`);
     assert.equal(milestones.length, 2);
     for (const [i, m] of milestones.entries()) {
-        await call(faculty, '/api/hei/milestones/submit', 'POST', { teamId, milestoneId: m.id, description: 'Done, photos on file.', proofUrls: [] });
+        await call(faculty, '/api/hei/milestones/submit', 'POST', { teamId, milestoneId: m.id, description: 'Done, photos on file.', proofUrls: [], hours: students.slice(0, 2).map((s: { id: string }) => ({ studentProfileId: s.id, hours: 40 })) });
         await call(officer, `/api/hei/milestones/${teamId}`, 'PATCH', { milestoneId: m.id, status: 'GP_VERIFIED' });
         await assert.rejects(call(csr, `/api/hei/milestones/${teamId}`, 'PATCH', { milestoneId: m.id, status: 'CSR_APPROVED', fundReleased: m.amount + 1 }), /agreed tranche/);
         await call(csr, `/api/hei/milestones/${teamId}`, 'PATCH', { milestoneId: m.id, status: 'CSR_APPROVED', fundReleased: m.amount });

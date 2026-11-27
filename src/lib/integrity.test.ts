@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeMilestoneHash } from './merkle';
-import { computeCredentialHash, creditsForHours, isProjectComplete, blendedRating } from './credentials';
+import { computeCredentialHash, creditsForHours, isProjectComplete, blendedRating, milestoneHoursCap } from './credentials';
 import { tfidfSimilarities } from '../services/deduplicationService';
 
 test('milestone hash: what submit stores is what verify recomputes', () => {
@@ -47,6 +47,10 @@ test('project completion: zero milestones is NOT complete', () => {
     assert.equal(isProjectComplete([{ status: 'CSR_APPROVED' }, { status: 'CSR_APPROVED' }], 'COMPLETED'), false, 'paid but not yet resolved by the citizen/officer');
     assert.equal(blendedRating(5, 3), 4.6);
     assert.equal(blendedRating(4, null), 4);
+    assert.equal(blendedRating(4, 5, 3), 3.8, 'faculty 40 + NGO 40 + citizen 20');
+    assert.equal(blendedRating(4, null, 3), 3.5, 'no citizen rating: faculty and NGO only');
+    assert.equal(milestoneHoursCap(new Date('2026-01-01'), new Date('2026-01-15')), 80, 'two weeks = 80 hours');
+    assert.equal(milestoneHoursCap(new Date('2026-01-10'), new Date('2026-01-01')), 40, 'at least one week');
 });
 
 test('duplicate detection: same problem scores higher than an unrelated one', () => {
@@ -77,4 +81,12 @@ test('university score: only resolved work counts, missing parts are left out, n
     assert.equal(good.breakdown.areaNeed, null, 'unknown state index = left out');
     assert.equal(universityScore([{ ...p(5, true), areaNeed: 0.5 }], 200)!.breakdown.areaNeed, 50);
     assert.equal(median([3, 1, 2]), 2);
+});
+
+test('CSR obligation: Indian financial year and 2% of average net profit', async () => {
+    const { financialYear, csrObligation } = await import('./csr');
+    assert.equal(financialYear(new Date(2026, 2, 31)).label, '2025-26', '31 March belongs to the year that started last April');
+    assert.equal(financialYear(new Date(2026, 3, 1)).label, '2026-27');
+    assert.deepEqual(csrObligation(15_00_00_000, 10_00_000), { required: 30_00_000, released: 10_00_000, remaining: 20_00_000, met: false });
+    assert.equal(csrObligation(null, 5), null, 'no profit entered = no obligation shown');
 });

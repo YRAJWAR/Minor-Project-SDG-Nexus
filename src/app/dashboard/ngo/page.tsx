@@ -10,6 +10,7 @@ import SDGBarChart from '@/components/ui/SDGBarChart';
 import AnimatedCounter from '@/components/ui/AnimatedCounter';
 import Link from 'next/link';
 import { generateImpactReport } from '@/lib/pdfGenerator';
+import NgoAttestations from '@/components/dashboard/NgoAttestations';
 
 const fadeIn = (delay: number) => ({
     initial: { opacity: 1, y: 12 },
@@ -59,7 +60,7 @@ export default function NGODashboard() {
         { label: 'Active Projects', value: allProjects.length, icon: '', bgColor: '#eff6ff', iconBg: '#dbeafe', color: '#3b82f6' },
         { label: 'Total Beneficiaries', value: totalBeneficiaries, icon: '', bgColor: '#ecfdf5', iconBg: '#d1fae5', color: '#10b981' },
         { label: 'Budget Utilized', value: Math.round((totalSpent / totalBudget) * 100), icon: '', bgColor: '#fffbeb', iconBg: '#fef3c7', color: '#f59e0b', suffix: '%' },
-        { label: 'Innovation Outcome Score', value: apiScoreData?.final_score || impactData?.overall_score || 847, icon: '', bgColor: '#f5f3ff', iconBg: '#ede9fe', color: '#8b5cf6' },
+        { label: 'Innovation Outcome Score', value: apiScoreData?.final_score ?? impactData?.overall_score ?? 0, icon: '', bgColor: '#f5f3ff', iconBg: '#ede9fe', color: '#8b5cf6' },
     ];
 
     return (
@@ -74,6 +75,8 @@ export default function NGODashboard() {
                     Export Impact Report
                 </button>
             </motion.div>
+
+            <NgoAttestations />
 
             {/* Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -106,7 +109,7 @@ export default function NGODashboard() {
                         )}
                     </h2>
                     <div className="flex items-center justify-around">
-                        <ImpactGauge score={apiScoreData?.final_score || impactData?.overall_score || 847} />
+                        <ImpactGauge score={apiScoreData?.final_score ?? impactData?.overall_score ?? 0} />
                         <div className="space-y-3">
                             {(apiScoreData ? [
                                 { label: 'Beneficiary Scale', score: Math.round(apiScoreData.scale_score), raw: apiScoreData.raw_scale_value, color: '#3b82f6' },

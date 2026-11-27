@@ -10,6 +10,7 @@ import AnimatedCounter from '@/components/ui/AnimatedCounter';
 import StatCard from '@/components/dashboard/StatCard';
 import MilestoneQueue from '@/components/dashboard/MilestoneQueue';
 import FundingQueue from '@/components/dashboard/FundingQueue';
+import CsrObligation from '@/components/dashboard/CsrObligation';
 import { generateExecutiveReport } from '@/lib/pdfGenerator';
 import { FileDown, AlertTriangle } from 'lucide-react';
 
@@ -70,7 +71,7 @@ export default function CorporateDashboard() {
 
             generateExecutiveReport({
                 title: "CSR Impact & Ecosystem Matches",
-                organizationName: "TechServe India CSR",
+                organizationName: user?.organization_name || "CSR partner",
                 date: new Date().toLocaleDateString(),
                 summaryMetrics: [
                     { label: "CSR Funds Disbursed", value: `₹${disbursedLakh} Lakh` },
@@ -119,9 +120,9 @@ export default function CorporateDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
                     { label: 'CSR Funds Disbursed', value: disbursedLakh, icon: '', color: '#3b82f6', prefix: '₹', suffix: ' Lakh' },
-                    { label: 'Projects Funded', value: projectsFunded, icon: '', color: '#10b981' },
+                    { label: 'Projects Backed', value: projectsFunded, icon: '', color: '#10b981' },
                     { label: 'SDGs Impacted', value: sdgsSupported, icon: '', color: '#8b5cf6' },
-                    { label: 'Lives Impacted', value: livesImpacted, icon: '', color: '#f59e0b' },
+                    { label: 'People Helped (verified)', value: livesImpacted, icon: '', color: '#f59e0b' },
                 ].map((stat, i) => (
                     <StatCard
                         key={i}
@@ -135,6 +136,8 @@ export default function CorporateDashboard() {
                     />
                 ))}
             </div>
+
+            <CsrObligation />
 
             <FundingQueue />
 

@@ -106,12 +106,13 @@ const NGOS = [
     { name: 'Brahmaputra Flood Relief Forum', district: 'Dhubri', sdg: [13, 11], pending: true },
     { name: 'Godavari Krishi Mitra', district: 'Khammam', sdg: [2, 12], pending: true },
 ];
+// avgNetProfit: fictional average net profit of the last three financial years (₹); 2% of it is the CSR obligation.
 const CSRS = [
-    { name: 'Deccan Polymers Ltd', district: 'Hyderabad', demo: true },
-    { name: 'Westcoast Infra Holdings', district: 'Pune' },
-    { name: 'Narmada Agro Industries', district: 'Kachchh' },
-    { name: 'Eastern Grid Power Co.', district: 'Khordha' },
-    { name: 'Sahyog FinServ Ltd', district: 'Chennai' },
+    { name: 'Deccan Polymers Ltd', district: 'Hyderabad', demo: true, avgNetProfit: 15_00_00_000 },
+    { name: 'Westcoast Infra Holdings', district: 'Pune', avgNetProfit: 48_00_00_000 },
+    { name: 'Narmada Agro Industries', district: 'Kachchh', avgNetProfit: 9_50_00_000 },
+    { name: 'Eastern Grid Power Co.', district: 'Khordha', avgNetProfit: 64_00_00_000 },
+    { name: 'Sahyog FinServ Ltd', district: 'Chennai', avgNetProfit: 15_00_00_000 },
 ];
 const OFFICERS: [string, string][] = [
     ['Nalgonda', 'Sunitha Rao'], ['Pune', 'Rahul Bhosale'], ['Barmer', 'Mahendra Singh Bhati'],
@@ -253,7 +254,7 @@ async function main() {
     }
     for (const c of CSRS) {
         const o = await prisma.organization.create({
-            data: { name: c.name, type: 'CORPORATE', state: PLACES[c.district].state, district: c.district, verification_status: 'VERIFIED', created_at: ago(380) },
+            data: { name: c.name, type: 'CORPORATE', state: PLACES[c.district].state, district: c.district, verification_status: 'VERIFIED', avgNetProfit: c.avgNetProfit, created_at: ago(380) },
         });
         orgByName[c.name] = o.id;
     }
@@ -368,9 +369,12 @@ async function main() {
 
         const uni = UNIVERSITIES.find((u) => u.key === uniKey)!;
         const budget = 400000 + Math.round(rand() * 10) * 50000;
+        // A verified NGO in the same state joins as field partner (it confirms milestones and rates the students).
+        const partner = NGOS.find((n) => !n.pending && PLACES[n.district].state === place.state);
         const proposal = await prisma.challengeProposal.create({
             data: {
                 challengeId: challenge.id, heiId: unis[uniKey].id, status: 'ACCEPTED', timelineWeeks: 12 + (ci % 3) * 2,
+                ngoPartnerId: partner ? orgByName[partner.name] : null,
                 approach: `Baseline survey, then a prototype built with ${uni.depts.slice(0, 2).join(' and ')} students, installed with local caretakers and checked 30 days after handover.`,
                 budgetRequested: budget, fundingSource: 'CSR', ipDeclaration: 'Open design; the community and district may reuse it freely.',
                 aiQualityScore: Number((0.74 + rand() * 0.22).toFixed(2)), createdAt: ago(daysAgo - 5),
@@ -408,6 +412,7 @@ async function main() {
                 : ci === 0 ? ['CSR_APPROVED', 'GP_VERIFIED', 'SUBMITTED', 'PENDING'] // hero: something waiting for CSR and for the officer
                     : pick([['CSR_APPROVED', 'SUBMITTED', 'PENDING', 'PENDING'], ['CSR_APPROVED', 'CSR_APPROVED', 'GP_VERIFIED', 'PENDING'], ['GP_VERIFIED', 'PENDING', 'PENDING', 'PENDING']] as MilestoneStatus[][]);
         const span = daysAgo - 10;
+        const logged = new Map<string, number>(); // hours per student on this project, for the credentials below
         for (const [mi, [mTitle, mDesc, share]] of MILESTONE_PLAN.entries()) {
             const st = plan[mi];
             const createdAt = ago(daysAgo - 10 - Math.round((span * (mi + 1)) / 5));
@@ -420,17 +425,30 @@ async function main() {
                 hashValue = createHash('sha256').update('edited after sealing').digest('hex');
                 tampered = true;
             }
+            const attested = partner && (st === 'GP_VERIFIED' || st === 'CSR_APPROVED');
             await prisma.milestone.create({
                 data: {
                     teamId: team.id, title: mTitle, description: mDesc, status: st, proofUrls: [],
+                    ngoAttestedAt: attested ? new Date(createdAt.getTime() + 2 * DAY) : null,
+                    ngoAttestation: attested ? pick(['Visited the site with the panchayat secretary; the work is in place and in use.', 'Checked on the ground with two villagers; matches the photos submitted.', 'Our field worker saw the installation working during the weekly visit.']) : null,
                     dueDate: new Date(NOW - (daysAgo - 10) * DAY + ((mi + 1) * (proposal.timelineWeeks * 7 * DAY)) / 4),
                     hashValue, gpsLat: sealed ? lat : null, gpsLng: sealed ? lng : null, createdAt,
                     verifierCode: st === 'GP_VERIFIED' || st === 'CSR_APPROVED' ? `GP-${district.slice(0, 3).toUpperCase()}-${100 + ci * 4 + mi}` : null,
                     fundReleased: st === 'CSR_APPROVED' ? agreed.amounts[mi] : null,
+                    releasedAt: st === 'CSR_APPROVED' ? new Date(createdAt.getTime() + 4 * DAY) : null,
+                    releasedByOrgId: st === 'CSR_APPROVED' ? funderId : null,
                     amount: agreed.amounts[mi],
                 },
             });
         }
+
+        // Hours each student logged per sealed milestone.
+        for (const ms of await prisma.milestone.findMany({ where: { teamId: team.id, status: { not: 'PENDING' } }, select: { id: true } })) {
+            const rows = [...new Set(members.map((m) => m.profileId))].map((id) => ({ milestoneId: ms.id, studentProfileId: id, hours: 15 + Math.round(rand() * 6) * 5 }));
+            await prisma.milestoneHours.createMany({ data: rows });
+            for (const row of rows) logged.set(row.studentProfileId, (logged.get(row.studentProfileId) ?? 0) + row.hours);
+        }
+        if (partner && resolved) await prisma.teamMember.updateMany({ where: { teamId: team.id }, data: { ngoRating: 4 + (ci % 2) } });
 
         const released = (await prisma.milestone.aggregate({ where: { teamId: team.id, status: 'CSR_APPROVED' }, _sum: { fundReleased: true } }))._sum.fundReleased ?? 0;
         await prisma.fundingCommitment.update({ where: { challengeId_csrOrgId: { challengeId: challenge.id, csrOrgId: funderId } }, data: { released } });
@@ -447,7 +465,7 @@ async function main() {
         if (resolved) {
             const issuedAt = ago(Math.max(5, daysAgo - 150));
             for (const m of new Map(members.map((x) => [x.profileId, x])).values()) {
-                const hours = 60 + Math.round(rand() * 6) * 15;
+                const hours = logged.get(m.profileId) ?? 0; // = the verified hours logged on the milestones
                 const creditPoints = creditsForHours(hours);
                 await prisma.studentCredential.create({
                     data: {

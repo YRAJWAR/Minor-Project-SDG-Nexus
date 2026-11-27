@@ -9,6 +9,7 @@ import { SESSION_COOKIE, readSession } from '@/server/middleware/auth';
 // First matching prefix wins, so more specific paths come first.
 const RULES: { prefix: string; exact?: boolean; roles: Role[] }[] = [
     { prefix: '/dashboard/government', roles: ['OFFICER', 'ADMIN'] },
+    { prefix: '/dashboard/admin', roles: ['ADMIN'] },
     { prefix: '/dashboard/hei/milestones', roles: ['FACULTY', 'STUDENT'] },
     { prefix: '/dashboard/hei/credentials', roles: ['FACULTY', 'STUDENT'] },
     { prefix: '/dashboard/hei', roles: ['FACULTY'] },

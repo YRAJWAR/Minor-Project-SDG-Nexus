@@ -13,7 +13,7 @@ export default function DashboardRedirect() {
             const rolePaths: Record<string, string> = {
                 ngo: '/dashboard/ngo',
                 government: '/dashboard/government',
-                admin: '/dashboard/government',
+                admin: '/dashboard/admin',
                 corporate: '/dashboard/corporate',
                 hei: '/dashboard/hei',
                 citizen: '/citizen/submit',

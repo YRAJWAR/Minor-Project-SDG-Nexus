@@ -36,6 +36,14 @@ const NAV_ITEMS: Record<string, { label: string; href: string; icon: string }[]>
         { label: 'Analytics', href: '/dashboard/analytics', icon: '📈' },
         { label: 'Profile', href: '/dashboard/profile', icon: '👤' },
     ],
+    admin: [
+        { label: 'Administration', href: '/dashboard/admin', icon: '👤' },
+        { label: 'District office', href: '/dashboard/government', icon: '🏛️' },
+        { label: 'Heatmap', href: '/dashboard/heatmap', icon: '🗺️' },
+        { label: 'Activity Ledger', href: '/dashboard/ledger', icon: '📋' },
+        { label: 'Leaderboard', href: '/dashboard/leaderboard', icon: '🏆' },
+        { label: 'Analytics', href: '/dashboard/analytics', icon: '📈' },
+    ],
     corporate: [
         { label: 'CSR dashboard', href: '/dashboard/corporate', icon: '🏢' },
         { label: 'Heatmap', href: '/dashboard/heatmap', icon: '🗺️' },
@@ -76,7 +84,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
     const { user, logout } = useAuth();
     const pathname = usePathname();
     const role = user?.role || 'ngo';
-    const items = NAV_ITEMS[role === 'admin' ? 'government' : role] || NAV_ITEMS.ngo;
+    const items = NAV_ITEMS[role] || NAV_ITEMS.ngo;
 
     return (
         <>

@@ -118,7 +118,7 @@ export default function PublicCredentialVerificationPage() {
 
                 {/* Status Banner */}
                 {isVerified ? (
-                    <div className="bg-emerald-950/80 border-2 border-emerald-500/60 rounded-2xl p-5 text-[var(--color-forest)] shadow-sm shadow-emerald-950/40 ">
+                    <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-5 text-[var(--color-forest)]">
                         <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/30">
                                 <CheckCircle2 className="w-7 h-7" />
@@ -136,7 +136,7 @@ export default function PublicCredentialVerificationPage() {
                         </div>
                     </div>
                 ) : (
-                    <div className="bg-rose-950/90 border-2 border-rose-500/80 rounded-2xl p-5 text-[var(--color-rust)] shadow-sm shadow-rose-950/40 ">
+                    <div className="bg-rose-50 border-2 border-rose-300 rounded-2xl p-5 text-[var(--color-rust)]">
                         <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-rose-500/30">
                                 <AlertTriangle className="w-7 h-7" />

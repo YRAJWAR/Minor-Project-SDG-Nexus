@@ -183,6 +183,8 @@ export async function transition(challengeId: string, action: Action, actor: Act
         notify = { roles: ['CSR'], message: `“${ch.title}” (${ch.district}) has a selected university plan by ${p.hei.name} and needs ₹${Math.round(p.budgetRequested).toLocaleString('en-IN')} in funding.`, extraUserIds: [...heiUsers.map((u) => u.id), ...(ch.submitterId ? [ch.submitterId] : [])] };
     } else if (action === 'COMMIT_FUNDS') {
         if (!actor.organizationId) throw new LifecycleError('Your account is not linked to a CSR organisation.', 403);
+        const org = await prisma.organization.findUnique({ where: { id: actor.organizationId }, select: { verification_status: true } });
+        if (org?.verification_status !== 'VERIFIED') throw new LifecycleError('Your organisation must be verified by the platform admin before it can commit funds.', 403);
         const accepted = await prisma.challengeProposal.findFirst({ where: { challengeId: ch.id, status: 'ACCEPTED' }, select: { budgetRequested: true, heiId: true } });
         if (!accepted) throw new LifecycleError('This report has no selected proposal to fund.', 409);
         const committed = (await prisma.fundingCommitment.aggregate({ where: { challengeId: ch.id }, _sum: { amount: true } }))._sum.amount ?? 0;

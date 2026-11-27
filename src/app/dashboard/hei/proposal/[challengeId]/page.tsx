@@ -67,6 +67,8 @@ export default function ProposalBuilderPage() {
     const [timelineWeeks, setTimelineWeeks] = useState(16);
     const [budgetRequested, setBudgetRequested] = useState<number | string>(450000);
     const [csrPartner, setCsrPartner] = useState('Open to any partner');
+    const [ngoPartnerId, setNgoPartnerId] = useState('');
+    const [ngoList, setNgoList] = useState<{ id: string; name: string; district: string | null }[]>([]);
     const [ipDeclaration, setIpDeclaration] = useState('Open Source — published under MIT/CC license');
     const [termsAccepted, setTermsAccepted] = useState(false);
     // Team and milestone plan (Phase 3): the officer compares these and the selected one becomes the project.
@@ -132,6 +134,7 @@ export default function ProposalBuilderPage() {
                     if (p.timelineWeeks) setTimelineWeeks(p.timelineWeeks);
                     if (p.budgetRequested) setBudgetRequested(p.budgetRequested);
                     if (p.fundingSource) setCsrPartner(p.fundingSource);
+                    if (p.ngoPartnerId) setNgoPartnerId(p.ngoPartnerId);
                     if (p.ipDeclaration) setIpDeclaration(p.ipDeclaration);
                     if (Array.isArray(p.planStudents) && p.planStudents.length) setTeam(p.planStudents);
                     if (Array.isArray(p.milestonePlan) && p.milestonePlan.length) setMilestones(p.milestonePlan);
@@ -163,6 +166,7 @@ export default function ProposalBuilderPage() {
         };
 
         fetchCorporates();
+        fetch('/api/corporate/list?type=NGO').then((r) => r.json()).then((j) => { if (j.success && Array.isArray(j.data)) setNgoList(j.data); }).catch(() => {});
     }, []);
 
     // AI Quality Pre-scorer Trigger
@@ -181,6 +185,7 @@ export default function ProposalBuilderPage() {
                     timelineWeeks,
                     budgetRequested: Number(budgetRequested),
                     csrPartner,
+                    ngoPartnerId,
                     ipDeclaration,
                 }),
             });
@@ -221,6 +226,7 @@ export default function ProposalBuilderPage() {
                     timelineWeeks,
                     budgetRequested: Number(budgetRequested),
                     csrPartner,
+                    ngoPartnerId,
                     ipDeclaration,
                     termsAccepted,
                     status: 'DRAFT',
@@ -280,6 +286,7 @@ export default function ProposalBuilderPage() {
                     timelineWeeks,
                     budgetRequested: Number(budgetRequested),
                     csrPartner,
+                    ngoPartnerId,
                     ipDeclaration,
                     termsAccepted,
                     status: 'SUBMITTED',
@@ -533,6 +540,19 @@ export default function ProposalBuilderPage() {
                             Preference shared with Department of Planning & CSR Council.
                         </p>
                     </div>
+                </div>
+
+                {/* NGO field partner (optional) */}
+                <div className="space-y-2">
+                    <label htmlFor="ngo-partner" className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                        NGO field partner (optional)
+                    </label>
+                    <select id="ngo-partner" value={ngoPartnerId} onChange={(e) => setNgoPartnerId(e.target.value)}
+                        className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 outline-none text-slate-800 bg-white font-medium">
+                        <option value="">No NGO partner</option>
+                        {ngoList.map((n) => <option key={n.id} value={n.id}>{n.name}{n.district ? ` (${n.district})` : ''}</option>)}
+                    </select>
+                    <p className="text-[11px] text-slate-500">A partner NGO confirms each milestone on the ground and rates the students (40% of their credential rating).</p>
                 </div>
 
                 {/* 5. IP Declaration (Radio Buttons) */}

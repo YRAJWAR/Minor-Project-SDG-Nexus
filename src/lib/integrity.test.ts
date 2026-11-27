@@ -64,7 +64,7 @@ test('university score: only resolved work counts, missing parts are left out, n
     const { universityScore, median } = await import('./universityScore');
     const due = new Date('2026-06-01');
     const p = (rating: number | null, onTime: boolean) => ({
-        budget: 400000, verifiedBeneficiaries: 800, citizenRating: rating,
+        budget: 400000, verifiedBeneficiaries: 800, citizenRating: rating, areaNeed: null as number | null,
         milestones: [{ dueDate: due, submittedAt: new Date(onTime ? '2026-05-20' : '2026-06-10'), sealed: true, hasProof: true }],
     });
     assert.equal(universityScore([], 100), null, 'no score before the first resolution');
@@ -74,5 +74,7 @@ test('university score: only resolved work counts, missing parts are left out, n
     assert.equal(good.breakdown.reach, 50, '200 people per lakh at the median scores 50');
     assert.ok(good.score! > universityScore([p(2, false)], 200)!.score!);
     assert.equal(universityScore([p(null, true)], 200)!.breakdown.satisfaction, null, 'no rating = left out');
+    assert.equal(good.breakdown.areaNeed, null, 'unknown state index = left out');
+    assert.equal(universityScore([{ ...p(5, true), areaNeed: 0.5 }], 200)!.breakdown.areaNeed, 50);
     assert.equal(median([3, 1, 2]), 2);
 });

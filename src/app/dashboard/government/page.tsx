@@ -887,7 +887,7 @@ export default function GovernmentDashboard() {
                                     {/* Footer Section: University assignment & Escalation Status */}
                                     <div className="pt-3 border-t border-slate-100 flex flex-col gap-3">
                                         <div className="flex items-center justify-between text-xs">
-                                            <div className="text-[11px] text-slate-500" title={ch.priorityBreakdown ? `Severity ${ch.priorityBreakdown.severity} · Endorsements ${ch.priorityBreakdown.endorsements} · Area backlog ${ch.priorityBreakdown.areaBacklog} · Waiting ${ch.priorityBreakdown.waiting} (weights 35/25/20/20)` : undefined}>
+                                            <div className="text-[11px] text-slate-500" title={ch.priorityBreakdown ? `Severity ${ch.priorityBreakdown.severity} · Endorsements ${ch.priorityBreakdown.endorsements} · Area: district backlog ${ch.priorityBreakdown.areaBacklog}${ch.priorityBreakdown.areaNeed != null ? `, state SDG Index need ${ch.priorityBreakdown.areaNeed}` : ''} · Waiting ${ch.priorityBreakdown.waiting} (weights 35/25/20/20)` : undefined}>
                                                 <span className="text-slate-400">Priority </span>
                                                 <span className="font-bold text-slate-800">{ch.priority ?? '—'}</span>
                                                 <span className="text-slate-400"> · {ch.endorsements ?? 0} endorsed · {ch.urgency?.toLowerCase()}</span>

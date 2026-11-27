@@ -20,6 +20,7 @@ import {
     RefreshCw,
 } from 'lucide-react';
 import { SDG_INFO } from '@/data/mockData';
+import QRCode from 'qrcode';
 
 export default function PublicCredentialVerificationPage() {
     const params = useParams();
@@ -29,6 +30,12 @@ export default function PublicCredentialVerificationPage() {
     const [credential, setCredential] = useState<any | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [copiedHash, setCopiedHash] = useState(false);
+    const [qr, setQr] = useState<string | null>(null);
+
+    // QR of this page's own address, so a printed or shared credential can be checked by scanning.
+    useEffect(() => {
+        if (credentialId) QRCode.toDataURL(window.location.href, { margin: 1, width: 160 }).then(setQr).catch(() => setQr(null));
+    }, [credentialId]);
 
     useEffect(() => {
         if (!credentialId) return;
@@ -163,6 +170,13 @@ export default function PublicCredentialVerificationPage() {
                                 </h1>
                             </div>
                         </div>
+                        {qr && (
+                            <figure className="flex items-center gap-3">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={qr} alt="QR code linking to this verification page" width={88} height={88} className="border border-[var(--color-rule)] bg-white" />
+                                <figcaption className="text-[11px] text-[var(--color-ink-muted)] max-w-[9rem]">Scan to open this check on another device.</figcaption>
+                            </figure>
+                        )}
                     </div>
 
                     {/* Recipient & University Info */}

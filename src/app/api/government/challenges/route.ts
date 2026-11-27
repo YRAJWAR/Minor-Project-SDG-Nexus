@@ -45,9 +45,10 @@ export async function GET(req: NextRequest) {
             }
         }
         const maxOpen = Math.max(0, ...openByDistrict.values());
+        const stateIndex = new Map((await prisma.state.findMany({ select: { name: true, sdgIndex: true } })).map((s) => [s.name.toLowerCase(), s.sdgIndex]));
 
         const allChallenges = dbChallenges.map((ch) => {
-                const prio = priority({ urgency: ch.urgency, endorsements: ch._count.endorsements, districtOpen: openByDistrict.get(ch.district.toLowerCase()) ?? 0, maxDistrictOpen: maxOpen, createdAt: ch.createdAt, status: ch.status }, now);
+                const prio = priority({ urgency: ch.urgency, endorsements: ch._count.endorsements, districtOpen: openByDistrict.get(ch.district.toLowerCase()) ?? 0, maxDistrictOpen: maxOpen, stateSdgIndex: ch.state ? stateIndex.get(ch.state.toLowerCase()) : null, createdAt: ch.createdAt, status: ch.status }, now);
                 const timeSinceUpdate = now - new Date(ch.updatedAt).getTime();
                 const daysSinceUpdate = Math.floor(timeSinceUpdate / (1000 * 60 * 60 * 24));
                 const isEscalationDue =

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { universityScore, reachPerLakh, median, type ResolvedProject } from '@/lib/universityScore';
+import { areaNeed } from '@/server/lifecycle';
 
 // Public: university impact scores from resolved projects only, with the breakdown behind each number.
 export async function GET() {
@@ -10,14 +11,16 @@ export async function GET() {
                 id: true, name: true, district: true, state: true,
                 proposals: {
                     where: { status: 'ACCEPTED', challenge: { status: 'DEPLOYED' } },
-                    select: { budgetRequested: true, challenge: { select: { verifiedBeneficiaries: true, citizenRating: true } }, team: { select: { milestones: { select: { dueDate: true, createdAt: true, status: true, hashValue: true, proofUrls: true, gpsLat: true } } } } },
+                    select: { budgetRequested: true, challenge: { select: { state: true, verifiedBeneficiaries: true, citizenRating: true } }, team: { select: { milestones: { select: { dueDate: true, createdAt: true, status: true, hashValue: true, proofUrls: true, gpsLat: true } } } } },
                 },
             },
         });
+        const stateIndex = new Map((await prisma.state.findMany({ select: { name: true, sdgIndex: true } })).map((s) => [s.name.toLowerCase(), s.sdgIndex]));
         const projectsOf = (h: (typeof heis)[number]): ResolvedProject[] => h.proposals.map((p) => ({
             budget: p.budgetRequested,
             verifiedBeneficiaries: p.challenge.verifiedBeneficiaries,
             citizenRating: p.challenge.citizenRating,
+            areaNeed: areaNeed(p.challenge.state ? stateIndex.get(p.challenge.state.toLowerCase()) : null),
             milestones: (p.team?.milestones ?? []).map((m) => ({
                 dueDate: m.dueDate, submittedAt: m.status === 'PENDING' ? null : m.createdAt,
                 sealed: !!m.hashValue, hasProof: m.proofUrls.length > 0 || m.gpsLat !== null,

@@ -187,6 +187,17 @@ const STAGE: Record<ChallengeStatus, number> = {
     SUBMITTED: 0, AI_PROCESSED: 1, VALIDATED: 2, UNIVERSITY_ASSIGNED: 3, TEAM_FORMED: 4, IN_PROGRESS: 5, COMPLETED: 6, DEPLOYED: 7,
 };
 
+// NITI Aayog SDG India Index 2023-24, composite score per State/UT (official dashboard sdgindiaindex.niti.gov.in, released 12 Jul 2024).
+// Real reference data, not demo data: used for the "area need" part of the priority and university scores.
+const SDG_INDEX: Record<string, number> = {
+    Kerala: 79, Uttarakhand: 79, 'Tamil Nadu': 78, Goa: 77, 'Himachal Pradesh': 77, Punjab: 76, Sikkim: 76, Karnataka: 75,
+    'Andhra Pradesh': 74, Gujarat: 74, Telangana: 74, Maharashtra: 73, Haryana: 72, Manipur: 72, Mizoram: 72, Tripura: 71,
+    'West Bengal': 70, Chhattisgarh: 67, 'Madhya Pradesh': 67, Rajasthan: 67, 'Uttar Pradesh': 67, Odisha: 66,
+    'Arunachal Pradesh': 65, Assam: 65, Meghalaya: 63, Nagaland: 63, Jharkhand: 62, Bihar: 57,
+    Chandigarh: 77, 'Jammu and Kashmir': 74, Puducherry: 74, 'Andaman and Nicobar Islands': 70, Delhi: 70,
+    'Dadra and Nagar Haveli and Daman and Diu': 66, Lakshadweep: 66, Ladakh: 65,
+};
+
 async function main() {
     // Children before parents.
     await prisma.$transaction([
@@ -205,8 +216,9 @@ async function main() {
         readFileSync(join(__dirname, 'data', 'india-regions.json'), 'utf8'),
     );
     for (const s of regions.states) {
+        if (!(s.name in SDG_INDEX)) throw new Error(`No SDG India Index score for ${s.name}`);
         await prisma.state.create({
-            data: { name: s.name, districts: { createMany: { data: [...new Set(s.districts)].map((name) => ({ name })) } } },
+            data: { name: s.name, sdgIndex: SDG_INDEX[s.name], districts: { createMany: { data: [...new Set(s.districts)].map((name) => ({ name })) } } },
         });
     }
     for (const [name, p] of Object.entries(PLACES)) {

@@ -4,11 +4,11 @@ import React, { useEffect, useState } from 'react';
 
 interface Row {
     id: string; name: string; place: string; score: number | null; basedOn: number;
-    breakdown: { onTime: number | null; satisfaction: number | null; reach: number | null; proof: number | null } | null;
+    breakdown: { onTime: number | null; satisfaction: number | null; reach: number | null; proof: number | null; areaNeed: number | null } | null;
 }
 
 const LABELS: [keyof NonNullable<Row['breakdown']>, string][] = [
-    ['onTime', 'On time (30%)'], ['satisfaction', 'Citizen rating (25%)'], ['reach', 'People per ₹ lakh (20%)'], ['proof', 'Proof (15%)'],
+    ['onTime', 'On time (30%)'], ['satisfaction', 'Citizen rating (25%)'], ['reach', 'People per ₹ lakh (20%)'], ['proof', 'Proof (15%)'], ['areaNeed', 'Area need (10%)'],
 ];
 
 // University impact scores from resolved projects only (GET /api/impact/universities).

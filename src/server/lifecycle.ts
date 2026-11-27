@@ -112,6 +112,9 @@ export function priority(input: { urgency: string; endorsements: number; distric
     };
 }
 
+// Citizens who said "this affects me too".
+const supporters = async (challengeId: string) => (await prisma.endorsement.findMany({ where: { challengeId }, select: { userId: true } })).map((e) => e.userId);
+
 export class LifecycleError extends Error {
     constructor(message: string, public status: 400 | 403 | 404 | 409) { super(message); }
 }
@@ -142,7 +145,7 @@ export async function transition(challengeId: string, action: Action, actor: Act
             }
             data.sdgTags = tags;
         }
-        notify = { roles: ['FACULTY'], message: `New verified problem open for proposals: “${ch.title}” (${ch.district}).`, extraUserIds: ch.submitterId ? [ch.submitterId] : [] };
+        notify = { roles: ['FACULTY'], message: `New verified problem open for proposals: “${ch.title}” (${ch.district}).`, extraUserIds: [...(ch.submitterId ? [ch.submitterId] : []), ...(await supporters(ch.id))] };
     } else if (action === 'REJECT') {
         const reason = payload.reason?.trim() ?? '';
         if (reason.length < 10 || reason.length > 500) throw new LifecycleError('Give a reason of 10–500 characters; the citizen will see it.', 400);
@@ -196,7 +199,9 @@ export async function transition(challengeId: string, action: Action, actor: Act
         commitBudget = accepted.budgetRequested;
         if (amount === gap) next = 'FUNDED';
         const heiUsers = await prisma.user.findMany({ where: { heiId: accepted.heiId, role: 'FACULTY' }, select: { id: true } });
-        notify = { roles: ['OFFICER'], message: amount === gap ? `“${ch.title}” is fully funded. Work can start.` : `₹${amount.toLocaleString('en-IN')} committed to “${ch.title}”; ₹${(gap - amount).toLocaleString('en-IN')} still needed.`, extraUserIds: heiUsers.map((u) => u.id) };
+        notify = amount === gap
+            ? { roles: ['OFFICER', 'STUDENT', 'NGO'], message: `“${ch.title}” is fully funded. Work can start.`, extraUserIds: [...heiUsers.map((u) => u.id), ...(ch.submitterId ? [ch.submitterId] : [])] }
+            : { roles: ['OFFICER'], message: `₹${amount.toLocaleString('en-IN')} committed to “${ch.title}”; ₹${(gap - amount).toLocaleString('en-IN')} still needed.`, extraUserIds: heiUsers.map((u) => u.id) };
     } else if (action === 'START') {
         next = 'IN_PROGRESS';
     } else if (action === 'COMPLETE') {
@@ -204,26 +209,26 @@ export async function transition(challengeId: string, action: Action, actor: Act
         if (open > 0) throw new LifecycleError(`${open} milestone(s) are not paid yet.`, 409);
         next = 'COMPLETED';
         data.completedAt = new Date();
-        notify = { roles: ['OFFICER'], message: `All milestones of “${ch.title}” are verified and paid. Please check the fix and confirm or dispute it.`, extraUserIds: ch.submitterId ? [ch.submitterId] : [] };
+        notify = { roles: ['OFFICER', 'NGO'], message: `All milestones of “${ch.title}” are verified and paid. Please check the fix and confirm or dispute it.`, extraUserIds: ch.submitterId ? [ch.submitterId] : [] };
     } else if (action === 'CONFIRM') {
         const rating = Number(payload.rating);
         if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new LifecycleError('Rate the fix from 1 to 5.', 400);
         data.confirmedAt = new Date();
         data.citizenRating = rating;
-        notify = { roles: ['OFFICER'], message: `The citizen confirmed the fix for “${ch.title}” (rated ${rating}/5). It can be closed.`, extraUserIds: [] };
+        notify = { roles: ['OFFICER', 'FACULTY', 'STUDENT', 'CSR', 'NGO'], message: `The citizen confirmed the fix for “${ch.title}” (rated ${rating}/5).`, extraUserIds: [] };
     } else if (action === 'DISPUTE') {
         const reason = payload.reason?.trim() ?? '';
         if (reason.length < 10 || reason.length > 500) throw new LifecycleError('Say what is still wrong (10–500 characters).', 400);
         next = 'IN_PROGRESS';
         data.disputeReason = reason;
         data.completedAt = null;
-        notify = { roles: ['OFFICER', 'FACULTY'], message: `The citizen says “${ch.title}” is not fixed: ${reason}`, extraUserIds: [] };
+        notify = { roles: ['OFFICER', 'FACULTY', 'STUDENT', 'CSR', 'NGO'], message: `The citizen says “${ch.title}” is not fixed: ${reason}`, extraUserIds: [] };
     } else if (action === 'CLOSE') {
         const n = Number(payload.beneficiaries);
         if (!Number.isInteger(n) || n < 1 || n > 10_000_000) throw new LifecycleError('Enter the verified number of people who benefit (a whole number).', 400);
         next = 'DEPLOYED';
         data.verifiedBeneficiaries = n;
-        notify = { roles: ['FACULTY'], message: `“${ch.title}” is resolved (${n.toLocaleString('en-IN')} people benefit). Student credentials can now be issued.`, extraUserIds: ch.submitterId ? [ch.submitterId] : [] };
+        notify = { roles: ['FACULTY', 'STUDENT', 'CSR', 'NGO'], message: `“${ch.title}” is resolved (${n.toLocaleString('en-IN')} people benefit). Student credentials can now be issued.`, extraUserIds: [...(ch.submitterId ? [ch.submitterId] : []), ...(await supporters(ch.id))] };
     }
 
     const audience = notify ? [
@@ -231,7 +236,7 @@ export async function transition(challengeId: string, action: Action, actor: Act
         ...notify.extraUserIds,
     ] : [];
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
         if (action === 'ENDORSE') {
             const existing = await tx.endorsement.findUnique({ where: { challengeId_userId: { challengeId: ch.id, userId: actor.id } } });
             if (existing) throw new LifecycleError('You have already endorsed this report.', 409);
@@ -291,4 +296,10 @@ export async function transition(challengeId: string, action: Action, actor: Act
         const updated = { ...ch, status: next };
         return { challengeId: ch.id, previousStatus: ch.status, status: next, allowedActions: allowedActions(updated, actor) };
     });
+    // A resolved project changes the university's track record, which matching reads for every future report.
+    if (action === 'CLOSE') {
+        const { refreshTrackRecords } = await import('@/server/trackRecord'); // lazy: trackRecord imports this module
+        await refreshTrackRecords().catch((err) => console.warn('Track record refresh failed:', err));
+    }
+    return result;
 }

@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     try {
         teams = await prisma.projectTeam.findMany({
             // Only the signed-in faculty member's own university.
-            where: { proposal: { status: 'ACCEPTED' }, heiId: user.heiId ?? '\u0000' },
+            where: { proposal: { status: 'ACCEPTED' }, heiId: user.heiId ?? '-' },
             include: {
                 proposal: { include: { challenge: true, ngoPartner: { select: { name: true } } } },
                 hei: true,

@@ -33,8 +33,14 @@ npm run smoke                # (with the app running) drives one report through 
 ```
 
 ## Demo accounts
-Every person and organisation in the demo is fictional. Password for all: `Demo@1234` (set in `prisma/seed.ts`).
-The sign-in page has one-click buttons.
+Every person and organisation in the demo is fictional; the places are real districts. Password for all: `Demo@1234`
+(set in `prisma/seed.ts`). The sign-in page has one-click buttons.
+
+The seed builds a busy year across India: about 220 reports from 77 districts in 21 states, each area reporting the
+problems it is known for (fluoride belts, arsenic and salinity in the delta, drought in Marathwada and Bundelkhand,
+stubble burning in Malwa, landslides in the Himalaya…), 22 universities, 31 NGOs, 15 CSR companies, 20 district officers,
+about 250 students and 280 citizens, competing proposals, co-funded projects, ~600 milestones and ~230 credentials.
+The wider world lives in `prisma/data/demo-world.ts`.
 
 | Role | Email |
 |---|---|

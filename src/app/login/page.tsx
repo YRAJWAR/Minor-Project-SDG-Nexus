@@ -16,11 +16,13 @@ export default function LoginPage() {
     const router = useRouter();
     // The landing page links here with ?email= to prefill a demo account.
     useEffect(() => { setEmail(new URLSearchParams(window.location.search).get('email') ?? ''); }, []);
+    // The free database sleeps when idle; wake it (and the server) while the person is still typing.
+    useEffect(() => { fetch('/api/health', { cache: 'no-store' }).catch(() => undefined); }, []);
 
     const signIn = async (mail: string, pass: string) => {
         setError('');
         setLoading(true);
-        const err = await login(mail, pass);
+        const { error: err, home } = await login(mail, pass);
         if (err) {
             setError(err);
             setLoading(false);
@@ -28,7 +30,7 @@ export default function LoginPage() {
         }
         // Back to the page the guard sent us from, but only same-site paths.
         const next = new URLSearchParams(window.location.search).get('next');
-        router.push(next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard');
+        router.replace(next && next.startsWith('/') && !next.startsWith('//') ? next : home);
     };
     const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); signIn(email, password); };
     // Demo accounts are fictional and share the password published on the home page (prisma/seed.ts).

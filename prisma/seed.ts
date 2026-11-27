@@ -1,5 +1,5 @@
 // Seeds reference data (all states/UTs and districts, the 17 SDGs) and a believable pan-India demo:
-// universities, NGOs, CSR partners, district officers, students, ~40 citizen problems at every stage,
+// 22 universities, 31 NGOs, 15 CSR partners, 20 district officers, ~250 students, ~280 citizens, ~220 problems at every stage,
 // proposals, teams, milestones (hash-sealed, one deliberately tampered), credentials, NGO projects.
 // Every person, university, NGO and company here is FICTIONAL. Safe to re-run: it wipes the tables first.
 // Hashes use the same helpers as the app, so ledger and credential verification work on seeded data.
@@ -10,7 +10,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { computeMilestoneHash } from '../src/lib/merkle';
 import { computeCredentialHash, creditsForHours } from '../src/lib/credentials';
-import { appendLedger, type LedgerEntry } from '../src/server/ledger';
+import { entryHash, type LedgerEntry } from '../src/server/ledger';
+import { refreshTrackRecords } from '../src/server/trackRecord';
+import { randomUUID } from 'node:crypto';
+import { MORE_PLACES, ISSUES, MORE_UNIVERSITIES, MORE_NGOS, MORE_CSRS, MORE_OFFICERS, NAMES } from './data/demo-world';
 
 const prisma = new PrismaClient();
 
@@ -108,7 +111,7 @@ const NGOS = [
 ];
 // avgNetProfit: fictional average net profit of the last three financial years (₹); 2% of it is the CSR obligation.
 const CSRS = [
-    { name: 'Deccan Polymers Ltd', district: 'Hyderabad', demo: true, avgNetProfit: 15_00_00_000 },
+    { name: 'Deccan Polymers Ltd', district: 'Hyderabad', demo: true, avgNetProfit: 45_00_00_000 },
     { name: 'Westcoast Infra Holdings', district: 'Pune', avgNetProfit: 48_00_00_000 },
     { name: 'Narmada Agro Industries', district: 'Kachchh', avgNetProfit: 9_50_00_000 },
     { name: 'Eastern Grid Power Co.', district: 'Khordha', avgNetProfit: 64_00_00_000 },
@@ -120,8 +123,58 @@ const OFFICERS: [string, string][] = [
 ];
 const CITIZENS = ['Lakshmi Reddy', 'Venkatesh Naik', 'Shabana Begum', 'Ramesh Pawar', 'Geeta Devi', 'Sunil Oraon', 'Manjula Hegde', 'Abdul Rasheed', 'Kamala Bai', 'Prakash Mandal'];
 
-// [title, description, district, category, SDGs, status, days ago, university key (for assigned+)]
-type Seed = [string, string, string, string, number[], ChallengeStatus, number, string?];
+// ── The wider demo world (prisma/data/demo-world.ts) ──
+const LANG_OF_STATE: Record<string, string> = {
+    Telangana: 'te', 'Andhra Pradesh': 'te', Maharashtra: 'mr', Assam: 'as', Odisha: 'or', Rajasthan: 'rj', Kerala: 'ml', 'Uttar Pradesh': 'hi',
+    Bihar: 'hi', 'Madhya Pradesh': 'hi', 'Tamil Nadu': 'ta', Uttarakhand: 'uk', Gujarat: 'gu', Karnataka: 'kn', 'West Bengal': 'bn',
+    Punjab: 'pa', Haryana: 'hi', 'Himachal Pradesh': 'hp', Chhattisgarh: 'ct', Meghalaya: 'mg', Tripura: 'bn',
+};
+for (const [name, p] of Object.entries(MORE_PLACES)) PLACES[name] = { state: p.state, lat: p.lat, lng: p.lng };
+for (const u of MORE_UNIVERSITIES) {
+    UNIVERSITIES.push({ key: u.key, name: u.name, district: u.district, code: `${u.key.toUpperCase()}-DEMO-2026`, naac: u.naac, perf: 0, sdg: u.sdg, depts: u.depts });
+    FACULTY[u.key] = u.faculty;
+}
+for (const n of MORE_NGOS) NGOS.push(n);
+for (const c of MORE_CSRS) CSRS.push(c);
+for (const o of MORE_OFFICERS) OFFICERS.push(o);
+
+// Unique fictional names from a language area's pool (deterministic).
+const usedNames = new Set<string>([...CITIZENS, ...Object.values(STUDENTS).flat(), ...Object.values(FACULTY), ...OFFICERS.map((o) => o[1])]);
+function nameFrom(lang: string, prefix = '') {
+    const pool = NAMES[lang] ?? NAMES.hi;
+    for (let tries = 0; tries < 500; tries++) {
+        const n = `${prefix}${pick(pool.first)} ${pick(pool.last)}`;
+        if (!usedNames.has(n)) { usedNames.add(n); return n; }
+    }
+    throw new Error(`Ran out of names for ${lang}`);
+}
+const langOf = (district: string) => MORE_PLACES[district]?.lang ?? LANG_OF_STATE[PLACES[district].state] ?? 'hi';
+// Students: 10 per university (new ones), 4 more for each original one. A second faculty member everywhere.
+const SECOND_FACULTY: Record<string, string> = {};
+for (const u of UNIVERSITIES) {
+    STUDENTS[u.key] ??= [];
+    const want = STUDENTS[u.key].length ? STUDENTS[u.key].length + 4 : 10;
+    while (STUDENTS[u.key].length < want) STUDENTS[u.key].push(nameFrom(langOf(u.district)));
+    SECOND_FACULTY[u.key] = nameFrom(langOf(u.district), 'Prof. ');
+}
+
+const haversine = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+    const R = 6371, dLat = ((b.lat - a.lat) * Math.PI) / 180, dLng = ((b.lng - a.lng) * Math.PI) / 180;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+};
+/** Universities best placed for a problem: same state first, then by distance, then SDG overlap. */
+function nearestUnis(district: string, sdgs: number[], n: number) {
+    const p = PLACES[district];
+    return [...UNIVERSITIES].sort((a, b) => {
+        const sa = (PLACES[a.district].state === p.state ? 0 : 1000) + haversine(p, PLACES[a.district]) - 150 * a.sdg.filter((x) => sdgs.includes(x)).length;
+        const sb = (PLACES[b.district].state === p.state ? 0 : 1000) + haversine(p, PLACES[b.district]) - 150 * b.sdg.filter((x) => sdgs.includes(x)).length;
+        return sa - sb;
+    }).slice(0, n);
+}
+
+// [title, description, district, category, SDGs, status, days ago, university key (for assigned+), urgency]
+type Seed = [string, string, string, string, number[], ChallengeStatus, number, string?, string?];
 const CHALLENGES: Seed[] = [
     // Nalgonda: the demo officer's district, one at every stage.
     ['High fluoride in Marriguda handpump water', 'Three handpumps used by about 400 families taste salty and children show brown teeth stains. A 2024 test by the panchayat found fluoride far above the safe limit. We need a low-cost filter or a safe source.', 'Nalgonda', 'Drinking Water & Sanitation', [6, 3], 'IN_PROGRESS', 64, 'kvit'],
@@ -185,8 +238,31 @@ function planFor(facultyId: string, members: string[], budget: number, weeks: nu
 }
 
 const STAGE: Record<ChallengeStatus, number> = {
-    SUBMITTED: 0, AI_PROCESSED: 1, VALIDATED: 2, UNIVERSITY_ASSIGNED: 3, TEAM_FORMED: 4, IN_PROGRESS: 5, COMPLETED: 6, DEPLOYED: 7,
+    SUBMITTED: 0, AI_PROCESSED: 1, VALIDATED: 2, UNIVERSITY_ASSIGNED: 3, TEAM_FORMED: 4, FUNDED: 4.5, IN_PROGRESS: 5, COMPLETED: 6, DEPLOYED: 7, REJECTED: -1, MERGED: -1,
 };
+
+// Every new district reports the problems it is known for, spread over the last year: older ones are mostly
+// resolved, recent ones are waiting for the officer. Status follows age, so the charts show a working year.
+function statusForAge(days: number): ChallengeStatus {
+    const x = rand();
+    if (days > 150) return x < 0.8 ? 'COMPLETED' : 'IN_PROGRESS';
+    if (days > 60) return x < 0.6 ? 'IN_PROGRESS' : x < 0.75 ? 'COMPLETED' : x < 0.9 ? 'TEAM_FORMED' : 'UNIVERSITY_ASSIGNED';
+    if (days > 20) return x < 0.25 ? 'TEAM_FORMED' : x < 0.42 ? 'FUNDED' : x < 0.62 ? 'UNIVERSITY_ASSIGNED' : x < 0.9 ? 'VALIDATED' : 'IN_PROGRESS';
+    return x < 0.3 ? 'VALIDATED' : x < 0.65 ? 'AI_PROCESSED' : 'SUBMITTED';
+}
+const HAND_WRITTEN = CHALLENGES.length;
+for (const [district, p] of Object.entries(MORE_PLACES)) {
+    for (const [ii, key] of p.issues.entries()) {
+        const [category, sdgs, urgency, title, description] = ISSUES[key];
+        const loc = p.locs[ii % p.locs.length];
+        const n = String(20 + Math.round(rand() * 38) * 10);
+        const days = Math.max(1, Math.round(rand() ** 1.3 * 360));
+        const status = statusForAge(days);
+        const fill = (t: string) => t.replaceAll('{loc}', loc).replaceAll('{district}', district).replaceAll('{n}', n);
+        const uni = STAGE[status] >= 3 ? nearestUnis(district, sdgs, 2)[ii % 2].key : undefined;
+        CHALLENGES.push([fill(title), fill(description), district, category, sdgs, status, days, uni, urgency]);
+    }
+}
 
 // NITI Aayog SDG India Index 2023-24, composite score per State/UT (official dashboard sdgindiaindex.niti.gov.in, released 12 Jul 2024).
 // Real reference data, not demo data: used for the "area need" part of the priority and university scores.
@@ -235,8 +311,8 @@ async function main() {
         const hei = await prisma.hEI.create({
             data: {
                 name: u.name, ugcId: `DEMO-HEI-${String(i + 1).padStart(3, '0')}`, state: p.state, district: u.district,
-                lat: p.lat, lng: p.lng, inviteCode: u.code, naacGrade: u.naac, pastPerformanceScore: u.perf,
-                departments: u.depts, sdgExpertise: u.sdg, isNewlyOnboarded: u.key === 'kpu',
+                lat: p.lat, lng: p.lng, inviteCode: u.code, naacGrade: u.naac, pastPerformanceScore: null,
+                departments: u.depts, sdgExpertise: u.sdg, isNewlyOnboarded: ['kpu', 'ghis', 'mirt'].includes(u.key),
             },
         });
         unis[u.key] = { id: hei.id, district: u.district };
@@ -254,7 +330,7 @@ async function main() {
     }
     for (const c of CSRS) {
         const o = await prisma.organization.create({
-            data: { name: c.name, type: 'CORPORATE', state: PLACES[c.district].state, district: c.district, verification_status: 'VERIFIED', avgNetProfit: c.avgNetProfit, created_at: ago(380) },
+            data: { name: c.name, type: 'CORPORATE', state: PLACES[c.district].state, district: c.district, verification_status: 'VERIFIED', avgNetProfit: c.avgNetProfit, created_at: ago(380 - Object.keys(orgByName).length), registration_number: `DEMO-CSR-${Object.keys(orgByName).length + 201}` },
         });
         orgByName[c.name] = o.id;
     }
@@ -262,8 +338,16 @@ async function main() {
     // ── People ──────────────────────────────────────────────
     const password_hash = await bcrypt.hash(DEMO_PASSWORD, 12);
     const slug = (s: string) => s.toLowerCase().replace(/^dr\.\s*/, '').replace(/[^a-z]+/g, '.').replace(/^\.|\.$/g, '');
+    // Emails are unique: a second person whose name gives the same address gets a number added.
+    const takenEmails = new Set<string>();
+    const uniqueEmail = (email: string) => {
+        let e = email;
+        for (let k = 2; takenEmails.has(e); k++) e = email.replace('@', `${k}@`);
+        takenEmails.add(e);
+        return e;
+    };
     const account = (email: string, full_name: string, role: Role, link: { districtId?: number; heiId?: string; organizationId?: string } = {}) =>
-        prisma.user.create({ data: { email, full_name, role, password_hash, created_at: ago(300), ...link } });
+        prisma.user.create({ data: { email: uniqueEmail(email), full_name, role, password_hash, created_at: ago(300), ...link } });
 
     const admin = await account('admin@demo.sdgnexus.in', 'Platform Admin', 'ADMIN');
     const officers: Record<string, string> = {};
@@ -276,10 +360,27 @@ async function main() {
     for (const [i, name] of CITIZENS.entries()) {
         citizenIds.push((await account(i === 0 ? 'citizen@demo.sdgnexus.in' : `${slug(name)}@demo.sdgnexus.in`, name, 'CITIZEN')).id);
     }
+    // Local residents: they report and support problems in their own district.
+    const localCitizens: Record<string, string[]> = {};
+    const citizenRows = [];
+    for (const district of Object.keys(PLACES)) {
+        localCitizens[district] = [];
+        for (let k = 0; k < 4 + Math.floor(rand() * 3); k++) {
+            const full_name = nameFrom(langOf(district));
+            const id = randomUUID();
+            citizenRows.push({ id, full_name, email: uniqueEmail(`${slug(full_name)}.${slug(district)}@demo.sdgnexus.in`), role: 'CITIZEN' as Role, password_hash, created_at: ago(330 - Math.floor(rand() * 300)) });
+            localCitizens[district].push(id);
+        }
+    }
+    await prisma.user.createMany({ data: citizenRows });
+    const allCitizens = [...citizenIds, ...citizenRows.map((c) => c.id)];
+    const nameOfCitizen = new Map<string, string>([...CITIZENS.map((n, i) => [citizenIds[i], n] as [string, string]), ...citizenRows.map((c) => [c.id, c.full_name] as [string, string])]);
+
     const facultyIds: Record<string, string> = {};
     for (const u of UNIVERSITIES) {
         const email = u.key === 'kvit' ? 'faculty@demo.sdgnexus.in' : `${slug(FACULTY[u.key])}@demo.sdgnexus.in`;
         facultyIds[u.key] = (await account(email, FACULTY[u.key], 'FACULTY', { heiId: unis[u.key].id })).id;
+        await account(`${slug(SECOND_FACULTY[u.key])}@demo.sdgnexus.in`, SECOND_FACULTY[u.key], 'FACULTY', { heiId: unis[u.key].id });
     }
     const students: Record<string, { profileId: string; userId: string; name: string }[]> = {};
     for (const u of UNIVERSITIES) {
@@ -298,7 +399,7 @@ async function main() {
     const csrUser = await account('csr@demo.sdgnexus.in', 'Meera Iyer', 'CSR', { organizationId: orgByName['Deccan Polymers Ltd'] });
     for (const n of NGOS.filter((x) => !x.demo)) await account(`team@${slug(n.name).replace(/\./g, '')}.demo.sdgnexus.in`, `${n.name} coordinator`, 'NGO', { organizationId: orgByName[n.name] });
     for (const c of CSRS.filter((x) => !x.demo)) await account(`csr@${slug(c.name).replace(/\./g, '')}.demo.sdgnexus.in`, `${c.name} CSR lead`, 'CSR', { organizationId: orgByName[c.name] });
-    console.log(`✓ ${await prisma.user.count()} users (7 universities, ${NGOS.length} NGOs, ${CSRS.length} CSR partners, ${OFFICERS.length} officers)`);
+    console.log(`✓ ${await prisma.user.count()} users (${UNIVERSITIES.length} universities, ${NGOS.length} NGOs, ${CSRS.length} CSR partners, ${OFFICERS.length} officers)`);
 
     // ── Challenges → proposals → teams → milestones → credentials ──
     let tampered = false;
@@ -311,7 +412,9 @@ async function main() {
         // Finished projects are resolved (citizen confirmed, officer closed) — except one, left COMPLETED and waiting
         // for the demo citizen's confirmation so the closing step can be shown live.
         const awaitingConfirmation = status === 'COMPLETED' && ci === 10;
-        const submitter = ci === 0 || ci === 6 || awaitingConfirmation ? CITIZENS[0] : pick(CITIZENS);
+        const submitterId = ci === 0 || ci === 6 || awaitingConfirmation ? citizenIds[0]
+            : ci >= HAND_WRITTEN ? pick(localCitizens[district]) : citizenIds[CITIZENS.indexOf(pick(CITIZENS))];
+        const submitter = nameOfCitizen.get(submitterId)!;
         const created = ago(daysAgo);
         const resolved = status === 'COMPLETED' && !awaitingConfirmation;
         const completedAt = status === 'COMPLETED' ? ago(awaitingConfirmation ? 4 : Math.max(20, daysAgo - 140)) : null;
@@ -324,13 +427,12 @@ async function main() {
                 gpsLat: jitter(place.lat), gpsLng: jitter(place.lng), photoUrls: [], videoUrls: [],
                 aiConfidence: STAGE[status] >= 1 ? Number((0.72 + rand() * 0.25).toFixed(2)) : null,
                 submittedBy: anonymous ? 'Anonymous Citizen' : submitter, submitterType: 'CITIZEN', isAnonymous: anonymous,
-                submitterId: citizenIds[CITIZENS.indexOf(submitter)],
-                urgency: URGENT.test(title) ? (ci % 2 ? 'CRITICAL' : 'HIGH') : ci % 3 ? 'MODERATE' : 'NORMAL',
+                submitterId,
+                urgency: CHALLENGES[ci][8] ?? (URGENT.test(title) ? (ci % 2 ? 'CRITICAL' : 'HIGH') : ci % 3 ? 'MODERATE' : 'NORMAL'),
                 gpVerified: STAGE[status] >= 2, submittedVia: ci % 4 === 0 ? 'mobile' : 'web',
                 createdAt: created, updatedAt: ago(Math.max(0, daysAgo - 3)),
             },
         });
-        const submitterId = citizenIds[CITIZENS.indexOf(submitter)];
         ledger.push({ actor_id: submitterId, actor_role: 'CITIZEN', action: 'CHALLENGE_SUBMITTED', entity_type: 'Challenge', entity_id: challenge.id, new_value: { status: 'AI_PROCESSED', district, state: place.state }, at: created });
         if (STAGE[status] >= 2) {
             ledger.push({ actor_id: officers[district] ?? admin.id, actor_role: officers[district] ? 'OFFICER' : 'ADMIN', action: 'CHALLENGE_VERIFY', entity_type: 'Challenge', entity_id: challenge.id, previous_value: { status: 'AI_PROCESSED' }, new_value: { status: 'VALIDATED' }, at: ago(daysAgo - 2) });
@@ -340,22 +442,26 @@ async function main() {
         }
         // Other citizens saying "this affects me too".
         if (STAGE[status] < 6) {
-            const endorsers = citizenIds.filter((id) => id !== submitterId).slice(0, Math.floor(rand() * 7));
+            const neighbours = (localCitizens[district] ?? []).filter((id) => id !== submitterId);
+            const others = allCitizens.filter((id) => id !== submitterId && !neighbours.includes(id));
+            const extra = Math.floor(rand() ** 2 * (CHALLENGES[ci][8] === 'CRITICAL' ? 30 : 14));
+            const endorsers = [...new Set([...neighbours.slice(0, Math.floor(rand() * (neighbours.length + 1))), ...Array.from({ length: extra }, () => pick(others))])];
             if (endorsers.length) await prisma.endorsement.createMany({ data: endorsers.map((userId) => ({ challengeId: challenge.id, userId })) });
         }
         // A proposal waiting for the officer on some validated challenges.
         if (status === 'VALIDATED' && ci % 2 === 0) {
-            const near = UNIVERSITIES.find((u) => PLACES[u.district].state === place.state) ?? UNIVERSITIES[ci % UNIVERSITIES.length];
-            const bidders = district === 'Nalgonda' ? [near, UNIVERSITIES.find((u) => u.key === 'scer')!] : [near];
+            const bidders = district === 'Nalgonda' ? [UNIVERSITIES[0], UNIVERSITIES.find((u) => u.key === 'scer')!] : nearestUnis(district, sdgTags, 1 + (ci % 3));
             for (const [bi, uni] of bidders.entries()) {
                 const budget = 300000 + Math.round(rand() * 6) * 50000;
-                const weeks = 10 + bi * 4;
+                const weeks = 10 + bi * 3;
                 const pool = students[uni.key];
                 const plan = planFor(facultyIds[uni.key], [pool[(ci + 3) % pool.length].profileId, pool[(ci + 4) % pool.length].profileId, pool[(ci + 5) % pool.length].profileId], budget, weeks);
                 await prisma.challengeProposal.create({
                     data: {
                         challengeId: challenge.id, heiId: unis[uni.key].id, status: 'SUBMITTED', timelineWeeks: weeks,
-                        approach: bi === 0
+                        approach: bi === 2
+                            ? `Start with a two-week listening exercise in ${place.state === PLACES[uni.district].state ? 'the' : 'a partner'} village, co-design the fix with the gram sabha, and leave behind a maintenance fund run by a local committee.`
+                            : bi === 0
                             ? `Field survey with the panchayat, then a low-cost pilot designed by ${uni.depts[0]} students, reviewed by the community before roll-out. Local caretakers are trained so it keeps working after handover.`
                             : `A larger study across nearby villages first, then a design that can be replicated district-wide, built by ${uni.depts.slice(0, 2).join(' and ')} students with a remote monitoring dashboard.`,
                         budgetRequested: budget, fundingSource: 'CSR', ipDeclaration: 'Open design; the community and district may reuse it freely.',
@@ -394,21 +500,32 @@ async function main() {
         });
         const agreed = planFor(facultyIds[uniKey], [...new Map(members.map((m) => [m.profileId, m])).keys()], budget, proposal.timelineWeeks);
         await prisma.challengeProposal.update({ where: { id: proposal.id }, data: { teamPlan: agreed.teamPlan, milestonePlan: agreed.milestonePlan } });
-        // Who funds it: Deccan Polymers in Telangana (the demo CSR), otherwise another partner.
-        const funderId = place.state === 'Telangana' ? orgByName['Deccan Polymers Ltd'] : csrIds[1 + (ci % (csrIds.length - 1))];
+        // Who funds it: Deccan Polymers in Telangana (the demo CSR); elsewhere a company from the same state, else one
+        // whose CSR focus matches the problem. Every fifth project is co-funded half and half by two companies.
+        const ranked = CSRS.filter((c) => !c.demo).sort((a, b) => {
+            const score = (c: (typeof CSRS)[number]) => (PLACES[c.district].state === place.state ? 10 : 0) + ((c as { sdg?: number[] }).sdg ?? []).filter((x) => sdgTags.includes(x)).length * 3 + ((ci * 7 + c.name.length) % 5) / 5;
+            return score(b) - score(a);
+        });
+        const funderId = place.state === 'Telangana' ? orgByName['Deccan Polymers Ltd'] : orgByName[ranked[0].name];
+        const coFunderId = ci % 5 === 2 && STAGE[status] >= 5 ? orgByName[ranked[funderId === orgByName[ranked[0].name] ? 1 : 0].name] : null;
+        const payerOf = (mi: number) => (coFunderId && mi >= 2 ? coFunderId : funderId);
         if (STAGE[status] === 4) {
             // Plan selected, waiting for money: milestones planned, 40% committed by another partner, the rest open.
             for (const [mi, [mTitle, mDesc]] of MILESTONE_PLAN.entries()) {
                 await prisma.milestone.create({ data: { teamId: team.id, title: mTitle, description: mDesc, status: 'PENDING', proofUrls: [], amount: agreed.amounts[mi], dueDate: new Date(NOW + agreed.milestonePlan[mi].week * 7 * DAY) } });
             }
-            await prisma.fundingCommitment.create({ data: { challengeId: challenge.id, csrOrgId: orgByName['Westcoast Infra Holdings'], amount: Math.round(budget * 0.4), createdAt: ago(daysAgo - 8) } });
+            const early = place.state === 'Telangana' ? orgByName[ranked[0].name] : funderId;
+            await prisma.fundingCommitment.create({ data: { challengeId: challenge.id, csrOrgId: early, amount: Math.round(budget * 0.4), createdAt: ago(daysAgo - 8) } });
             continue;
         }
-        await prisma.fundingCommitment.create({ data: { challengeId: challenge.id, csrOrgId: funderId, amount: budget, released: 0, createdAt: ago(daysAgo - 8) } });
+        const half = agreed.amounts[0] + agreed.amounts[1]; // co-funders split exactly at the tranche boundary
+        await prisma.fundingCommitment.create({ data: { challengeId: challenge.id, csrOrgId: funderId, amount: coFunderId ? half : budget, released: 0, createdAt: ago(daysAgo - 8) } });
+        if (coFunderId) await prisma.fundingCommitment.create({ data: { challengeId: challenge.id, csrOrgId: coFunderId, amount: budget - half, released: 0, createdAt: ago(daysAgo - 7) } });
 
         // How far each project has got: completed = all released; in progress varies.
         const plan: MilestoneStatus[] =
-            STAGE[status] >= 6 ? ['CSR_APPROVED', 'CSR_APPROVED', 'CSR_APPROVED', 'CSR_APPROVED']
+            status === 'FUNDED' ? ['PENDING', 'PENDING', 'PENDING', 'PENDING'] // fully funded, work about to start
+            : STAGE[status] >= 6 ? ['CSR_APPROVED', 'CSR_APPROVED', 'CSR_APPROVED', 'CSR_APPROVED']
                 : ci === 0 ? ['CSR_APPROVED', 'GP_VERIFIED', 'SUBMITTED', 'PENDING'] // hero: something waiting for CSR and for the officer
                     : pick([['CSR_APPROVED', 'SUBMITTED', 'PENDING', 'PENDING'], ['CSR_APPROVED', 'CSR_APPROVED', 'GP_VERIFIED', 'PENDING'], ['GP_VERIFIED', 'PENDING', 'PENDING', 'PENDING']] as MilestoneStatus[][]);
         const span = daysAgo - 10;
@@ -436,7 +553,7 @@ async function main() {
                     verifierCode: st === 'GP_VERIFIED' || st === 'CSR_APPROVED' ? `GP-${district.slice(0, 3).toUpperCase()}-${100 + ci * 4 + mi}` : null,
                     fundReleased: st === 'CSR_APPROVED' ? agreed.amounts[mi] : null,
                     releasedAt: st === 'CSR_APPROVED' ? new Date(createdAt.getTime() + 4 * DAY) : null,
-                    releasedByOrgId: st === 'CSR_APPROVED' ? funderId : null,
+                    releasedByOrgId: st === 'CSR_APPROVED' ? payerOf(mi) : null,
                     amount: agreed.amounts[mi],
                 },
             });
@@ -450,8 +567,10 @@ async function main() {
         }
         if (partner && resolved) await prisma.teamMember.updateMany({ where: { teamId: team.id }, data: { ngoRating: 4 + (ci % 2) } });
 
-        const released = (await prisma.milestone.aggregate({ where: { teamId: team.id, status: 'CSR_APPROVED' }, _sum: { fundReleased: true } }))._sum.fundReleased ?? 0;
-        await prisma.fundingCommitment.update({ where: { challengeId_csrOrgId: { challengeId: challenge.id, csrOrgId: funderId } }, data: { released } });
+        for (const org of [funderId, ...(coFunderId ? [coFunderId] : [])]) {
+            const released = (await prisma.milestone.aggregate({ where: { teamId: team.id, status: 'CSR_APPROVED', releasedByOrgId: org }, _sum: { fundReleased: true } }))._sum.fundReleased ?? 0;
+            await prisma.fundingCommitment.update({ where: { challengeId_csrOrgId: { challengeId: challenge.id, csrOrgId: org } }, data: { released } });
+        }
 
         if (status === 'COMPLETED') {
             const officerId = officers[district] ?? admin.id, officerRole = officers[district] ? 'OFFICER' : 'ADMIN';
@@ -478,30 +597,45 @@ async function main() {
             }
         }
     }
-    // One rejected and one merged report in Nalgonda, so the officer's history shows both outcomes.
+    // Rejected and merged reports, so officers' histories show every outcome (Nalgonda first, for the demo officer).
     const streetLights = await prisma.challenge.findFirstOrThrow({ where: { title: { startsWith: 'Street lights off' } } });
-    const extra = [
+    const openIn = async (district: string) => (await prisma.challenge.findFirst({ where: { district, status: { notIn: ['DEPLOYED', 'COMPLETED', 'REJECTED', 'MERGED'] } }, orderBy: { createdAt: 'asc' } }))?.id ?? null;
+    const extra: { title: string; description: string; status: 'REJECTED' | 'MERGED'; rejectReason: string | null; mergedIntoId: string | null; category: string; sdg: number[]; days: number; district?: string }[] = [
         { title: 'Neighbour built wall on my land in Chandur', description: 'My neighbour has built a compound wall two feet into my plot. I want the government to remove it.', status: 'REJECTED' as const, rejectReason: 'This is a private land dispute, not a public problem. Please approach the Tahsildar office or the civil court.', mergedIntoId: null, category: 'Infrastructure & Connectivity', sdg: [16], days: 20 },
         { title: 'Dark stretch on Kattangur road, no lights', description: 'Street lights on the road from Nakrekal to Kattangur have not worked for months; walking at night is unsafe.', status: 'MERGED' as const, rejectReason: null, mergedIntoId: streetLights.id, category: 'Infrastructure & Connectivity', sdg: [11, 7], days: 1 },
+        { district: 'Raichur', title: 'Want my crop loan waived in Sindhanur', description: 'My crop failed and I cannot repay my bank loan. Please get my loan waived by the government.', status: 'REJECTED', rejectReason: 'Loan waivers are decided by the bank and the state scheme for each person. Please apply at your bank branch or the agriculture office; this platform is for shared local problems.', mergedIntoId: null, category: 'Agriculture & Food Security', sdg: [1, 2], days: 33 },
+        { district: 'Beed', title: 'No drinking water in Ashti, tanker comes late', description: 'The tanker comes once in three days and families fight for water. Old wells are dry.', status: 'MERGED', rejectReason: null, mergedIntoId: await openIn('Beed'), category: 'Drinking Water & Sanitation', sdg: [6], days: 12 },
+        { district: 'Bastar', title: 'Ration shop owner rude in Bakawand', description: 'The ration shop owner shouts at women and closes early. We want him removed.', status: 'REJECTED', rejectReason: 'A complaint about one person\u2019s conduct goes to the District Supply Officer or the state grievance portal. If ration is not reaching families, please report that problem with the village name.', mergedIntoId: null, category: 'Rural Healthcare & Nutrition', sdg: [2, 16], days: 18 },
+        { district: 'Madurai', title: 'Girls leaving school in Usilampatti villages', description: 'Many girls stop after class 8 because the high school is far. Parents do not send them by bus.', status: 'MERGED', rejectReason: null, mergedIntoId: await openIn('Madurai'), category: 'Education & Digital Literacy', sdg: [4, 5], days: 9 },
+        { district: 'South 24 Parganas', title: 'Problem in our area please help', description: 'There are many problems in our area for a long time and nobody listens to us at all.', status: 'REJECTED', rejectReason: 'We could not tell what the problem is or where. Please report again with the village name and what exactly is wrong.', mergedIntoId: null, category: 'Infrastructure & Connectivity', sdg: [11], days: 6 },
+        { district: 'Bathinda', title: 'Smoke from burning fields near Maur', description: 'Every November the fields around Maur burn and the whole village coughs; schools stay shut some days.', status: 'MERGED', rejectReason: null, mergedIntoId: await openIn('Bathinda'), category: 'Forest & Environment', sdg: [13, 3], days: 4 },
     ];
-    for (const [i, x] of extra.entries()) {
-        const submitterId = citizenIds[3 + i];
+    for (const [i, x] of extra.filter((e) => e.status !== 'MERGED' || e.mergedIntoId).entries()) {
+        const xd = x.district ?? 'Nalgonda', xs = PLACES[xd].state;
+        const submitterId = xd === 'Nalgonda' ? citizenIds[3 + i] : pick(localCitizens[xd]);
         const c = await prisma.challenge.create({
             data: {
-                title: x.title, description: x.description, state: 'Telangana', district: 'Nalgonda', category: x.category, sdgTags: x.sdg, status: x.status,
-                gpsLat: jitter(PLACES.Nalgonda.lat), gpsLng: jitter(PLACES.Nalgonda.lng), photoUrls: [], videoUrls: [], aiConfidence: 0.8,
-                submittedBy: CITIZENS[3 + i], submitterId, submitterType: 'CITIZEN', rejectReason: x.rejectReason, mergedIntoId: x.mergedIntoId,
+                title: x.title, description: x.description, state: xs, district: xd, category: x.category, sdgTags: x.sdg, status: x.status,
+                gpsLat: jitter(PLACES[xd].lat), gpsLng: jitter(PLACES[xd].lng), photoUrls: [], videoUrls: [], aiConfidence: 0.8,
+                submittedBy: nameOfCitizen.get(submitterId)!, submitterId, submitterType: 'CITIZEN', rejectReason: x.rejectReason, mergedIntoId: x.mergedIntoId,
                 createdAt: ago(x.days), updatedAt: ago(Math.max(0, x.days - 1)),
             },
         });
-        ledger.push({ actor_id: submitterId, actor_role: 'CITIZEN', action: 'CHALLENGE_SUBMITTED', entity_type: 'Challenge', entity_id: c.id, new_value: { status: 'AI_PROCESSED', district: 'Nalgonda', state: 'Telangana' }, at: ago(x.days) });
-        ledger.push({ actor_id: officers.Nalgonda, actor_role: 'OFFICER', action: x.status === 'REJECTED' ? 'CHALLENGE_REJECT' : 'CHALLENGE_MERGE', entity_type: 'Challenge', entity_id: c.id, previous_value: { status: 'AI_PROCESSED' }, new_value: { status: x.status, rejectReason: x.rejectReason, mergedIntoId: x.mergedIntoId }, at: ago(Math.max(0, x.days - 0.5)) });
-        if (x.status === 'MERGED') await prisma.endorsement.upsert({ where: { challengeId_userId: { challengeId: streetLights.id, userId: submitterId } }, create: { challengeId: streetLights.id, userId: submitterId }, update: {} });
+        ledger.push({ actor_id: submitterId, actor_role: 'CITIZEN', action: 'CHALLENGE_SUBMITTED', entity_type: 'Challenge', entity_id: c.id, new_value: { status: 'AI_PROCESSED', district: xd, state: xs }, at: ago(x.days) });
+        ledger.push({ actor_id: officers[xd], actor_role: 'OFFICER', action: x.status === 'REJECTED' ? 'CHALLENGE_REJECT' : 'CHALLENGE_MERGE', entity_type: 'Challenge', entity_id: c.id, previous_value: { status: 'AI_PROCESSED' }, new_value: { status: x.status, rejectReason: x.rejectReason, mergedIntoId: x.mergedIntoId }, at: ago(Math.max(0, x.days - 0.5)) });
+        if (x.mergedIntoId) await prisma.endorsement.upsert({ where: { challengeId_userId: { challengeId: x.mergedIntoId, userId: submitterId } }, create: { challengeId: x.mergedIntoId, userId: submitterId }, update: {} });
     }
     ledger.sort((a, b) => a.at!.getTime() - b.at!.getTime());
-    for (const e of ledger) await appendLedger(e, prisma);
+    const asText = (v: unknown) => (v === undefined || v === null ? null : typeof v === 'string' ? v : JSON.stringify(v));
+    let prevHash: string | null = null;
+    const ledgerRows = ledger.map((e) => {
+        const row = { actor_id: e.actor_id, actor_role: e.actor_role, action: e.action, entity_type: e.entity_type, entity_id: e.entity_id, previous_value: asText(e.previous_value), new_value: asText(e.new_value), prev_hash: prevHash, created_at: e.at! };
+        prevHash = entryHash(row);
+        return { ...row, hash: prevHash };
+    });
+    for (let i = 0; i < ledgerRows.length; i += 400) await prisma.auditLog.createMany({ data: ledgerRows.slice(i, i + 400) }); // inserted in order, so seq follows the chain
 
-    console.log(`✓ ${CHALLENGES.length + extra.length} challenges, ${await prisma.endorsement.count()} endorsements, ${ledger.length} ledger entries, ${await prisma.challengeProposal.count()} proposals, ${await prisma.projectTeam.count()} teams, ${await prisma.milestone.count()} milestones, ${await prisma.studentCredential.count()} credentials`);
+    console.log(`✓ ${await prisma.challenge.count()} challenges, ${await prisma.endorsement.count()} endorsements, ${ledger.length} ledger entries, ${await prisma.challengeProposal.count()} proposals, ${await prisma.projectTeam.count()} teams, ${await prisma.milestone.count()} milestones, ${await prisma.studentCredential.count()} credentials`);
 
     // ── NGO projects, field activity, impact scores, CSR funding ──
     const PROJECT_IDEAS: Record<number, string[]> = {
@@ -622,7 +756,25 @@ async function main() {
             data: { userId, message, priority, entityType: challengeId ? 'Challenge' : 'System', entityId: challengeId ?? 'system', challengeId: challengeId ?? null, read: i % 4 === 3, createdAt: ago(i * 0.7) },
         });
     }
-    console.log(`✓ ${notes.length} notifications; demo accounts: see README`);
+    // More of what each demo account would really see on a busy week.
+    const nalgondaNew = await prisma.challenge.findMany({ where: { district: 'Nalgonda', status: { in: ['SUBMITTED', 'AI_PROCESSED'] } }, select: { id: true, title: true } });
+    const needFunding = await prisma.challenge.findMany({ where: { status: 'TEAM_FORMED' }, select: { id: true, title: true, district: true }, take: 8 });
+    const kvitTeams = await prisma.challenge.findMany({ where: { proposals: { some: { heiId: unis.kvit.id, status: 'ACCEPTED' } }, status: 'DEPLOYED' }, select: { id: true, title: true } });
+    const busy: [string, string, string, string?][] = [
+        ...nalgondaNew.map((c) => [officers.Nalgonda, `New report in your district: “${c.title}”.`, 'P2', c.id] as [string, string, string, string]),
+        ...needFunding.map((c) => [csrUser.id, `“${c.title}” (${c.district}) has a selected university plan and needs funding.`, 'P2', c.id] as [string, string, string, string]),
+        ...kvitTeams.map((c) => [facultyIds.kvit, `“${c.title}” is resolved. Student credentials can be issued.`, 'P3', c.id] as [string, string, string, string]),
+        [ngoUser.id, 'Krishna Valley Institute of Technology named you field partner on a new proposal in Nalgonda.', 'P2'],
+        [admin.id, `${await prisma.challenge.count({ where: { status: { in: ['SUBMITTED', 'AI_PROCESSED'] }, createdAt: { lt: ago(7) } } })} reports across India have waited more than 7 days for an officer.`, 'P1'],
+    ];
+    await prisma.notification.createMany({
+        data: busy.map(([userId, message, priority, challengeId], i) => ({ userId, message, priority, entityType: challengeId ? 'Challenge' : 'System', entityId: challengeId ?? 'system', challengeId: challengeId ?? null, read: i % 3 === 2, createdAt: ago(1 + i * 0.9) })),
+    });
+    console.log(`✓ ${notes.length + busy.length} notifications; demo accounts: see README`);
+
+    // Track record = the university score from resolved projects; matching reads it for every new report.
+    await refreshTrackRecords(prisma);
+    console.log(`✓ track records for ${UNIVERSITIES.length} universities`);
 }
 
 main()

@@ -20,7 +20,7 @@ function scoreHeiMatch(
             ? 100
             : 75; // ponytail: same-district check only; Phase 2 uses real distance (haversine)
 
-    const pastPerformance = Math.round((hei.pastPerformanceScore ?? 0.85) * 100);
+    const pastPerformance = Math.round((hei.pastPerformanceScore ?? 0.5) * 100); // 50 = no resolved project yet (neutral)
 
     const overall = Math.min(
         99,

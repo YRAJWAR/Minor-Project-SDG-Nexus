@@ -56,6 +56,7 @@ npm run dev                 # http://localhost:3000
 | 6 Design (use `.claude/skills/impeccable` guidance) | done — see DESIGN.md |
 | 7 Ship | done — live at https://sdg-nexus-delta.vercel.app |
 | 8 Plan gaps (QR, SDG Index, CSR 2%, hours, NGO sign-off, admin) | done |
+| 9 Connected roles + crowded demo world | done |
 
 ## Log (newest last — every assistant adds an entry before stopping)
 Format: date · who · branch · what changed (files) · what is unfinished · anything the next one must know.
@@ -190,3 +191,20 @@ Format: date · who · branch · what changed (files) · what is unfinished · a
   - Checks: 18 tests, build passes, `npm run smoke` passes (now logs hours). Browser-checked admin, CSR, NGO, credentials, verify, milestone form.
   - Not done (deliberately): real file uploads (needs the owner's Vercel Blob store and token; proof stays as data URLs, hashed);
     Hindi UI and public pledges (optional stretch items in the plan).
+- 2026-11-27 · Claude Code · phase-9-crowded → merged to main · Roles more connected; a much bigger demo world.
+  - Connections: `src/server/trackRecord.ts` computes university scores (also behind `/api/impact/universities`) and, on every
+    CLOSE, stores them as `HEI.pastPerformanceScore`, which officer suggestions, the faculty inbox and smart matching read
+    (neutral 50 until a first resolved project; the old 0.85 / 0 defaults are gone). `audienceWhere` (src/lib/notifications.ts)
+    now scopes STUDENT to the selected team, NGO to the field partner, CSR to the funders. Lifecycle notifications reach
+    everyone on a report (team students, NGO partner, funders), and supporters ("me too") hear at VERIFY and CLOSE.
+    Milestone-verified notices go to the team's students only (was every student of the university); tranche releases reach
+    the team; new proposals notify only the officer (CSR partners hear once a plan is selected).
+  - Bug fixed: NUL-character placeholders in Prisma filters (`?? '\u0000'`) crash PostgreSQL ("invalid byte sequence");
+    replaced with `'-'` in 8 places.
+  - Seed: `prisma/data/demo-world.ts` (54 more real districts with local localities and their typical problems, 15 universities,
+    19 NGOs, 10 CSR companies, 14 officers, regional name pools). Status follows age (a working year), FUNDED stage seeded,
+    competing bids from the best-placed universities, home-state / SDG-focus funders, every fifth project co-funded,
+    local residents report and support their own district, more rejected/merged outcomes, a busier notification bell.
+    Ledger rows are hashed in memory and bulk-inserted (same `entryHash`), track records computed at the end.
+    Result: 714 users, ~220 reports, ~900 endorsements, ~815 ledger entries, 156 teams, 624 milestones, 228 credentials.
+  - Checks: 18 tests, build, `npm run smoke` passes; ledger chain valid; dashboards checked in the browser.

@@ -19,7 +19,7 @@ function calculateMatchBreakdown(
             ? 100
             : 80; // ponytail: same-district check only; Phase 2 uses real distance
 
-    const pastPerformance = Math.round((hei.pastPerformanceScore ?? 0) * 100);
+    const pastPerformance = Math.round((hei.pastPerformanceScore ?? 0.5) * 100); // 50 = no resolved project yet (neutral)
 
     const overall = Math.min(
         98,

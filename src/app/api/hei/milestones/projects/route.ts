@@ -11,9 +11,9 @@ export async function GET(req: NextRequest) {
             where: {
                 status: 'ACCEPTED',
                 // Faculty: own university. Students: teams they belong to. Officers: their district.
-                ...(user.role === 'FACULTY' ? { heiId: user.heiId ?? '\u0000' } : {}),
+                ...(user.role === 'FACULTY' ? { heiId: user.heiId ?? '-' } : {}),
                 ...(user.role === 'STUDENT' ? { team: { members: { some: { student: { userId: user.id } } } } } : {}),
-                ...(user.role === 'OFFICER' ? { challenge: { district: { equals: user.district?.name ?? '\u0000', mode: 'insensitive' as const } } } : {}),
+                ...(user.role === 'OFFICER' ? { challenge: { district: { equals: user.district?.name ?? '-', mode: 'insensitive' as const } } } : {}),
             },
             include: { challenge: true, hei: true, team: { include: { milestones: true, members: { include: { student: { select: { user: { select: { full_name: true } } } } } } } } },
             orderBy: { createdAt: 'desc' },

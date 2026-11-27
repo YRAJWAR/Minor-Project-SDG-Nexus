@@ -77,7 +77,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ p
                     include: {
                         proposal: { include: { challenge: { select: { district: true } } } },
                         members: { include: { student: true } },
-                        hei: { include: { users: true } },
+                        hei: { include: { users: { where: { role: 'FACULTY' } } } }, // faculty only; students are reached through the team
                     },
                 },
             },
@@ -147,6 +147,8 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ p
             }
             if (next === 'CSR_APPROVED') {
                 await NotificationTriggers.fundReleased({ id: milestone.id, title: milestone.title, challengeId }, amount!, null, heiUserIds[0] ?? null);
+                const { notifyUsers } = await import('@/lib/notifications');
+                await notifyUsers(studentUserIds, `Tranche released: ₹${amount!.toLocaleString('en-IN')} for milestone '${milestone.title}'`, 'MILESTONE', milestone.id, 'P2', challengeId);
             }
         } catch (notifErr) {
             console.warn('Milestone notification failed:', notifErr);

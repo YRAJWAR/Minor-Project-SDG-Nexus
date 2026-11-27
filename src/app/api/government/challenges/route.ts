@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
         try {
             dbChallenges = await prisma.challenge.findMany({
                 // Officers see only their own district; admins see everything.
-                where: user.role === 'ADMIN' ? {} : { district: { equals: user.district?.name ?? '\u0000', mode: 'insensitive' } },
+                where: user.role === 'ADMIN' ? {} : { district: { equals: user.district?.name ?? '-', mode: 'insensitive' } },
                 orderBy: { createdAt: 'desc' },
                 include: {
                     _count: { select: { endorsements: true } },

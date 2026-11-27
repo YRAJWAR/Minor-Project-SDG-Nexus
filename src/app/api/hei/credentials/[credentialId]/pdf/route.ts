@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { buildStudentCredentialPDF } from '@/lib/credentialPdf';
+import QRCode from 'qrcode';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-    _request: NextRequest,
+    request: NextRequest,
     context: { params: Promise<{ credentialId: string }> }
 ) {
     const { credentialId } = await context.params;
@@ -25,7 +26,13 @@ export async function GET(
         return new NextResponse(`No credential exists with ID "${credentialId}".`, { status: 404 });
     }
 
+    // The verify address printed (and encoded in the QR) is this deployment's own, unless NEXT_PUBLIC_APP_URL overrides it.
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
+    const qrDataUrl = await QRCode.toDataURL(`${appUrl}/verify/credential/${cred.id}`, { margin: 1, width: 240 });
+
     const doc = buildStudentCredentialPDF({
+        appUrl,
+        qrDataUrl,
         credentialId: cred.id,
         studentName: cred.student.user.full_name,
         branch: cred.student.branch,

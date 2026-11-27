@@ -15,10 +15,10 @@ export async function GET(req: NextRequest) {
             // Only the signed-in faculty member's own university.
             where: { proposal: { status: 'ACCEPTED' }, heiId: user.heiId ?? '\u0000' },
             include: {
-                proposal: { include: { challenge: true } },
+                proposal: { include: { challenge: true, ngoPartner: { select: { name: true } } } },
                 hei: true,
                 members: { include: { student: { include: { user: true } } } },
-                milestones: true,
+                milestones: { include: { hours: true } },
             },
         });
     } catch (dbErr) {
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 
     const data = completed.map((t) => {
         const challenge = t.proposal.challenge;
-        const defaultHours = t.proposal.timelineWeeks * 10;
+        const hoursOf = (id: string) => t.milestones.flatMap((m) => m.hours).filter((h) => h.studentProfileId === id).reduce((a, h) => a + h.hours, 0);
         return {
             id: t.id,
             proposalId: t.proposalId,
@@ -61,6 +61,8 @@ export async function GET(req: NextRequest) {
             facultyEmail: t.facultyEmail,
             universityName: t.hei.name,
             allMilestonesApproved: true,
+            citizenRating: challenge.citizenRating,
+            ngoPartner: t.proposal.ngoPartner?.name ?? null,
             teamMembers: t.members.map((m) => ({
                 studentProfileId: m.studentProfileId,
                 studentName: m.student.user.full_name,
@@ -69,8 +71,9 @@ export async function GET(req: NextRequest) {
                 year: m.student.year,
                 role: m.role,
                 skills: m.student.skills,
-                defaultHours,
-                defaultCredits: creditsForHours(defaultHours),
+                defaultHours: hoursOf(m.studentProfileId), // verified hours logged on the milestones
+                defaultCredits: creditsForHours(hoursOf(m.studentProfileId)),
+                ngoRating: m.ngoRating,
             })),
             existingCredentials: existing
                 .filter((c) => c.challengeTitle === challenge.title && t.members.some((m) => m.studentProfileId === c.studentProfileId))

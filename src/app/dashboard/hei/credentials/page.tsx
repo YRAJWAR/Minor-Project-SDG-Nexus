@@ -43,6 +43,8 @@ interface CompletedProject {
     facultyEmail: string;
     universityName: string;
     allMilestonesApproved: boolean;
+    citizenRating: number | null;
+    ngoPartner: string | null;
     teamMembers: TeamMemberItem[];
     existingCredentials?: any[];
 }
@@ -55,8 +57,9 @@ interface TeamMemberItem {
     year: number;
     role: string;
     skills: string[];
-    defaultHours: number;
+    defaultHours: number; // verified hours logged on the milestones
     defaultCredits: number;
+    ngoRating: number | null;
 }
 
 interface StudentFormState {
@@ -114,15 +117,13 @@ export default function StudentCredentialsPage() {
 
         // Initialize state for each student
         const initialMap: Record<string, StudentFormState> = {};
-        const defaultHours = proj.timelineWeeks ? proj.timelineWeeks * 10 : 120;
-
         proj.teamMembers.forEach((member) => {
             initialMap[member.studentProfileId] = {
                 studentProfileId: member.studentProfileId,
                 studentName: member.studentName,
                 branch: member.branch,
                 year: member.year,
-                creditHours: defaultHours,
+                creditHours: member.defaultHours,
                 facultyRating: 4.5,
             };
         });
@@ -131,18 +132,13 @@ export default function StudentCredentialsPage() {
         setIsFormOpen(true);
     };
 
-    // ponytail: NGO and community ratings are not collected yet (Phase 4), so the rating is the faculty rating alone.
-    const computeOverallRating = (facultyRating: number) => facultyRating;
-
-    // Handle Hours input change
-    const handleHoursChange = (studentProfileId: string, hours: number) => {
-        setStudentForms((prev) => ({
-            ...prev,
-            [studentProfileId]: {
-                ...prev[studentProfileId],
-                creditHours: Math.max(1, hours),
-            },
-        }));
+    // Same blend the server saves: faculty 40% + NGO partner 40% + citizen 20% (faculty 80% without an NGO rating).
+    const computeOverallRating = (facultyRating: number, ngo?: number | null) => {
+        const parts: [number, number][] = [[facultyRating, ngo ? 40 : 80]];
+        if (ngo) parts.push([ngo, 40]);
+        if (selectedProject?.citizenRating) parts.push([selectedProject.citizenRating, 20]);
+        const w = parts.reduce((t, [, k]) => t + k, 0);
+        return Math.round((parts.reduce((t, [v, k]) => t + v * k, 0) / w) * 10) / 10;
     };
 
     // Handle Faculty Slider change
@@ -167,9 +163,7 @@ export default function StudentCredentialsPage() {
                 studentName: form.studentName,
                 branch: form.branch,
                 year: form.year,
-                creditHours: form.creditHours,
-                facultyRating: form.facultyRating,
-                overallRating: computeOverallRating(form.facultyRating),
+                overallRating: form.facultyRating,
             }));
 
             const res = await fetch('/api/hei/credentials/issue', {
@@ -427,7 +421,7 @@ export default function StudentCredentialsPage() {
                                             <div>
                                                 <span className="font-bold block">Evaluation Weights:</span>
                                                 <span>
-                                                    The rating saved on each credential is your faculty rating. Hours must be between 30 and 40 per week of the project timeline.
+                                                    Hours are the verified hours logged on this project&apos;s milestones (30 hours = 1 credit; at least 30 needed). The saved rating blends your rating (40%), the NGO partner&apos;s (40%, if any) and the citizen&apos;s rating of the fix (20%).
                                                 </span>
                                             </div>
                                         </div>
@@ -443,8 +437,8 @@ export default function StudentCredentialsPage() {
                                                     creditHours: 120,
                                                     facultyRating: 4.5,
                                                 };
-                                                const overallRating = computeOverallRating(formState.facultyRating);
-                                                const creditPoints = Math.max(1, Math.round(formState.creditHours / 30));
+                                                const overallRating = computeOverallRating(formState.facultyRating, student.ngoRating);
+                                                const creditPoints = Math.floor(formState.creditHours / 30);
 
                                                 return (
                                                     <div
@@ -483,20 +477,10 @@ export default function StudentCredentialsPage() {
                                                                         (30 hrs = 1 Credit)
                                                                     </span>
                                                                 </label>
-                                                                <input
-                                                                    type="number"
-                                                                    min={10}
-                                                                    max={400}
-                                                                    step={10}
-                                                                    value={formState.creditHours}
-                                                                    onChange={(e) =>
-                                                                        handleHoursChange(
-                                                                            student.studentProfileId,
-                                                                            parseInt(e.target.value, 10) || 0
-                                                                        )
-                                                                    }
-                                                                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                                />
+                                                                <p className={`px-3 py-2 rounded-xl border text-xs font-semibold ${formState.creditHours >= 30 ? 'bg-white border-slate-300 text-slate-800' : 'bg-rose-50 border-rose-200 text-rose-800'}`}>
+                                                                    {formState.creditHours} verified hours{formState.creditHours < 30 ? ' — below 30, no credit yet' : ''}
+                                                                    {student.ngoRating ? ` · NGO rating ${student.ngoRating}/5` : ''}
+                                                                </p>
                                                             </div>
 
                                                             {/* Faculty Rating Slider */}

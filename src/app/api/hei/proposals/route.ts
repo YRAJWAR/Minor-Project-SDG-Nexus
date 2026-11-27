@@ -140,6 +140,7 @@ export async function POST(request: NextRequest) {
             timelineWeeks,
             budgetRequested,
             csrPartner,
+            ngoPartnerId,
             ipDeclaration,
             termsAccepted,
             status = 'SUBMITTED', // 'DRAFT' or 'SUBMITTED'
@@ -247,6 +248,14 @@ export async function POST(request: NextRequest) {
         const parsedBudget = Number.isFinite(Number(budgetRequested)) ? Number(budgetRequested) : 0;
         const parsedScore = aiQualityScore ? Number(aiQualityScore) / 100 : null;
 
+        // Optional NGO field partner: must be a verified NGO on the platform.
+        let ngoId: string | null = null;
+        if (typeof ngoPartnerId === 'string' && ngoPartnerId) {
+            const ngo = await prisma.organization.findFirst({ where: { id: ngoPartnerId, type: 'NGO', verification_status: 'VERIFIED' }, select: { id: true } });
+            if (!ngo) return NextResponse.json({ success: false, error: 'Choose a verified NGO as field partner, or none.', timestamp: new Date().toISOString() }, { status: 400 });
+            ngoId = ngo.id;
+        }
+
         let proposal;
         if (existingProposal) {
             proposal = await prisma.challengeProposal.update({
@@ -256,6 +265,7 @@ export async function POST(request: NextRequest) {
                     timelineWeeks: parsedWeeks,
                     budgetRequested: parsedBudget,
                     fundingSource: csrPartner || existingProposal.fundingSource,
+                    ngoPartnerId: ngoId,
                     ipDeclaration: ipDeclaration || existingProposal.ipDeclaration,
                     status: proposalStatus,
                     aiQualityScore: parsedScore ?? existingProposal.aiQualityScore,
@@ -271,6 +281,7 @@ export async function POST(request: NextRequest) {
                     timelineWeeks: parsedWeeks,
                     budgetRequested: parsedBudget,
                     fundingSource: csrPartner || null,
+                    ngoPartnerId: ngoId,
                     ipDeclaration: ipDeclaration || '',
                     status: proposalStatus,
                     aiQualityScore: parsedScore,
@@ -304,6 +315,7 @@ export async function POST(request: NextRequest) {
                 timelineWeeks: proposal.timelineWeeks,
                 budgetRequested: proposal.budgetRequested,
                 fundingSource: proposal.fundingSource,
+                ngoPartnerId: proposal.ngoPartnerId,
                 ipDeclaration: proposal.ipDeclaration,
                 aiQualityScore: proposal.aiQualityScore,
             },

@@ -33,6 +33,7 @@ test('priority: urgent, endorsed, long-waiting reports rank higher; overdue afte
     assert.equal(low.overdue, false);
     assert.equal(high.overdue, true);
     assert.equal(priority({ ...base, status: 'VALIDATED', createdAt: new Date(now - 30 * 86_400_000) } as never, now).overdue, false, 'only reports awaiting the officer go overdue');
+    assert.ok(priority({ ...base, stateSdgIndex: 57 }, now).score > priority({ ...base, stateSdgIndex: 79 }, now).score, 'a lower SDG Index state ranks higher');
 });
 
 test('ledger: chained hashes detect an edited old entry', () => {

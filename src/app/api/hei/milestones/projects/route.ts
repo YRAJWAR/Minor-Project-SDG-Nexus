@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
                 ...(user.role === 'STUDENT' ? { team: { members: { some: { student: { userId: user.id } } } } } : {}),
                 ...(user.role === 'OFFICER' ? { challenge: { district: { equals: user.district?.name ?? '\u0000', mode: 'insensitive' as const } } } : {}),
             },
-            include: { challenge: true, hei: true, team: { include: { milestones: true, members: true } } },
+            include: { challenge: true, hei: true, team: { include: { milestones: true, members: { include: { student: { select: { user: { select: { full_name: true } } } } } } } } },
             orderBy: { createdAt: 'desc' },
         });
     } catch (dbErr) {
@@ -52,6 +52,7 @@ export async function GET(req: NextRequest) {
                 facultyName: team.facultyName,
                 facultyEmail: team.facultyEmail,
                 heiName: prop.hei.name,
+                members: team.members.map((m) => ({ studentProfileId: m.studentProfileId, name: m.student.user.full_name })),
             };
         });
 

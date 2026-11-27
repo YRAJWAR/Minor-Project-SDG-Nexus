@@ -90,6 +90,7 @@ model Organization {
   state               String
   district            String?
   verification_status String   @default("PENDING")
+  avgNetProfit        Float? // CSR partners: average net profit of the last 3 financial years (₹), entered by them; 2% of it is the CSR obligation
   created_at          DateTime @default(now())
 
   // Relations
@@ -98,6 +99,7 @@ model Organization {
   impact_scores   ImpactScore[]
   csr_allocations CSRAllocation[] @relation("CorporateCSR")
   commitments     FundingCommitment[]
+  partnerOn       ChallengeProposal[]
   risk_flags      RiskFlag[]
 
   @@index([type])
@@ -421,6 +423,8 @@ model ChallengeProposal {
   ipDeclaration   String
   status          ProposalStatus @default(DRAFT)
   aiQualityScore  Float?
+  ngoPartnerId    String? // optional NGO field partner; it attests milestones and rates the students
+  ngoPartner      Organization?  @relation(fields: [ngoPartnerId], references: [id])
   teamPlan        Json? // [{ studentProfileId, role }] — 2–8 students of the same university
   milestonePlan   Json? // [{ title, week, amount }] — 2–6 items; amounts add up to budgetRequested
   createdAt       DateTime       @default(now())
@@ -458,6 +462,7 @@ model TeamMember {
   studentProfileId String
   student          StudentProfile @relation(fields: [studentProfileId], references: [id])
   role             String
+  ngoRating        Int? // 1–5 from the NGO field partner, if the project has one
 
   @@index([teamId])
   @@index([studentProfileId])
@@ -483,6 +488,11 @@ model Milestone {
   verifierCode  String?
   fundReleased  Float?
   amount        Float? // tranche agreed in the selected proposal; a release must equal it
+  releasedAt      DateTime? // when the tranche was paid
+  releasedByOrgId String? // the CSR organisation that paid it
+  ngoAttestedAt   DateTime? // the NGO field partner confirmed the work on the ground
+  ngoAttestation  String?
+  hours           MilestoneHours[]
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
@@ -558,3 +568,15 @@ model FundingCommitment {
   @@map("funding_commitments")
 }
 
+
+// Field hours per student per milestone, logged with the proof. Credentials count only hours on verified milestones.
+model MilestoneHours {
+  id               String    @id @default(cuid())
+  milestoneId      String
+  milestone        Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  studentProfileId String
+  hours            Int
+
+  @@unique([milestoneId, studentProfileId])
+  @@map("milestone_hours")
+}

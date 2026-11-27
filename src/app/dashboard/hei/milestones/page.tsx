@@ -44,6 +44,7 @@ interface MilestoneProject {
     totalMilestones: number;
     verifiedMilestones: number;
     facultyName?: string;
+    members?: { studentProfileId: string; name: string }[];
 }
 
 interface MilestoneItem {
@@ -136,6 +137,7 @@ export default function MilestoneTrackerPage() {
     const [formError, setFormError] = useState<string | null>(null);
     // Planned milestones (from the selected proposal) waiting for proof; the proof is attached to one of them.
     const [plannedId, setPlannedId] = useState('');
+    const [hoursBy, setHoursBy] = useState<Record<string, string>>({});
     const plannedOpen = milestones.filter((m) => m.amount != null && (m.status === 'PENDING' || m.status === 'REJECTED'));
     const isPlannedProject = milestones.some((m) => m.amount != null);
 
@@ -290,6 +292,7 @@ export default function MilestoneTrackerPage() {
                     description: newDescription.trim(),
                     dueDate: newDueDate,
                     proofUrls: photos.map((p) => p.dataUrl),
+                    hours: (selectedProject?.members ?? []).map((m) => ({ studentProfileId: m.studentProfileId, hours: Number(hoursBy[m.studentProfileId] || 0) })),
                     gpsLat,
                     gpsLng,
                 }),
@@ -305,6 +308,7 @@ export default function MilestoneTrackerPage() {
             setSealedHash(json.data.hashValue);
             setMilestones((prev) => (plannedId ? prev.map((m) => (m.id === submittedMilestone.id ? submittedMilestone : m)) : [submittedMilestone, ...prev]));
             setPlannedId('');
+            setHoursBy({});
             setSealedSuccess(true);
         } catch (err: any) {
             setFormError(err.message || 'Error sealing milestone');
@@ -707,6 +711,25 @@ export default function MilestoneTrackerPage() {
                                             ))}
                                         </select>
                                     </div>
+                                )}
+
+                                {selectedProject?.members && selectedProject.members.length > 0 && (
+                                    <fieldset className="space-y-1.5">
+                                        <legend className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                            Hours each student worked {isPlannedProject && <span className="text-rose-500">*</span>}
+                                        </legend>
+                                        <p className="text-[11px] text-slate-500">Up to 40 hours per week of this milestone. Only hours on verified milestones count towards credits.</p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {selectedProject.members.map((m) => (
+                                                <label key={m.studentProfileId} className="flex items-center justify-between gap-2 text-xs text-slate-700 rounded-lg border border-slate-200 px-3 py-2">
+                                                    <span className="truncate">{m.name}</span>
+                                                    <input type="number" min={0} step={1} inputMode="numeric" value={hoursBy[m.studentProfileId] ?? ''}
+                                                        onChange={(e) => setHoursBy((h) => ({ ...h, [m.studentProfileId]: e.target.value }))}
+                                                        className="w-20 rounded-md border border-slate-300 px-2 py-1 text-right" aria-label={`Hours for ${m.name}`} />
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </fieldset>
                                 )}
 
                                 {/* 1. Title */}

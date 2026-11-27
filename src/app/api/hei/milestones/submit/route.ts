@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { requireUser } from '@/server/middleware/auth';
 import { computeMilestoneHash } from '@/lib/merkle';
 import { transition } from '@/server/lifecycle';
+import { milestoneHoursCap } from '@/lib/credentials';
 
 const fail = (error: string, status: number) =>
     NextResponse.json({ success: false, error, timestamp: new Date().toISOString() }, { status });
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => null);
     if (!body) return fail('Invalid request body', 400);
-    const { projectId, teamId, milestoneId, title, description, dueDate, proofUrls = [], proofVideoUrl, gpsLat, gpsLng } = body;
+    const { projectId, teamId, milestoneId, title, description, dueDate, proofUrls = [], proofVideoUrl, gpsLat, gpsLng, hours = [] } = body;
 
     if (typeof milestoneId !== 'string') {
         if (typeof title !== 'string' || !title.trim() || title.trim().length > 200) return fail('Milestone title must be 1–200 characters', 400);
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
     try {
         team = await prisma.projectTeam.findFirst({
             where: { OR: [{ id: teamOrProjectId }, { proposalId: teamOrProjectId }] },
-            include: { proposal: { include: { challenge: { select: { id: true, status: true } } } }, members: { select: { student: { select: { userId: true } } } } },
+            include: { proposal: { include: { challenge: { select: { id: true, status: true } } } }, members: { select: { studentProfileId: true, student: { select: { userId: true } } } } },
         });
     } catch (dbErr) {
         console.error('DB error loading team for milestone:', dbErr);
@@ -55,6 +56,22 @@ export async function POST(request: NextRequest) {
         return fail('Milestones can be submitted once the project is fully funded.', 409);
     }
     if (planned > 0 && typeof milestoneId !== 'string') return fail('Choose which planned milestone this proof is for.', 400);
+
+    // Hours each student worked on this milestone, capped at 40 per week of the milestone's span.
+    if (!Array.isArray(hours)) return fail('Hours must be a list of { studentProfileId, hours }.', 400);
+    if (planned > 0 && hours.length === 0) return fail('Log the hours each student worked on this milestone.', 400);
+    const memberIds = new Set(team.members.map((m) => m.studentProfileId));
+    const ordered = await prisma.milestone.findMany({ where: { teamId: team.id }, orderBy: { dueDate: 'asc' }, select: { id: true, dueDate: true } });
+    const at = typeof milestoneId === 'string' ? ordered.findIndex((m) => m.id === milestoneId) : -1;
+    const due = at >= 0 ? ordered[at].dueDate : new Date(dueDate);
+    const cap = milestoneHoursCap(at > 0 ? ordered[at - 1].dueDate : team.proposal.createdAt, due);
+    const seen = new Set<string>();
+    for (const h of hours as { studentProfileId?: unknown; hours?: unknown }[]) {
+        if (typeof h?.studentProfileId !== 'string' || !memberIds.has(h.studentProfileId)) return fail('Hours can only be logged for students on this team.', 400);
+        if (seen.has(h.studentProfileId)) return fail('Each student can appear once in the hours list.', 400);
+        seen.add(h.studentProfileId);
+        if (!Number.isInteger(h.hours) || (h.hours as number) < 0 || (h.hours as number) > cap) return fail(`Hours per student must be a whole number from 0 to ${cap} for this milestone.`, 400);
+    }
 
     // The hash is computed from exactly what is stored (same timestamp, same numbers), so
     // /api/ledger/verify can recompute it later. Any hash sent by the client is ignored.
@@ -97,6 +114,17 @@ export async function POST(request: NextRequest) {
     } catch (dbErr) {
         console.error('Milestone could not be saved:', dbErr);
         return fail('The milestone could not be saved. Nothing was submitted — please try again.', 503);
+    }
+
+    try {
+        // Resubmitting (after a rejection) replaces the earlier log.
+        await prisma.$transaction([
+            prisma.milestoneHours.deleteMany({ where: { milestoneId: milestone.id } }),
+            prisma.milestoneHours.createMany({ data: (hours as { studentProfileId: string; hours: number }[]).filter((h) => h.hours > 0).map((h) => ({ milestoneId: milestone.id, studentProfileId: h.studentProfileId, hours: h.hours })) }),
+        ]);
+    } catch (dbErr) {
+        console.error('Hours could not be saved:', dbErr);
+        return fail('The proof was saved but the hours were not. Please submit the hours again.', 503);
     }
 
     // The first proof on a funded project moves the report to "in progress".

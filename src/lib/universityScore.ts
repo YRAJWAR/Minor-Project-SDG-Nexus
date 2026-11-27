@@ -2,16 +2,17 @@
 // score 0–100 = 30% milestones on time + 25% citizen satisfaction + 20% verified beneficiaries per ₹ lakh (vs the
 // median university) + 15% proof completeness + 10% area need.
 // A part with no data is left out and the remaining weights are scaled up — never filled with a made-up value.
-// ponytail: "area need" has no data source yet (no district SDG index in the DB), so it is always left out.
+// Area need = average need of the states worked in, from the NITI Aayog SDG India Index (areaNeed in server/lifecycle.ts).
 
 export interface ResolvedProject {
     budget: number;
     verifiedBeneficiaries: number | null;
     citizenRating: number | null;
+    areaNeed: number | null; // 0-1 for the project's state, null if its index is unknown
     milestones: { dueDate: Date; submittedAt: Date | null; sealed: boolean; hasProof: boolean }[];
 }
 
-const WEIGHTS = { onTime: 30, satisfaction: 25, reach: 20, proof: 15 } as const;
+const WEIGHTS = { onTime: 30, satisfaction: 25, reach: 20, proof: 15, areaNeed: 10 } as const;
 type Part = keyof typeof WEIGHTS;
 
 /** Beneficiaries per ₹1 lakh across a university's projects (null if none recorded). */
@@ -26,11 +27,13 @@ export function universityScore(projects: ResolvedProject[], medianReach: number
     const ms = projects.flatMap((p) => p.milestones.filter((m) => m.submittedAt));
     const ratings = projects.map((p) => p.citizenRating).filter((r): r is number => r !== null);
     const reach = reachPerLakh(projects);
+    const needs = projects.map((p) => p.areaNeed).filter((n): n is number => n !== null);
     const parts: Record<Part, number | null> = {
         onTime: ms.length ? ms.filter((m) => m.submittedAt! <= m.dueDate).length / ms.length : null,
         satisfaction: ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length - 1) / 4 : null,
         reach: reach !== null && medianReach ? Math.min(1, reach / (2 * medianReach)) : null, // the median scores 50
         proof: ms.length ? ms.filter((m) => m.sealed && m.hasProof).length / ms.length : null,
+        areaNeed: needs.length ? needs.reduce((a, b) => a + b, 0) / needs.length : null,
     };
     const used = (Object.keys(parts) as Part[]).filter((k) => parts[k] !== null);
     const weight = used.reduce((s, k) => s + WEIGHTS[k], 0);

@@ -20,6 +20,7 @@ import {
     RefreshCw,
 } from 'lucide-react';
 import { SDG_INFO } from '@/data/mockData';
+import QRCode from 'qrcode';
 
 export default function PublicCredentialVerificationPage() {
     const params = useParams();
@@ -29,6 +30,12 @@ export default function PublicCredentialVerificationPage() {
     const [credential, setCredential] = useState<any | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [copiedHash, setCopiedHash] = useState(false);
+    const [qr, setQr] = useState<string | null>(null);
+
+    // QR of this page's own address, so a printed or shared credential can be checked by scanning.
+    useEffect(() => {
+        if (credentialId) QRCode.toDataURL(window.location.href, { margin: 1, width: 160 }).then(setQr).catch(() => setQr(null));
+    }, [credentialId]);
 
     useEffect(() => {
         if (!credentialId) return;
@@ -111,7 +118,7 @@ export default function PublicCredentialVerificationPage() {
 
                 {/* Status Banner */}
                 {isVerified ? (
-                    <div className="bg-emerald-950/80 border-2 border-emerald-500/60 rounded-2xl p-5 text-[var(--color-forest)] shadow-sm shadow-emerald-950/40 ">
+                    <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-5 text-[var(--color-forest)]">
                         <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/30">
                                 <CheckCircle2 className="w-7 h-7" />
@@ -129,7 +136,7 @@ export default function PublicCredentialVerificationPage() {
                         </div>
                     </div>
                 ) : (
-                    <div className="bg-rose-950/90 border-2 border-rose-500/80 rounded-2xl p-5 text-[var(--color-rust)] shadow-sm shadow-rose-950/40 ">
+                    <div className="bg-rose-50 border-2 border-rose-300 rounded-2xl p-5 text-[var(--color-rust)]">
                         <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-rose-500/30">
                                 <AlertTriangle className="w-7 h-7" />
@@ -163,6 +170,13 @@ export default function PublicCredentialVerificationPage() {
                                 </h1>
                             </div>
                         </div>
+                        {qr && (
+                            <figure className="flex items-center gap-3">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={qr} alt="QR code linking to this verification page" width={88} height={88} className="border border-[var(--color-rule)] bg-white" />
+                                <figcaption className="text-[11px] text-[var(--color-ink-muted)] max-w-[9rem]">Scan to open this check on another device.</figcaption>
+                            </figure>
+                        )}
                     </div>
 
                     {/* Recipient & University Info */}

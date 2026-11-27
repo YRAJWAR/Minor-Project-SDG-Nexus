@@ -55,6 +55,7 @@ npm run dev                 # http://localhost:3000
 | 4 Closure, credentials, scores | done |
 | 6 Design (use `.claude/skills/impeccable` guidance) | done — see DESIGN.md |
 | 7 Ship | done — live at https://sdg-nexus-delta.vercel.app |
+| 8 Plan gaps (QR, SDG Index, CSR 2%, hours, NGO sign-off, admin) | done |
 
 ## Log (newest last — every assistant adds an entry before stopping)
 Format: date · who · branch · what changed (files) · what is unfinished · anything the next one must know.
@@ -169,4 +170,23 @@ Format: date · who · branch · what changed (files) · what is unfinished · a
   - Hosted DB seeded from the local `.env.neon` (git-ignored; never commit or print it). `BASE_URL=https://sdg-nexus-delta.vercel.app npm run smoke`
     passed end to end; live data then reset with the seed.
   - Public link is the production domain; the `-git-main-` preview addresses sit behind Vercel's login (Deployment Protection).
-
+- 2026-11-27 · Claude Code · phase-8-gaps → merged to main · Built the REBUILD_PLAN items that were still missing.
+  - Credential QR code (`qrcode` package): verify page and PDF; the PDF prints this deployment's own address.
+  - NITI Aayog SDG India Index 2023-24 composite score for all 36 States/UTs in `prisma/seed.ts` (`SDG_INDEX`, copied from the
+    official dashboard sdgindiaindex.niti.gov.in). Used by `areaNeed()` in `src/server/lifecycle.ts`: priority's 20% area share
+    = half state need + half district backlog; university score gets its 10% "area need" part.
+  - Migration `phase8_csr_hours_attestation`: Organization.avgNetProfit; Milestone releasedAt, releasedByOrgId, ngoAttestedAt,
+    ngoAttestation; ChallengeProposal.ngoPartnerId; TeamMember.ngoRating; new MilestoneHours model.
+  - CSR: `/api/funding/obligation` + `CsrObligation` panel (2% of average net profit vs tranches released this financial year,
+    `src/lib/csr.ts`). CSR stats now come from FundingCommitments (not old NGO-project allocations). Unverified CSR orgs cannot COMMIT_FUNDS.
+  - Hours: proof submission must log hours per student (cap 40/week of the milestone's span, `milestoneHoursCap`). Credentials
+    use only those logged hours (≥30 needed); faculty no longer type hours.
+  - NGO field partner: optional on proposals (verified NGOs only). `/api/ngo/attestations` + `NgoAttestations` panel on the NGO
+    dashboard: confirm milestones on the ground (ledger entry) and rate students. Rating = faculty 40 + NGO 40 + citizen 20
+    (faculty 80 without an NGO). Officer queue shows whether the NGO confirmed.
+  - Admin page `/dashboard/admin`: approve/reject NGO and CSR organisations, create district officers (both logged in the ledger).
+  - Small fixes: NGO dashboard no longer shows a made-up 847 score; CSR report PDF uses the real organisation name; verify-page
+    banners readable (light background).
+  - Checks: 18 tests, build passes, `npm run smoke` passes (now logs hours). Browser-checked admin, CSR, NGO, credentials, verify, milestone form.
+  - Not done (deliberately): real file uploads (needs the owner's Vercel Blob store and token; proof stays as data URLs, hashed);
+    Hindi UI and public pledges (optional stretch items in the plan).

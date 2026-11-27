@@ -116,17 +116,20 @@ export async function GET(req: NextRequest) {
         };
     });
 
-    // A CSR partner's own portfolio, from its allocations.
+    // A CSR partner's own portfolio, from its funding commitments to university projects.
     let myCsr = null;
     if (user.role === 'CSR' && user.organizationId) {
-        const mine = await prisma.cSRAllocation.findMany({ where: { corporate_org_id: user.organizationId }, select: { project_id: true, amount_committed: true, amount_disbursed: true } }).catch(() => []);
-        const funded = outProjects.filter((p) => mine.some((a) => a.project_id === p.id));
+        const mine = await prisma.fundingCommitment.findMany({
+            where: { csrOrgId: user.organizationId },
+            select: { amount: true, released: true, challenge: { select: { sdgTags: true, verifiedBeneficiaries: true } } },
+        }).catch(() => []);
         myCsr = {
-            committed: mine.reduce((s, a) => s + a.amount_committed, 0),
-            disbursed: mine.reduce((s, a) => s + a.amount_disbursed, 0),
-            projects: funded.length,
-            sdgs: new Set(funded.flatMap((p) => p.sdg_tags)).size,
-            beneficiaries: funded.reduce((s, p) => s + p.beneficiary_count, 0),
+            committed: mine.reduce((s, c) => s + c.amount, 0),
+            disbursed: mine.reduce((s, c) => s + c.released, 0),
+            projects: mine.length,
+            sdgs: new Set(mine.flatMap((c) => c.challenge.sdgTags)).size,
+            // Only beneficiaries the officer verified at closure.
+            beneficiaries: mine.reduce((s, c) => s + (c.challenge.verifiedBeneficiaries ?? 0), 0),
         };
     }
 

@@ -115,7 +115,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ p
                 data: {
                     status: next,
                     ...(typeof verifierCode === 'string' ? { verifierCode } : {}),
-                    ...(next === 'CSR_APPROVED' ? { fundReleased: amount } : {}),
+                    ...(next === 'CSR_APPROVED' ? { fundReleased: amount, releasedAt: new Date(), releasedByOrgId: user.organizationId ?? null } : {}),
                 },
             });
             if (count !== 1) throw new Error('CHANGED');

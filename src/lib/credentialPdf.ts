@@ -15,6 +15,7 @@ export interface CredentialPDFData {
     hashValue: string;
     issuedAt: string | Date;
     appUrl?: string;
+    qrDataUrl?: string; // PNG data URL of the verify address (made by the caller with `qrcode`)
 }
 
 /**
@@ -230,6 +231,8 @@ export function buildStudentCredentialPDF(data: CredentialPDFData): jsPDF {
 
     cY += 4.5;
     doc.text(`Issued On: ${issuedDateStr} • SDG Nexus`, boxX + 5, cY);
+
+    if (data.qrDataUrl) doc.addImage(data.qrDataUrl, 'PNG', boxX + boxW - 31, y + 2, 29, 29);
 
     // 8. Signature line for the issuing institution
     y += cryptoBoxH + 14;

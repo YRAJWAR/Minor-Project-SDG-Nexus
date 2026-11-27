@@ -53,9 +53,11 @@ New faculty and students join the demo university with invite code `KVIT-DEMO-20
 2. **Citizen** — report a problem (state → district); open *Tanker-dependent wadis in Purandar taluka* from the notification and confirm the fix.
 3. **District officer** — Work queue: verify (confirm SDGs), reject or merge; *Compare proposals* and select a plan; verify a milestone.
 4. **Faculty** — inbox of matched problems; *Write a proposal* with a team and milestones that add up to the budget.
-5. **CSR partner** — *University projects needing funding*: commit funds; release the tranche for a verified milestone.
-6. **Student** — milestone tracker and credentials; open a credential's public verify page.
-7. **Ledger** — anyone can check the hash chain; one seeded milestone is deliberately tampered and fails verification.
+5. **CSR partner** — the 2% CSR obligation for this financial year; *University projects needing funding*: commit funds; release the tranche for a verified milestone.
+6. **NGO** — *Field partner work*: confirm the Marriguda installation milestone on the ground and rate the students.
+7. **Student** — milestone tracker and credentials; open a credential's public verify page (scan its QR code).
+8. **Admin** — approve the two pending NGOs, add a district officer.
+9. **Ledger** — anyone can check the hash chain; one seeded milestone is deliberately tampered and fails verification.
 
 ## Deploy (Vercel + hosted PostgreSQL)
 1. Create a PostgreSQL database on a host such as Neon or Supabase and copy its connection string.
@@ -76,5 +78,5 @@ New faculty and students join the demo university with invite code `KVIT-DEMO-20
 
 ## Tech
 Next.js 16 (App Router), TypeScript, Prisma 6, PostgreSQL, Tailwind CSS 4, Leaflet, Recharts, jsPDF.
-Fonts: Anek Latin and Mukta by Ek Type. District list: [KTBsomen/Indian-state-district-json](https://github.com/KTBsomen/Indian-state-district-json)
+Fonts: Anek Latin and Mukta by Ek Type. State SDG scores: NITI Aayog SDG India Index 2023-24. District list: [KTBsomen/Indian-state-district-json](https://github.com/KTBsomen/Indian-state-district-json)
 (MIT, from igod.gov.in), 36 states/UTs, 784 districts. Basemap © Esri.

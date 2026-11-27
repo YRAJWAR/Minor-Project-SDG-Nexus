@@ -24,9 +24,22 @@ export function isProjectComplete(milestones: { status: string }[], challengeSta
     return challengeStatus === 'DEPLOYED' && milestones.length > 0 && milestones.every((m) => m.status === 'CSR_APPROVED');
 }
 
-/** Student rating on a credential: faculty 80%, the citizen's rating of the fix 20% (faculty alone if none). */
-export function blendedRating(faculty: number, citizen: number | null | undefined): number {
-    return Math.round((citizen ? 0.8 * faculty + 0.2 * citizen : faculty) * 10) / 10;
+/**
+ * Student rating on a credential: faculty 40% + NGO field partner 40% + the citizen's rating of the fix 20%.
+ * Without an NGO rating the faculty weight rises to 80%; a missing citizen rating is left out (never assumed).
+ */
+export function blendedRating(faculty: number, citizen: number | null | undefined, ngo?: number | null): number {
+    const parts: [number, number][] = [[faculty, ngo ? 40 : 80]];
+    if (ngo) parts.push([ngo, 40]);
+    if (citizen) parts.push([citizen, 20]);
+    const w = parts.reduce((s, [, k]) => s + k, 0);
+    return Math.round((parts.reduce((s, [v, k]) => s + v * k, 0) / w) * 10) / 10;
+}
+
+/** Field hours a student may log on one milestone: 40 per week between the previous milestone's due date and this one's. */
+export const HOURS_PER_WEEK_CAP = 40;
+export function milestoneHoursCap(start: Date, due: Date): number {
+    return HOURS_PER_WEEK_CAP * Math.max(1, Math.ceil((due.getTime() - start.getTime()) / (7 * 86_400_000)));
 }
 
 /** Credits awarded for verified field hours: 30 hours = 1 credit (whole credits only). */

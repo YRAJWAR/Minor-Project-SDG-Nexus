@@ -5,12 +5,9 @@ import { computeCredentialHash, creditsForHours, isProjectComplete, blendedRatin
 
 export const dynamic = 'force-dynamic';
 
-const HOURS_PER_WEEK_CAP = 40;
-
 interface StudentIssuePayload {
     studentProfileId: string;
-    creditHours: number;
-    overallRating?: number;
+    overallRating?: number; // the faculty rating, 1–5
 }
 
 const fail = (error: string, status: number) =>
@@ -33,7 +30,7 @@ export async function POST(request: NextRequest) {
     try {
         team = await prisma.projectTeam.findFirst({
             where: { OR: [{ id: projectId }, { proposalId: projectId }] },
-            include: { proposal: { include: { challenge: true } }, members: true, milestones: true },
+            include: { proposal: { include: { challenge: true } }, members: true, milestones: { include: { hours: true } } },
         });
     } catch (dbErr) {
         console.error('DB error loading project for credential issuance:', dbErr);
@@ -48,13 +45,15 @@ export async function POST(request: NextRequest) {
 
     const challenge = team.proposal.challenge;
     const memberIds = new Set(team.members.map((m) => m.studentProfileId));
-    const maxHours = team.proposal.timelineWeeks * HOURS_PER_WEEK_CAP;
+    // Hours come only from the logs on this project's milestones (all verified and paid by now), never from this request.
+    const verifiedHours = new Map<string, number>();
+    for (const h of team.milestones.flatMap((m) => m.hours)) verifiedHours.set(h.studentProfileId, (verifiedHours.get(h.studentProfileId) ?? 0) + h.hours);
+    const ngoRating = new Map(team.members.map((m) => [m.studentProfileId, m.ngoRating]));
 
     for (const s of students) {
-        const hours = Number(s.creditHours);
         if (!memberIds.has(s.studentProfileId)) return fail(`Student ${s.studentProfileId} is not a member of this team.`, 400);
-        if (!Number.isInteger(hours) || hours < 30 || hours > maxHours) {
-            return fail(`Hours for ${s.studentProfileId} must be a whole number between 30 and ${maxHours}.`, 400);
+        if ((verifiedHours.get(s.studentProfileId) ?? 0) < 30) {
+            return fail('Every student needs at least 30 verified field hours (one credit) on this project\'s milestones.', 409);
         }
         if (s.overallRating !== undefined && !(s.overallRating >= 1 && s.overallRating <= 5)) {
             return fail('Ratings must be between 1 and 5.', 400);
@@ -74,7 +73,8 @@ export async function POST(request: NextRequest) {
 
             const out = [];
             for (const s of students) {
-                const creditPoints = creditsForHours(s.creditHours);
+                const hours = verifiedHours.get(s.studentProfileId)!;
+                const creditPoints = creditsForHours(hours);
                 const cred = await tx.studentCredential.create({
                     data: {
                         studentProfileId: s.studentProfileId,
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
                         challengeTitle: challenge.title,
                         challengeDistrict: challenge.district,
                         sdgTags: challenge.sdgTags,
-                        hoursContributed: s.creditHours,
+                        hoursContributed: hours,
                         creditPoints,
                         nepCompliant: true,
                         hashValue: computeCredentialHash(s.studentProfileId, challenge.id, creditPoints, issuedAt),
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
                     where: { id: s.studentProfileId },
                     data: {
                         credits: { increment: creditPoints },
-                        ...(s.overallRating !== undefined ? { rating: blendedRating(s.overallRating, challenge.citizenRating) } : {}),
+                        ...(s.overallRating !== undefined ? { rating: blendedRating(s.overallRating, challenge.citizenRating, ngoRating.get(s.studentProfileId)) } : {}),
                     },
                 });
                 out.push(cred);

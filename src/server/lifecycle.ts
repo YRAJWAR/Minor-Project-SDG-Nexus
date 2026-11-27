@@ -87,18 +87,26 @@ export function allowedActions(ch: ChallengeLike, actor: Actor): Action[] {
 const SEVERITY: Record<string, number> = { NORMAL: 0.25, MODERATE: 0.5, HIGH: 0.75, CRITICAL: 1 };
 export const OVERDUE_DAYS = 7;
 
-export function priority(input: { urgency: string; endorsements: number; districtOpen: number; maxDistrictOpen: number; createdAt: Date; status: ChallengeStatus }, now = Date.now()) {
+/** Need of a state, 0-1, from its NITI Aayog SDG India Index score: lower score = more need (index 50 or below = full need). */
+export function areaNeed(sdgIndex: number | null | undefined): number | null {
+    return typeof sdgIndex === 'number' ? Math.min(1, Math.max(0, (100 - sdgIndex) / 50)) : null;
+}
+
+export function priority(input: { urgency: string; endorsements: number; districtOpen: number; maxDistrictOpen: number; stateSdgIndex?: number | null; createdAt: Date; status: ChallengeStatus }, now = Date.now()) {
     const days = Math.max(0, (now - input.createdAt.getTime()) / 86_400_000);
+    const need = areaNeed(input.stateSdgIndex);
     const parts = {
         severity: SEVERITY[input.urgency] ?? SEVERITY.NORMAL,
         endorsements: Math.min(1, Math.log2(1 + input.endorsements) / Math.log2(21)), // 20 endorsements = full marks
         areaBacklog: input.maxDistrictOpen > 0 ? input.districtOpen / input.maxDistrictOpen : 0,
         waiting: Math.min(1, days / 14),
     };
-    const score = Math.round(100 * (0.35 * parts.severity + 0.25 * parts.endorsements + 0.2 * parts.areaBacklog + 0.2 * parts.waiting));
+    // The 20% "area" share: half the state's SDG Index need, half the district's open backlog (backlog alone if the index is unknown).
+    const area = need === null ? parts.areaBacklog : (need + parts.areaBacklog) / 2;
+    const score = Math.round(100 * (0.35 * parts.severity + 0.25 * parts.endorsements + 0.2 * area + 0.2 * parts.waiting));
     return {
         score,
-        breakdown: Object.fromEntries(Object.entries(parts).map(([k, v]) => [k, Math.round(v * 100)])) as Record<keyof typeof parts, number>,
+        breakdown: { ...(Object.fromEntries(Object.entries(parts).map(([k, v]) => [k, Math.round(v * 100)])) as Record<keyof typeof parts, number>), areaNeed: need === null ? null : Math.round(need * 100) },
         overdue: AWAITING_OFFICER.includes(input.status) && days > OVERDUE_DAYS,
         daysWaiting: Math.floor(days),
     };
@@ -175,6 +183,8 @@ export async function transition(challengeId: string, action: Action, actor: Act
         notify = { roles: ['CSR'], message: `“${ch.title}” (${ch.district}) has a selected university plan by ${p.hei.name} and needs ₹${Math.round(p.budgetRequested).toLocaleString('en-IN')} in funding.`, extraUserIds: [...heiUsers.map((u) => u.id), ...(ch.submitterId ? [ch.submitterId] : [])] };
     } else if (action === 'COMMIT_FUNDS') {
         if (!actor.organizationId) throw new LifecycleError('Your account is not linked to a CSR organisation.', 403);
+        const org = await prisma.organization.findUnique({ where: { id: actor.organizationId }, select: { verification_status: true } });
+        if (org?.verification_status !== 'VERIFIED') throw new LifecycleError('Your organisation must be verified by the platform admin before it can commit funds.', 403);
         const accepted = await prisma.challengeProposal.findFirst({ where: { challengeId: ch.id, status: 'ACCEPTED' }, select: { budgetRequested: true, heiId: true } });
         if (!accepted) throw new LifecycleError('This report has no selected proposal to fund.', 409);
         const committed = (await prisma.fundingCommitment.aggregate({ where: { challengeId: ch.id }, _sum: { amount: true } }))._sum.amount ?? 0;

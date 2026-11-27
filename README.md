@@ -20,6 +20,13 @@ B.Tech minor project, Dev Bhoomi Uttarakhand University, 2026.
 
 All rules live in one place, `src/server/lifecycle.ts`; every action is appended to the ledger (`src/server/ledger.ts`).
 
+Rules that keep it honest:
+- **Retention:** the last tranche pays all but 10% of the budget; that part is released only when the officer closes the report after the citizen confirms (or 14 days pass).
+- **Student load:** at most 3 active projects per student and 40 field hours a week across all of them.
+- **NGO consent:** a university can only *invite* an NGO; it attests milestones and rates students only after accepting.
+- **Proof location:** each milestone shows how far its proof GPS is from the reported spot; more than 5 km is flagged.
+- **One matching formula** (`src/server/matching.ts`): 40% SDG fit, 25% distance, 15% department fit, 15% track record (from resolved projects), 5% spare capacity; universities within 800 km are suggested first.
+
 ## Run it locally
 Needs Node 20+ and PostgreSQL 16+.
 ```bash
@@ -56,11 +63,11 @@ New faculty and students join the demo university with invite code `KVIT-DEMO-20
 
 ### Five-minute demo
 1. **Landing page** — the India sheet: live reports per district, the route with counts per stage, the latest ledger hashes.
-2. **Citizen** — report a problem (state → district); open *Tanker-dependent wadis in Purandar taluka* from the notification and confirm the fix.
-3. **District officer** — Work queue: verify (confirm SDGs), reject or merge; *Compare proposals* and select a plan; verify a milestone.
+2. **Citizen** — *My reports* shows what is waiting on you: *Tanker-dependent wadis in Purandar taluka* is finished, with 10% of its budget held back until you confirm or dispute the fix. Report a new problem (state → district).
+3. **District officer** — Work queue: verify (confirm SDGs), reject or merge; *Compare proposals* on the anganwadi report (one plan is blocked: its students already have 3 active projects); verify a milestone (each shows how far its proof GPS is from the reported spot).
 4. **Faculty** — inbox of matched problems; *Write a proposal* with a team and milestones that add up to the budget.
 5. **CSR partner** — the 2% CSR obligation for this financial year; *University projects needing funding*: commit funds; release the tranche for a verified milestone.
-6. **NGO** — *Field partner work*: confirm the Marriguda installation milestone on the ground and rate the students.
+6. **NGO** — *Field partner work*: accept or decline the two invitations from Krishna Valley; confirm the Marriguda installation milestone on the ground and rate the students.
 7. **Student** — milestone tracker and credentials; open a credential's public verify page (scan its QR code).
 8. **Admin** — approve the two pending NGOs, add a district officer.
 9. **Ledger** — anyone can check the hash chain; one seeded milestone is deliberately tampered and fails verification.

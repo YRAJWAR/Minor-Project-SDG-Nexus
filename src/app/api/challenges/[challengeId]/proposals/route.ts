@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireUser, inJurisdiction } from '@/server/middleware/auth';
-import { validatePlan, type PlanMilestone, type TeamPlan } from '@/server/lifecycle';
+import { validatePlan, overcommittedStudents, type PlanMilestone, type TeamPlan } from '@/server/lifecycle';
 
 // All submitted university proposals for one report, for the officer choosing between them.
 export async function GET(req: NextRequest, context: { params: Promise<{ challengeId: string }> }) {
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ challen
 
         const proposals = await prisma.challengeProposal.findMany({
             where: { challengeId, status: { not: 'DRAFT' } },
-            include: { hei: { select: { name: true, district: true, naacGrade: true } } },
+            include: { hei: { select: { name: true, district: true, naacGrade: true } }, ngoPartner: { select: { name: true } } },
             orderBy: { createdAt: 'asc' },
         });
         const ids = proposals.flatMap((p) => ((p.teamPlan as unknown as TeamPlan | null)?.members ?? []).map((m) => m.studentProfileId));
@@ -27,6 +27,8 @@ export async function GET(req: NextRequest, context: { params: Promise<{ challen
         const name = new Map(students.map((s) => [s.id, `${s.user.full_name} (${s.branch}, yr ${s.year})`]));
         const fname = new Map(faculty.map((f) => [f.id, f.full_name]));
 
+        // Students already on 3 active projects make a plan unselectable (lifecycle refuses it too).
+        const busyByProposal = new Map(await Promise.all(proposals.map(async (p) => [p.id, await overcommittedStudents(((p.teamPlan as unknown as TeamPlan | null)?.members ?? []).map((m) => m.studentProfileId))] as const)));
         return NextResponse.json({
             success: true,
             data: proposals.map((p) => {
@@ -38,7 +40,8 @@ export async function GET(req: NextRequest, context: { params: Promise<{ challen
                     faculty: team?.facultyId ? fname.get(team.facultyId) ?? null : null,
                     team: (team?.members ?? []).map((m) => name.get(m.studentProfileId) ?? 'Unknown student'),
                     milestones: plan,
-                    problems: validatePlan(team, plan, p.budgetRequested, p.timelineWeeks),
+                    ngoPartner: p.ngoPartner ? { name: p.ngoPartner.name, status: p.ngoStatus } : null,
+                    problems: [...validatePlan(team, plan, p.budgetRequested, p.timelineWeeks), ...(busyByProposal.get(p.id)?.length ? [`${busyByProposal.get(p.id)!.join(', ')} already on 3 active projects.`] : [])],
                 };
             }),
         });

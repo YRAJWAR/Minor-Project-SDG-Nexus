@@ -70,17 +70,21 @@ async function main() {
     for (const [i, m] of milestones.entries()) {
         await call(faculty, '/api/hei/milestones/submit', 'POST', { teamId, milestoneId: m.id, description: 'Done, photos on file.', proofUrls: [], hours: students.slice(0, 2).map((s: { id: string }) => ({ studentProfileId: s.id, hours: 40 })) });
         await call(officer, `/api/hei/milestones/${teamId}`, 'PATCH', { milestoneId: m.id, status: 'GP_VERIFIED' });
-        await assert.rejects(call(csr, `/api/hei/milestones/${teamId}`, 'PATCH', { milestoneId: m.id, status: 'CSR_APPROVED', fundReleased: m.amount + 1 }), /agreed tranche/);
-        await call(csr, `/api/hei/milestones/${teamId}`, 'PATCH', { milestoneId: m.id, status: 'CSR_APPROVED', fundReleased: m.amount });
-        step(6 + i, `milestone ${i + 1}: proof → verified → ₹${m.amount.toLocaleString('en-IN')} released (wrong amount refused)`);
+        // What the funder pays now (the last tranche keeps 10% of the budget back until the report is closed).
+        const q = (await call(csr, '/api/milestones/queue')).find((x: { id: string }) => x.id === m.id);
+        await assert.rejects(call(csr, `/api/hei/milestones/${teamId}`, 'PATCH', { milestoneId: m.id, status: 'CSR_APPROVED', fundReleased: q.suggestedRelease + 1 }), /agreed tranche/);
+        await call(csr, `/api/hei/milestones/${teamId}`, 'PATCH', { milestoneId: m.id, status: 'CSR_APPROVED', fundReleased: q.suggestedRelease });
+        step(6 + i, `milestone ${i + 1}: proof → verified → ₹${q.suggestedRelease.toLocaleString('en-IN')} released${q.retained ? `, ₹${q.retained.toLocaleString('en-IN')} held back` : ''} (wrong amount refused)`);
     }
     const afterWork = await call(citizen, `/api/challenges/${id}/status`);
     assert.equal(afterWork.status, 'COMPLETED');
+    assert.equal(afterWork.heldBack, budget * 0.1, '10% of the budget is held until closure');
 
     await assert.rejects(act(officer, id, { action: 'CLOSE', beneficiaries: 120 }), /Waiting/);
     await act(citizen, id, { action: 'CONFIRM', rating: 5 });
     assert.equal((await act(officer, id, { action: 'CLOSE', beneficiaries: 120 })).status, 'DEPLOYED');
-    step(8, 'citizen confirmed (rated 5); officer closed it as resolved (early close refused)');
+    assert.equal((await call(citizen, `/api/challenges/${id}/status`)).heldBack, 0, 'closing releases what was held back');
+    step(8, 'citizen confirmed (rated 5); officer closed it, releasing the held-back 10% (early close refused)');
 
     const issued = await call(faculty, '/api/hei/credentials/issue', 'POST', {
         projectId: teamId, students: students.slice(0, 2).map((s: { id: string }) => ({ studentProfileId: s.id, creditHours: 60, overallRating: 4 })),

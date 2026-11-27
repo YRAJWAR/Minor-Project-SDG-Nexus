@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 
 interface Proposal {
     id: string; status: string; university: string; universityDistrict: string; naac: string | null; approach: string;
-    timelineWeeks: number; budget: number; aiQualityScore: number | null; faculty: string | null; team: string[];
+    timelineWeeks: number; budget: number; aiQualityScore: number | null; faculty: string | null; team: string[]; ngoPartner?: { name: string; status: string | null } | null;
     milestones: { title: string; week: number; amount: number }[]; problems: string[];
 }
 
@@ -45,6 +45,7 @@ export default function ProposalsPanel({ challengeId, onSelected }: { challengeI
                     </summary>
                     <p className="mt-2 text-slate-600 whitespace-pre-line">{p.approach}</p>
                     <p className="mt-2 text-slate-700"><strong>Lead:</strong> {p.faculty ?? '—'} · <strong>Team:</strong> {p.team.join(', ') || '—'}</p>
+                    {p.ngoPartner && <p className="text-slate-700"><strong>NGO field partner:</strong> {p.ngoPartner.name} <span className={p.ngoPartner.status === 'ACCEPTED' ? 'text-emerald-700' : p.ngoPartner.status === 'DECLINED' ? 'text-rose-700' : 'text-amber-700'}>({p.ngoPartner.status === 'ACCEPTED' ? 'accepted' : p.ngoPartner.status === 'DECLINED' ? 'declined' : 'invited, not yet answered'})</span></p>}
                     <ol className="mt-1 list-decimal pl-5 text-slate-700">
                         {p.milestones.map((m, i) => <li key={i}>{m.title} — week {m.week}, {inr(m.amount)}</li>)}
                     </ol>

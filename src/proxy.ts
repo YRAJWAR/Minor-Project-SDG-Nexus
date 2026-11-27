@@ -10,6 +10,7 @@ import { SESSION_COOKIE, readSession } from '@/server/middleware/auth';
 const RULES: { prefix: string; exact?: boolean; roles: Role[] }[] = [
     { prefix: '/dashboard/government', roles: ['OFFICER', 'ADMIN'] },
     { prefix: '/dashboard/admin', roles: ['ADMIN'] },
+    { prefix: '/dashboard/reports', roles: ['CITIZEN', 'NGO'] },
     { prefix: '/dashboard/hei/milestones', roles: ['FACULTY', 'STUDENT'] },
     { prefix: '/dashboard/hei/credentials', roles: ['FACULTY', 'STUDENT'] },
     { prefix: '/dashboard/hei', roles: ['FACULTY'] },

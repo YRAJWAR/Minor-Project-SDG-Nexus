@@ -22,6 +22,7 @@ const NAV_ITEMS: Record<string, { label: string; href: string; icon: string }[]>
         { label: 'Dashboard', href: '/dashboard/ngo', icon: '📊' },
         { label: 'New field project', href: '/dashboard/ngo/create-project', icon: '➕' },
         { label: 'Report a problem', href: '/citizen/submit', icon: '📢' },
+        { label: 'My reports', href: '/dashboard/reports', icon: '🔍' },
         { label: 'Heatmap', href: '/dashboard/heatmap', icon: '🗺️' },
         { label: 'Activity Ledger', href: '/dashboard/ledger', icon: '📋' },
         { label: 'Leaderboard', href: '/dashboard/leaderboard', icon: '🏆' },
@@ -53,7 +54,8 @@ const NAV_ITEMS: Record<string, { label: string; href: string; icon: string }[]>
         { label: 'Profile', href: '/dashboard/profile', icon: '👤' },
     ],
     citizen: [
-        { label: 'Submit Challenge', href: '/citizen/submit', icon: '📢' },
+        { label: 'My reports', href: '/dashboard/reports', icon: '📋' },
+        { label: 'Report a problem', href: '/citizen/submit', icon: '📢' },
         { label: 'Track Challenge', href: '/track', icon: '🔍' },
         { label: 'Impact Heatmap', href: '/dashboard/heatmap', icon: '🗺️' },
         { label: 'Activity Ledger', href: '/dashboard/ledger', icon: '📋' },

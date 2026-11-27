@@ -425,6 +425,7 @@ model ChallengeProposal {
   aiQualityScore  Float?
   ngoPartnerId    String? // optional NGO field partner; it attests milestones and rates the students
   ngoPartner      Organization?  @relation(fields: [ngoPartnerId], references: [id])
+  ngoStatus       String? // INVITED | ACCEPTED | DECLINED — the NGO must accept before it can attest or rate
   teamPlan        Json? // [{ studentProfileId, role }] — 2–8 students of the same university
   milestonePlan   Json? // [{ title, week, amount }] — 2–6 items; amounts add up to budgetRequested
   createdAt       DateTime       @default(now())
@@ -489,6 +490,7 @@ model Milestone {
   fundReleased  Float?
   amount        Float? // tranche agreed in the selected proposal; a release must equal it
   releasedAt      DateTime? // when the tranche was paid
+  retained        Float? // part of the last tranche held back until the citizen confirms and the officer closes
   releasedByOrgId String? // the CSR organisation that paid it
   ngoAttestedAt   DateTime? // the NGO field partner confirmed the work on the ground
   ngoAttestation  String?
@@ -576,7 +578,10 @@ model MilestoneHours {
   milestone        Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
   studentProfileId String
   hours            Int
+  periodStart      DateTime? // the weeks these hours cover (previous milestone's due date → this one's),
+  periodEnd        DateTime? // used for the 40-hours-a-week limit across all of a student's projects
 
   @@unique([milestoneId, studentProfileId])
+  @@index([studentProfileId])
   @@map("milestone_hours")
 }

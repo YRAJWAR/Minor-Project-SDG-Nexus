@@ -2,50 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireUser, inJurisdiction } from '@/server/middleware/auth';
 import { transition, LifecycleError } from '@/server/lifecycle';
+import { rankUniversities } from '@/server/matching';
 
-function scoreHeiMatch(
-    challenge: { sdgTags: number[]; district: string },
-    hei: { sdgExpertise: number[]; district: string; pastPerformanceScore: number | null }
-) {
-    const commonSDGs = challenge.sdgTags.filter((t) => hei.sdgExpertise.includes(t));
-    const sdgOverlap =
-        challenge.sdgTags.length > 0
-            ? Math.round((commonSDGs.length / challenge.sdgTags.length) * 100)
-            : 50;
-
-    const normalizedSdgScore = commonSDGs.length > 0 ? Math.max(70, sdgOverlap) : 35;
-
-    const geoProximity =
-        challenge.district.trim().toLowerCase() === hei.district.trim().toLowerCase()
-            ? 100
-            : 75; // ponytail: same-district check only; Phase 2 uses real distance (haversine)
-
-    const pastPerformance = Math.round((hei.pastPerformanceScore ?? 0.5) * 100); // 50 = no resolved project yet (neutral)
-
-    const overall = Math.min(
-        99,
-        Math.round(normalizedSdgScore * 0.5 + geoProximity * 0.25 + pastPerformance * 0.25)
-    );
-
-    const reasons: string[] = [];
-    if (commonSDGs.length > 0) {
-        reasons.push(`Alignment on UN SDG ${commonSDGs.join(', ')}`);
-    }
-    if (geoProximity === 100) {
-        reasons.push(`Home district institution (${hei.district})`);
-    } else {
-        reasons.push(`Outside the challenge district`);
-    }
-    reasons.push(`${pastPerformance}% track record rating`);
-
-    return {
-        score: overall,
-        sdgOverlap: normalizedSdgScore,
-        geoProximity,
-        pastPerformance,
-        reasons,
-    };
-}
 
 export async function GET(
     req: NextRequest,
@@ -65,16 +23,17 @@ export async function GET(
                     id: true,
                     title: true,
                     district: true,
+                    state: true,
                     category: true,
                     sdgTags: true,
                     status: true,
                     description: true,
                     submittedVia: true,
+                    gpsLat: true,
+                    gpsLng: true,
                 },
             });
-            heis = await prisma.hEI.findMany({
-                select: { id: true, name: true, district: true, sdgExpertise: true, pastPerformanceScore: true, naacGrade: true, departments: true },
-            });
+            heis = challenge ? await rankUniversities(challenge, 3) : [];
         } catch (dbErr) {
             console.error('Prisma error in validate GET:', dbErr);
             return NextResponse.json(
@@ -96,25 +55,7 @@ export async function GET(
             );
         }
 
-        const allHeis = heis;
-        const scored = allHeis.map((h: any) => {
-            const match = scoreHeiMatch(challenge, h);
-            return {
-                id: h.id,
-                name: h.name,
-                district: h.district,
-                naacGrade: h.naacGrade,
-                departments: h.departments,
-                score: match.score,
-                sdgOverlap: match.sdgOverlap,
-                geoProximity: match.geoProximity,
-                pastPerformance: match.pastPerformance,
-                reasons: match.reasons,
-            };
-        });
-
-        scored.sort((a: any, b: any) => b.score - a.score);
-        const top3Heis = scored.slice(0, 3);
+        const top3Heis = heis;
 
         return NextResponse.json({
             success: true,
@@ -155,9 +96,7 @@ export async function POST(
         let allHeis;
         try {
             challenge = await prisma.challenge.findUnique({ where: { id: challengeId } });
-            allHeis = await prisma.hEI.findMany({
-                select: { id: true, name: true, district: true, sdgExpertise: true, pastPerformanceScore: true, naacGrade: true },
-            });
+            allHeis = challenge ? await rankUniversities(challenge) : [];
         } catch (dbErr) {
             console.error('DB lookup failed in validate route:', dbErr);
             return NextResponse.json(
@@ -179,28 +118,8 @@ export async function POST(
             );
         }
 
-        // 4. Score all candidate HEIs
-        const scoredHeis = allHeis.map((hei) => {
-            const match = scoreHeiMatch(
-                {
-                    sdgTags: challenge.sdgTags,
-                    district: challenge.district,
-                },
-                hei
-            );
-            return {
-                id: hei.id,
-                name: hei.name,
-                district: hei.district,
-                matchScore: match.score,
-                sdgOverlap: match.sdgOverlap,
-                reasons: match.reasons,
-                naacGrade: hei.naacGrade,
-            };
-        });
-
-        // Top 3 HEI matches
-        const top3Heis = scoredHeis.sort((a, b) => b.matchScore - a.matchScore).slice(0, 3);
+        // Ranked with the shared formula (src/server/matching.ts).
+        const top3Heis = allHeis.slice(0, 3);
 
         // 5. Verify (if still awaiting the officer) and optionally assign, through the lifecycle service:
         //    it checks role, district and status, and writes the change + ledger entry + notifications together.

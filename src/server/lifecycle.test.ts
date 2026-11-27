@@ -2,7 +2,8 @@
 // Guards the Phase 2 rules: who may do what from which status, the priority score, and the ledger hash chain.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { allowedActions, blockedReason, priority, validatePlan } from './lifecycle';
+import { allowedActions, blockedReason, priority, validatePlan, retentionFor, trancheDue } from './lifecycle';
+import { scoreMatch } from './matching';
 import { entryHash } from './ledger';
 
 const ch = (status: 'SUBMITTED' | 'VALIDATED' | 'REJECTED', district = 'Nalgonda') => ({ id: 'c1', status, district, submitterId: 'citizen1' });
@@ -74,4 +75,22 @@ test('closure: only the reporter confirms or disputes; the officer closes after 
     assert.equal(blockedReason('CLOSE', done({ completedAt: new Date(Date.now() - 15 * 86_400_000) }), officer('Nalgonda')), null);
     assert.match(blockedReason('CLOSE', done({ confirmedAt: new Date() }), officer('Pune')) ?? '', /outside/);
     assert.match(blockedReason('CONFIRM', done({ confirmedAt: new Date() }), { id: 'citizen1', role: 'CITIZEN' }) ?? '', /already/);
+});
+
+test('retention: the last-due tranche keeps 10% of the budget back, never more than itself', () => {
+    const team = [{ id: 'a', dueDate: new Date('2026-01-10') }, { id: 'b', dueDate: new Date('2026-03-10') }];
+    assert.deepEqual(trancheDue({ id: 'a', amount: 100000 }, team, 300000), { due: 100000, retained: 0 });
+    assert.deepEqual(trancheDue({ id: 'b', amount: 200000 }, team, 300000), { due: 170000, retained: 30000 });
+    assert.equal(retentionFor(1000000, 50000), 50000, 'capped at the tranche');
+});
+
+test('matching: one formula; SDG fit, distance, department, track record and capacity all count', () => {
+    const ch = { sdgTags: [6, 3], category: 'Drinking Water & Sanitation', lat: 17.05, lng: 79.27 };
+    const base = { id: 'u', name: 'U', district: 'X', departments: ['Civil Engineering'], sdgExpertise: [6, 3], lat: 17.1, lng: 79.3, pastPerformanceScore: 0.8, activeProjects: 0 };
+    const near = scoreMatch(ch, base);
+    assert.ok(near.score > 90 && near.score <= 100);
+    assert.ok(scoreMatch(ch, { ...base, lat: 28.6, lng: 77.2 }).score < near.score, 'far away scores lower');
+    assert.ok(scoreMatch(ch, { ...base, activeProjects: 6 }).score < near.score, 'a full university scores lower');
+    assert.ok(scoreMatch(ch, { ...base, departments: ['Marine Science'] }).score < near.score, 'no relevant department scores lower');
+    assert.equal(scoreMatch(ch, { ...base, lat: null }).distKm, null, 'unknown distance is not invented');
 });

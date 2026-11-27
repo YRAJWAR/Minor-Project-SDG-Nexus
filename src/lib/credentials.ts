@@ -42,6 +42,23 @@ export function milestoneHoursCap(start: Date, due: Date): number {
     return HOURS_PER_WEEK_CAP * Math.max(1, Math.ceil((due.getTime() - start.getTime()) / (7 * 86_400_000)));
 }
 
+/** A student may be on at most this many active projects (team formed, funded or in progress) at once. */
+export const MAX_ACTIVE_TEAMS = 3;
+
+const weeksOf = (start: Date, end: Date) => Math.max(1, (end.getTime() - start.getTime()) / (7 * 86_400_000));
+/**
+ * Hours a week one student is already committed to during [start, end), from hours logged on other milestones.
+ * Each log is spread evenly over its own period; only logs whose period overlaps count.
+ */
+export function weeklyLoad(logs: { hours: number; start: Date; end: Date }[], start: Date, end: Date): number {
+    return logs.filter((l) => l.end > start && l.start < end).reduce((t, l) => t + l.hours / weeksOf(l.start, l.end), 0);
+}
+/** Would logging `hours` over [start, end) push this student past 40 hours a week across all their projects? */
+export function overWeeklyLimit(logs: { hours: number; start: Date; end: Date }[], hours: number, start: Date, end: Date) {
+    const total = weeklyLoad(logs, start, end) + hours / weeksOf(start, end);
+    return { total: Math.round(total), over: total > HOURS_PER_WEEK_CAP + 1e-9 };
+}
+
 /** Credits awarded for verified field hours: 30 hours = 1 credit (whole credits only). */
 export function creditsForHours(hours: number): number {
     return Math.floor(hours / 30);

@@ -57,6 +57,8 @@ npm run dev                 # http://localhost:3000
 | 7 Ship | done — live at https://sdg-nexus-delta.vercel.app |
 | 8 Plan gaps (QR, SDG Index, CSR 2%, hours, NGO sign-off, admin) | done |
 | 9 Connected roles + crowded demo world | done |
+| 10 Faster sign-in | done |
+| 11 Deeper logic (retention, student load, NGO consent, proof GPS, My reports, one matcher) | done |
 
 ## Log (newest last — every assistant adds an entry before stopping)
 Format: date · who · branch · what changed (files) · what is unfinished · anything the next one must know.
@@ -220,3 +222,19 @@ Format: date · who · branch · what changed (files) · what is unfinished · a
   - Login goes straight to the role's page (`ROLE_HOME` in `src/lib/AuthContext.tsx`, also used by `/dashboard`).
   - `GET /api/health` (SELECT 1); the sign-in page calls it on load to wake the sleeping Neon database while the person types.
   - Remaining latency is distance: functions + database are in US East (iad1/us-east-1); moving both to an Asia region is an owner step.
+- 2026-11-27 · Claude Code · phase-11-logic → merged to main · Six logic fixes.
+  - Migration `retention_load_ngo_invites`: Milestone.retained, MilestoneHours.periodStart/periodEnd, ChallengeProposal.ngoStatus.
+  - Retention (`retentionFor`/`trancheDue` in lifecycle.ts): last-due milestone pays amount − 10% of budget; CLOSE releases it
+    (milestone.fundReleased and the funder's commitment). CSR queue and the citizen's track page show the held amount.
+  - Student load (`src/lib/credentials.ts`): `MAX_ACTIVE_TEAMS` = 3 (checked on proposal submit, in Compare proposals and at
+    SELECT_PROPOSAL via `overcommittedStudents`); 40 h/week across projects (`overWeeklyLimit`, uses the hours' periods).
+    Student search returns `activeProjects`, least busy first; the builder disables students already on 3.
+  - NGO consent: naming an NGO sets `ngoStatus` INVITED and notifies it; NGO accepts/declines (`/api/ngo/attestations` RESPOND);
+    only ACCEPTED partners attest, rate, get notified, or appear on the queue/credentials.
+  - Proof GPS: `/api/milestones/queue` returns `proofDistanceKm` (vs the report's GPS); > 5 km is flagged in red.
+  - My reports: `/dashboard/reports` + `/api/me/reports` (citizen and NGO): reported, supported, "waiting on you". Citizens land there.
+  - One matcher: `src/server/matching.ts` (scoreMatch + rankUniversities) used by officer suggestions, routing panel and faculty
+    inbox; `src/services/smartMatchingService.ts` deleted (it also held a hard-coded fake NGO list).
+  - Seed: NGO partners ACCEPTED, two open KVIT invitations to the demo NGO, Purandar keeps 10% retained, hours carry periods,
+    proof GPS near each site with one planted ~30 km away (Yelahanka, Bengaluru Urban), teams built from the least busy students.
+  - Checks: 21 tests (retention, weekly load, matching added), build, smoke (now asserts the held-back 10% and its release).

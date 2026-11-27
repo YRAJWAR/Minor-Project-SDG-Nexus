@@ -4,6 +4,7 @@ import type { MilestoneStatus, Role } from '@prisma/client';
 import { requireUser, inJurisdiction } from '@/server/middleware/auth';
 import { transition } from '@/server/lifecycle';
 import { appendLedger } from '@/server/ledger';
+import { trancheDue } from '@/server/lifecycle';
 
 const fail = (error: string, status: number) =>
     NextResponse.json({ success: false, error, timestamp: new Date().toISOString() }, { status });
@@ -98,8 +99,11 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ p
         }
 
         const challengeId = current.team.proposal.challengeId;
-        if (next === 'CSR_APPROVED' && current.amount !== null && Math.round(amount!) !== Math.round(current.amount)) {
-            return fail(`This milestone's agreed tranche is ₹${Math.round(current.amount).toLocaleString('en-IN')}.`, 400);
+        // The last milestone pays all but the retention, which is released when the report is closed.
+        const siblings = await prisma.milestone.findMany({ where: { teamId: current.teamId }, select: { id: true, dueDate: true } });
+        const { due, retained } = trancheDue(current, siblings, current.team.proposal.budgetRequested);
+        if (next === 'CSR_APPROVED' && due !== null && Math.round(amount!) !== due) {
+            return fail(`This milestone's agreed tranche is ₹${due.toLocaleString('en-IN')}${retained ? ` now (₹${retained.toLocaleString('en-IN')} is held back until the citizen confirms the fix)` : ''}.`, 400);
         }
         const planned = current.amount !== null;
         milestone = await prisma.$transaction(async (tx) => {
@@ -115,13 +119,13 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ p
                 data: {
                     status: next,
                     ...(typeof verifierCode === 'string' ? { verifierCode } : {}),
-                    ...(next === 'CSR_APPROVED' ? { fundReleased: amount, releasedAt: new Date(), releasedByOrgId: user.organizationId ?? null } : {}),
+                    ...(next === 'CSR_APPROVED' ? { fundReleased: amount, releasedAt: new Date(), releasedByOrgId: user.organizationId ?? null, retained: retained || null } : {}),
                 },
             });
             if (count !== 1) throw new Error('CHANGED');
             await appendLedger({
                 actor_id: user.id, actor_role: user.role, action: `MILESTONE_${next}`, entity_type: 'Milestone', entity_id: milestoneId,
-                previous_value: { status: current.status }, new_value: { status: next, ...(next === 'CSR_APPROVED' ? { released: amount } : {}), challengeId },
+                previous_value: { status: current.status }, new_value: { status: next, ...(next === 'CSR_APPROVED' ? { released: amount, ...(retained ? { retained } : {}) } : {}), challengeId },
             }, tx);
             return tx.milestone.findUniqueOrThrow({ where: { id: milestoneId } });
         }).catch((err: Error) => {

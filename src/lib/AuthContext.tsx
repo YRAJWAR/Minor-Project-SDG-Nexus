@@ -59,7 +59,7 @@ type AuthResult = string | null;
 /** Each role's own starting page (also used by /dashboard to forward signed-in users). */
 export const ROLE_HOME: Record<string, string> = {
     ngo: '/dashboard/ngo', government: '/dashboard/government', admin: '/dashboard/admin', corporate: '/dashboard/corporate',
-    hei: '/dashboard/hei', citizen: '/citizen/submit', student: '/dashboard/hei/milestones',
+    hei: '/dashboard/hei', citizen: '/dashboard/reports', student: '/dashboard/hei/milestones',
 };
 
 interface AuthContextType {

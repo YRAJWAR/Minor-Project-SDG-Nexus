@@ -45,6 +45,7 @@ interface ChallengeStatusData {
     confirmedAt?: string | null;
     disputeReason?: string | null;
     verifiedBeneficiaries?: number | null;
+    heldBack?: number;
     signedIn?: boolean;
     id: string;
     title: string;
@@ -288,6 +289,7 @@ export default function TrackChallengePage() {
                             )}
                         </div>
                     )}
+                    {!!data.heldBack && <p className="text-sm text-[var(--color-ochre)]">₹{data.heldBack.toLocaleString('en-IN')} of the funding is held back until the fix is confirmed and the district officer closes the report.</p>}
                     {data.confirmedAt && <p className="text-sm text-[var(--color-forest)]">Confirmed fixed by the citizen · rated {data.citizenRating}/5</p>}
                     {data.status === 'IN_PROGRESS' && data.disputeReason && <p className="text-sm text-[var(--color-ochre)]">Reopened after a dispute: {data.disputeReason}</p>}
                     {data.verifiedBeneficiaries != null && <p className="text-sm text-[var(--color-ink-soft)]">Resolved · <strong className="text-[var(--color-ink)]">{data.verifiedBeneficiaries.toLocaleString('en-IN')}</strong> people benefit (verified by the district officer)</p>}

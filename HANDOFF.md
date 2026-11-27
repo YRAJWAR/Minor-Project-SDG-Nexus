@@ -208,3 +208,7 @@ Format: date · who · branch · what changed (files) · what is unfinished · a
     Ledger rows are hashed in memory and bulk-inserted (same `entryHash`), track records computed at the end.
     Result: 714 users, ~220 reports, ~900 endorsements, ~815 ledger entries, 156 teams, 624 milestones, 228 credentials.
   - Checks: 18 tests, build, `npm run smoke` passes; ledger chain valid; dashboards checked in the browser.
+  - IMPORTANT, live reset: the hosted connection string contains `&`, so `set -a; . ./.env.neon` silently fails and the seed
+    runs against the LOCAL database. Reset the live demo with:
+    `node -e "require('dotenv').config({path:'.env.neon',override:true}); require('child_process').execSync('npx prisma db seed',{stdio:'inherit',env:process.env})"`
+    (takes ~10–15 minutes over the network; local takes ~30 s).
